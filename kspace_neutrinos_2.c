@@ -130,7 +130,7 @@ double rho_nu(double a,double mnu,int sp)
             rho_nu_val=7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
         }
         else{
-            if(!(RhoNuTab[sp]))
+            if(!(RhoNuTab_interp[sp]))
                 tabulate_rho_nu(NU_SW*kT/mnu,mnu,sp);
             rho_nu_val=gsl_interp_eval(RhoNuTab_interp[sp],RhoNuLogA[sp],RhoNuTab[sp],log(a),RhoNuTab_acc[sp]);
         }
