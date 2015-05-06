@@ -468,16 +468,9 @@ inline double kTbyaM(double amnu)
 
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_delta_tot(int nk_in, char * savedir)
+void read_all_nu_state(char * savedir)
 {
    if(ThisTask==0){
-        if(nk_in > nk){
-                char err[500];
-                sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,nk);
-                terminate(err);
-        }
-        nk=nk_in;
-        int ik;
         FILE* fd;
         char * dfile;
         if (savedir == NULL){
@@ -500,6 +493,7 @@ void read_delta_tot(int nk_in, char * savedir)
              int iia;
              for(iia=0; iia< namax;iia++){
                      double scale;
+                     int ik;
                      if(fscanf(fd, "# %lg ", &scale) != 1)
                              break;
                      scalefact[iia]=scale;
@@ -507,13 +501,21 @@ void read_delta_tot(int nk_in, char * savedir)
                      if(log(All.Time) <= scale)
                              break;
                      /*Read kvalues*/
-                     for(ik=0;ik<nk; ik++)
-                             /*If we do not have a complete delta_tot for one redshift, we stop*/
+                     /*If we do not have a complete delta_tot for one redshift, we stop
+                      * unless this is the first line, in which case we use it to set nk */
+                     for(ik=0;ik<nk; ik++){
                              if(fscanf(fd, "%lg ", &(delta_tot[ik][iia])) != 1){
+                                 if(iia != 0){
                                      char err[150];
                                      snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(scalefact[iia]));
                                      terminate(err);
+                                 }
+                                 else{
+                                     nk = ik+1;
+                                     break;
+                                 }
                              }
+                     }
              }
              /*If our table starts at a different time from the simulation, stop.*/
              if(fabs(scalefact[0] - log(All.TimeTransfer)) > 1e-4){
@@ -526,18 +528,6 @@ void read_delta_tot(int nk_in, char * savedir)
                      ia=iia;
              printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
              fclose(fd);
-             /*Get a clean restart file*/
-#ifndef NOCALLSOFSYSTEM
-             system("mv delta_tot_nu.txt delta_tot_nu.txt.bak");
-#else
-             fd=fopen("delta_tot_nu.txt","w");
-             fclose(fd);
-#endif
-        }
-        else {
-             char err[150];
-             snprintf(err,150,"Could not open %s for reading\n",dfile);
-             terminate(err);
         }
         if (savedir != NULL)
             myfree(dfile);
@@ -546,8 +536,9 @@ void read_delta_tot(int nk_in, char * savedir)
 
 /* Constructor. transfer_init_tabulate must be called before this function.
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
+ * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[], char * snapdir)
+void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
 {
    if(nk_in > nk){
            char err[500];
@@ -562,7 +553,6 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[], char *
         gsl_interp *spline;
         double OmegaNua3=OmegaNu(All.TimeTransfer)*pow(All.TimeTransfer,3);
         int ik;
-        read_delta_tot(nk_in, snapdir);
         /*Check that if we are restarting from a snapshot, we successfully read a table*/
         if(fabs(All.TimeBegin - All.TimeTransfer) >1e-4 && (!ia))
             terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
@@ -591,8 +581,14 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[], char *
         gsl_interp_free(spline);
         if(!ia)
              ia=1;
-        for(ik=0; ik< ia; ik++)
-             save_delta_tot(ik, NULL);
+        /*Get a clean debug restart file*/
+#ifndef NOCALLSOFSYSTEM
+        system("mv delta_tot_nu.txt delta_tot_nu.txt.bak");
+#else
+        fd=fopen("delta_tot_nu.txt","w");
+        fclose(fd);
+#endif
+        save_all_nu_state(NULL);
    }
    /*Broadcast data to other processors*/
    MPI_Bcast(&ia,1,MPI_INT,0,MYMPI_COMM_WORLD);
@@ -796,7 +792,7 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
   if(!ia){
        /*Initialise delta_tot, setting ia = 1
         * and signifying that we are ready to leave the relativistic regime*/
-       delta_tot_init(nk_in, wavenum,delta_cdm_curr, NULL);
+       delta_tot_init(nk_in, wavenum,delta_cdm_curr);
        /*Initialise delta_nu_last*/
        get_delta_nu_combined(a, ia, wavenum, delta_nu_last,Omega0);
   }
