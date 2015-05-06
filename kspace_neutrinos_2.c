@@ -466,27 +466,36 @@ inline double kTbyaM(double amnu)
   return kT/amnu;
 }
 
-/* Constructor. transfer_init_tabulate must be called before this function.
- * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
- * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
+/* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
+ * Must be called before delta_tot_init, or resuming wont work*/
+void read_delta_tot(int nk_in, char * savedir)
 {
-   if(nk_in > nk){
-           char err[500];
-           sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,nk);
-           terminate(err);
-   }
-   nk=nk_in;
-    /*Construct delta_nu_init only if we are on the first processor.
-     * This avoids races with the file access*/
    if(ThisTask==0){
+        if(nk_in > nk){
+                char err[500];
+                sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,nk);
+                terminate(err);
+        }
+        nk=nk_in;
         int ik;
-        gsl_interp_accel *acc = gsl_interp_accel_alloc();
-        gsl_interp *spline;
         FILE* fd;
-        double OmegaNua3=OmegaNu(All.TimeTransfer)*pow(All.TimeTransfer,3);
+        char * dfile;
+        if (savedir == NULL){
+            dfile = "delta_tot_nu.txt";
+        }
+        else{
+            int nbytes = sizeof(char)*(strlen(savedir)+25);
+            dfile = mymalloc("filename", nbytes);
+            if(!dfile){
+                    char err[150];
+                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
+                    terminate(err);
+            }
+            dfile = strncpy(dfile, savedir, nbytes);
+            dfile = strncat(dfile, "delta_tot_nu.txt",25);
+        }
         /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
-        if((fd = fopen("delta_tot_nu.txt", "r"))){
+        if((fd = fopen(dfile, "r"))){
              /*Read redshifts; Initial one is known already*/
              int iia;
              for(iia=0; iia< namax;iia++){
@@ -525,6 +534,35 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
              fclose(fd);
 #endif
         }
+        else {
+             char err[150];
+             snprintf(err,150,"Could not open %s for reading\n",dfile);
+             terminate(err);
+        }
+        if (savedir != NULL)
+            myfree(dfile);
+    }
+}
+
+/* Constructor. transfer_init_tabulate must be called before this function.
+ * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
+ * Note delta_cdm_curr includes baryons*/
+void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[], char * snapdir)
+{
+   if(nk_in > nk){
+           char err[500];
+           sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,nk);
+           terminate(err);
+   }
+   nk=nk_in;
+    /*Construct delta_nu_init only if we are on the first processor.
+     * This avoids races with the file access*/
+   if(ThisTask==0){
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
+        gsl_interp *spline;
+        double OmegaNua3=OmegaNu(All.TimeTransfer)*pow(All.TimeTransfer,3);
+        int ik;
+        read_delta_tot(nk_in, snapdir);
         /*Check that if we are restarting from a snapshot, we successfully read a table*/
         if(fabs(All.TimeBegin - All.TimeTransfer) >1e-4 && (!ia))
             terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
@@ -758,7 +796,7 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
   if(!ia){
        /*Initialise delta_tot, setting ia = 1
         * and signifying that we are ready to leave the relativistic regime*/
-       delta_tot_init(nk_in, wavenum,delta_cdm_curr);
+       delta_tot_init(nk_in, wavenum,delta_cdm_curr, NULL);
        /*Initialise delta_nu_last*/
        get_delta_nu_combined(a, ia, wavenum, delta_nu_last,Omega0);
   }
@@ -817,7 +855,6 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
 double get_neutrino_powerspec(double kk, double logkk[], double delta_nu_curr[], gsl_interp *spline_nu, gsl_interp_accel * acc_nu, double delta_cdm_curr[], gsl_interp *spline_cdm, gsl_interp_accel * acc,int nbins)
 {
         double delta_cdm,delta_nu;
-        int ret;
         if(kk < logkk[0]){
                 char err[300];
                 snprintf(err,300,"trying to extract a k= %g < min stored = %g \n",kk,logkk[0]);
