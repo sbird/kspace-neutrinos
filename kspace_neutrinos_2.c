@@ -412,22 +412,49 @@ double find_ai(double af, double k, double kfsl,double mnu);
 double specialJ_fit(double x);
 void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu);
 
-void save_delta_tot(ia)
+void save_delta_tot(int iia, char * savedir)
 {
    if(ThisTask==0){
         FILE *fd;
         int i;
-        if(!(fd = fopen("delta_tot_nu.txt", "a")))
+        char * dfile;
+        //NULL means use current directory
+        if (savedir == NULL){
+            dfile = "delta_tot_nu.txt";
+        }
+        else{
+            int nbytes = sizeof(char)*(strlen(savedir)+25);
+            char * dfile = mymalloc("filename", nbytes);
+            if(!dfile){
+                    char err[150];
+                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
+                    terminate(err);
+            }
+            dfile = strncpy(dfile, savedir, nbytes);
+            dfile = strncat(dfile, "delta_tot_nu.txt",25);
+        }
+        if(!(fd = fopen(dfile, "a")))
              terminate("Could not open delta_tot_nu.txt for writing!\n");
         /*Write log scale factor*/
-        fprintf(fd, "# %le ", scalefact[ia]);
+        fprintf(fd, "# %le ", scalefact[iia]);
         /*Write kvalues*/
         for(i=0;i<nk; i++)
-                fprintf(fd,"%le ",delta_tot[i][ia]);
+                fprintf(fd,"%le ",delta_tot[i][iia]);
         fprintf(fd,"\n");
         fclose(fd);
+        if(savedir != NULL)
+            myfree(dfile);
    }
    return;
+}
+
+/* Function to save all the internal state of the neutrino integrator to disc.
+ * Must be called for resume to work*/
+void save_all_nu_state(char * savedir)
+{
+    int ik;
+    for(ik=0; ik< ia; ik++)
+         save_delta_tot(ik, savedir);
 }
 
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
@@ -527,14 +554,14 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
         if(!ia)
              ia=1;
         for(ik=0; ik< ia; ik++)
-             save_delta_tot(ik);
+             save_delta_tot(ik, NULL);
    }
    /*Broadcast data to other processors*/
-   MPI_Bcast(&ia,1,MPI_INT,0,MPI_COMM_WORLD);
+   MPI_Bcast(&ia,1,MPI_INT,0,MYMPI_COMM_WORLD);
    /*scalefact is a chunk of memory that also includes the delta_tot values*/
-   MPI_Bcast(scalefact,namax*(1+nk),MPI_DOUBLE,0,MPI_COMM_WORLD);
+   MPI_Bcast(scalefact,namax*(1+nk),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
    /*Finally delta_nu_init*/
-   MPI_Bcast(delta_nu_init,nk,MPI_DOUBLE,0,MPI_COMM_WORLD);
+   MPI_Bcast(delta_nu_init,nk,MPI_DOUBLE,0,MYMPI_COMM_WORLD);
    return;
 
 }
@@ -767,12 +794,9 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
                delta_tot[ik][ia] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
        }
        ia++;
-       if (ThisTask==0){
-              printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));
-              save_delta_tot(ia-1);
-       }
+       /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
+       save_delta_tot(ia-1, NULL);
    }
-
    return;
 }
 
