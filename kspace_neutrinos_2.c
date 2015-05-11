@@ -424,7 +424,7 @@ void save_delta_tot(int iia, char * savedir)
         }
         else{
             int nbytes = sizeof(char)*(strlen(savedir)+25);
-            char * dfile = mymalloc("filename", nbytes);
+            dfile = mymalloc("filename", nbytes);
             if(!dfile){
                     char err[150];
                     snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
