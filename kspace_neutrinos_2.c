@@ -145,6 +145,12 @@ double OmegaNu_single(double a,double mnu, int sp)
         rhonu=rho_nu(a,mnu,sp);
         rhonu /= (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY));
         rhonu /= All.HubbleParam*All.HubbleParam;
+        //Remove neutrino density which is particle based, if necessary
+#ifdef HYBRID_NEUTRINOS
+        if(! All.slow_neutrinos_analytic)
+            rhonu*=(1-All.nufrac_low);
+#endif
+
         return rhonu;
 }
 
@@ -409,11 +415,22 @@ void rebin_power(double logk[],double delta_cdm_curr[],int nbins, double Kbin[],
 #if defined(PMGRID)
 double fslength(double ai, double af,double mnu);
 double find_ai(double af, double k, double kfsl,double mnu);
+double specialJ(double x, double mnu);
 double specialJ_fit(double x);
 void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu);
+#ifdef HYBRID_NEUTRINOS
+double nufrac_low(double mnu);
+double Jfrac_low(double x, double mnu);
+int set_slow_neutrinos_analytic();
+#endif
 
 void save_delta_tot(int iia, char * savedir)
 {
+#ifdef HYBRID_NEUTRINOS
+    //Check whether we want to stop the particle neutrinos from beign tracers.
+    if(! set_slow_neutrinos_analytic())
+        printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",All.nufrac_low);
+#endif
    if(ThisTask==0){
         FILE *fd;
         int i;
@@ -633,13 +650,98 @@ Fit to the special function J(x) that is accurate to better than 3% relative and
 double specialJ_fit(double x)
 {
   double x2, x4, x8;
-  if (x <= 0.) return 1.;
+  if (x <= 0.)
+      return 1.;
   x2 = x*x;
   x4 = x2*x2;
   x8 = x4*x4;
 
   return (1.+ 0.0168 * x2 + 0.0407* x4)/(1. + 2.1734 * x2 + 1.6787 * exp(4.1811*log(x)) +  0.1467 * x8);
 }
+
+#ifdef HYBRID_NEUTRINOS
+/*Function to decide whether slow neutrinos are treated analytically or not.
+ * Sets All.slow_neutrinos_analytic.
+ * Should be called every few timesteps.*/
+int set_slow_neutrinos_analytic()
+{
+    double val=1;
+    //Just use a redshift cut for now. Really we want something more sophisticated,
+    //based on the shot noise and average overdensity.
+    if (All.Time > All.nu_crit_time){
+        val = 0;
+        //Set up the fraction of neutrinos correctly.
+        //This may be slightly wrong in the presence of a non-negligible hierarchy.
+        All.nufrac_low = nufrac_low((All.MNu[0]+All.MNu[1]+All.MNu[2])/3.);
+    }
+    All.slow_neutrinos_analytic = val;
+    return val;
+}
+
+
+//Fermi-Dirac kernel for below
+double fermi_dirac_kernel(double x, void * params)
+{
+  return x * x / (exp(x) + 1);
+}
+
+//This is integral f_0(q) q^2 dq between 0 and qc to compute the fraction of OmegaNu which is in particles.
+double nufrac_low(double mnu)
+{
+    double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
+    /*These functions are so smooth that we don't need much space*/
+    gsl_integration_workspace * w = gsl_integration_workspace_alloc (100);
+    double abserr;
+    gsl_function F;
+    F.function = &fermi_dirac_kernel;
+    F.params = NULL;
+    double total_fd;
+    gsl_integration_qag (&F, 0, qc, 0, 1e-6,100,GSL_INTEG_GAUSS61, w,&(total_fd), &abserr);
+    //divided by the total F-D probability (which is 3 Zeta(3)/2 ~ 1.8 if MAX_FERMI_DIRAC is large enough
+    total_fd /= 1.5*1.202056903159594;
+    gsl_integration_workspace_free (w);
+    return total_fd;
+}
+
+//This is an approximation to integral f_0(q) q^2 j_0(qX) dq between 0 and qc.
+//It gives the fraction of the integral that is due to neutrinos below a certain threshold.
+double Jfrac_low(double x, double mnu)
+{
+    double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
+    double integ;
+    //Use when qc*x is small and the bessel function can be expanded.
+      if (qc*x < 0.01)
+        integ= All.nufrac_low + qc*qc*qc*qc*qc*(-192. +80.*qc -5.*qc*qc*qc)*x*x/11520.;
+    else{
+        integ= (24.*(1.+x*x) - (24.-12.*(-2.+qc*qc)*x*x +qc*(24.-12.*qc +qc*qc*qc)*x*x*x*x)*cos(qc*x) + 4.*x*(-6.*qc + (6. -6.*qc + qc*qc*qc)*x*x)*sin(qc*x))/(48.*x*x*x*x*x*x);
+    }
+    //Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)
+    integ /= 1.8031;
+    return integ;
+}
+
+/* Fourier transform of truncated Fermi Dirac distribution, with support on q > qc only.
+    qc is a dimensionless momentum (normalized to TNU),
+    Uses an expansion of the FD distribution for qc << 1, very accurate for qc <= 1
+    mnu is in eV. x has units of inverse dimensionless momentum
+ */
+double specialJ(double x, double mnu)
+{
+  double specialJ = specialJ_fit(x);
+  if( !All.slow_neutrinos_analytic ) {
+        specialJ -= Jfrac_low(x, mnu);
+  }
+  return specialJ;
+}
+
+#else //Now for single-component neutrinos
+
+double specialJ(double x, double mnu)
+{
+    return specialJ_fit(x);
+}
+
+#endif //HYBRID_NEUTRINOS
 
 /*A structure for the parameters for the below integration kernel*/
 struct _delta_nu_int_params
@@ -665,7 +767,7 @@ double get_delta_nu_int(double logai, void * params)
     double ai = exp(logai);
     double fsl_aia = fslength(ai, p->a,p->mnu);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
-    return fsl_aia/(ai*hubble_function(ai)) *specialJ_fit(p->k*fsl_aia) * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
+    return fsl_aia/(ai*hubble_function(ai)) *specialJ(p->k*fsl_aia, p->mnu) * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
 }
 
 /*****************************************************************************************************
@@ -693,7 +795,7 @@ void get_delta_nu(double a, int Na, double wavenum[],  double delta_nu_curr[],co
        * This will be good if all species have similar masses, or
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
-      delta_nu_curr[ik] = specialJ_fit(wavenum[ik]*fsl_A0a)*delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, mnu)*delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /*If only one time given, we are still at the initial time*/
   if(Na > 1){
