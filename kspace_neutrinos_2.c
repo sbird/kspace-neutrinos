@@ -431,9 +431,8 @@ void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],con
 void save_delta_tot(int iia, char * savedir)
 {
 #ifdef HYBRID_NEUTRINOS
-    //Check whether we want to stop the particle neutrinos from beign tracers.
-    if(! set_slow_neutrinos_analytic())
-        printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low);
+    //Check whether we want to stop the particle neutrinos from being tracers.
+    set_slow_neutrinos_analytic();
 #endif
    if(ThisTask==0){
         FILE *fd;
@@ -678,6 +677,8 @@ int set_slow_neutrinos_analytic()
     //Just use a redshift cut for now. Really we want something more sophisticated,
     //based on the shot noise and average overdensity.
     if (All.Time > All.nu_crit_time){
+        if(All.slow_neutrinos_analytic && ThisTask==0)
+            printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low);
         val = 0;
     }
     All.slow_neutrinos_analytic = val;
