@@ -42,6 +42,13 @@
 
 #define H100   All.Hubble /* 100 km/s/Mpc in units of 1/UnitTime. */
 
+#ifdef HYBRID_NEUTRINOS
+//Fraction of neutrino mass not followed by the analytic integrator.
+static double nufrac_low=0;
+double _nufrac_low(double mnu);
+double Jfrac_low(double x, double mnu);
+int set_slow_neutrinos_analytic();
+#endif
 /*Note q carries units of eV/c. kT/c has units of eV/c.
  * M_nu has units of eV  Here c=1. */
 double rho_nu_int(double q, void * params)
@@ -147,10 +154,12 @@ double OmegaNu_single(double a,double mnu, int sp)
         rhonu /= All.HubbleParam*All.HubbleParam;
         //Remove neutrino density which is particle based, if necessary
 #ifdef HYBRID_NEUTRINOS
-        if(! All.slow_neutrinos_analytic)
-            rhonu*=(1-All.nufrac_low);
+        if(! All.slow_neutrinos_analytic){
+            if(!nufrac_low)
+                nufrac_low = _nufrac_low(mnu);
+            rhonu*=(1-nufrac_low);
+        }
 #endif
-
         return rhonu;
 }
 
@@ -418,18 +427,13 @@ double find_ai(double af, double k, double kfsl,double mnu);
 double specialJ(double x, double mnu);
 double specialJ_fit(double x);
 void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu);
-#ifdef HYBRID_NEUTRINOS
-double nufrac_low(double mnu);
-double Jfrac_low(double x, double mnu);
-int set_slow_neutrinos_analytic();
-#endif
 
 void save_delta_tot(int iia, char * savedir)
 {
 #ifdef HYBRID_NEUTRINOS
     //Check whether we want to stop the particle neutrinos from beign tracers.
     if(! set_slow_neutrinos_analytic())
-        printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",All.nufrac_low);
+        printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low);
 #endif
    if(ThisTask==0){
         FILE *fd;
@@ -645,10 +649,15 @@ double fslength(double ai, double af,double mnu)
 
 /**************************************************************************************************
 Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute
+    J(x) = Integrate[(Sin[q*x]/(q*x))*(q^2/(Exp[q] + 1)), {q, 0, Infinity}]
+    and J(0) = 1.
+    Mathematica gives this in terms of the PolyGamma function:
+   (PolyGamma[1, 1/2 - i x/2] - PolyGamma[1, 1 - i x/2] -    PolyGamma[1, 1/2 + i x/2] +
+   PolyGamma[1, 1 + i x/2])/(12 x Zeta[3]), which we could evaluate exactly if we wanted to.
 ***************************************************************************************************/
-
 double specialJ_fit(double x)
 {
+
   double x2, x4, x8;
   if (x <= 0.)
       return 1.;
@@ -670,9 +679,6 @@ int set_slow_neutrinos_analytic()
     //based on the shot noise and average overdensity.
     if (All.Time > All.nu_crit_time){
         val = 0;
-        //Set up the fraction of neutrinos correctly.
-        //This may be slightly wrong in the presence of a non-negligible hierarchy.
-        All.nufrac_low = nufrac_low((All.MNu[0]+All.MNu[1]+All.MNu[2])/3.);
     }
     All.slow_neutrinos_analytic = val;
     return val;
@@ -686,7 +692,7 @@ double fermi_dirac_kernel(double x, void * params)
 }
 
 //This is integral f_0(q) q^2 dq between 0 and qc to compute the fraction of OmegaNu which is in particles.
-double nufrac_low(double mnu)
+double _nufrac_low(double mnu)
 {
     double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
     /*These functions are so smooth that we don't need much space*/
@@ -711,7 +717,7 @@ double Jfrac_low(double x, double mnu)
     double integ;
     //Use when qc*x is small and the bessel function can be expanded.
       if (qc*x < 0.01)
-        integ= All.nufrac_low + qc*qc*qc*qc*qc*(-192. +80.*qc -5.*qc*qc*qc)*x*x/11520.;
+        integ= nufrac_low + qc*qc*qc*qc*qc*(-192. +80.*qc -5.*qc*qc*qc)*x*x/11520.;
     else{
         integ= (24.*(1.+x*x) - (24.-12.*(-2.+qc*qc)*x*x +qc*(24.-12.*qc +qc*qc*qc)*x*x*x*x)*cos(qc*x) + 4.*x*(-6.*qc + (6. -6.*qc + qc*qc*qc)*x*x)*sin(qc*x))/(48.*x*x*x*x*x*x);
     }
