@@ -28,6 +28,7 @@
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_sf_bessel.h>
 /* Note Omega0, the total non-relativistic matter, includes neutrinos (and radiation). */
 #define FLOAT   1e-6            /*Floating point accuracy*/
 #define BOLEVK 8.61734e-5        /*The Boltzmann constant in units of eV/K*/
@@ -46,7 +47,7 @@
 //Fraction of neutrino mass not followed by the analytic integrator.
 static double nufrac_low=0;
 double _nufrac_low(double mnu);
-double Jfrac_low(double x, double mnu);
+double Jfrac_high(double x, double mnu);
 int set_slow_neutrinos_analytic();
 #endif
 /*Note q carries units of eV/c. kT/c has units of eV/c.
@@ -710,17 +711,21 @@ double _nufrac_low(double mnu)
     return total_fd;
 }
 
-//This is an approximation to integral f_0(q) q^2 j_0(qX) dq between 0 and qc.
-//It gives the fraction of the integral that is due to neutrinos below a certain threshold.
-double Jfrac_low(double x, double mnu)
+//Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.
+double II(double x, double qc, int n)
+{
+    return (n*n+n*n*n*qc+n*qc*x*x - x*x)* qc*gsl_sf_bessel_j0(qc*x) + (2*n+n*n*qc+qc*x*x)*cos(qc*x);
+}
+
+//This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
+//It gives the fraction of the integral that is due to neutrinos above a certain threshold.
+double Jfrac_high(double x, double mnu)
 {
     double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
-    double integ;
-    //Use when qc*x is small and the bessel function can be expanded.
-      if (qc*x < 0.01)
-        integ= nufrac_low + qc*qc*qc*qc*qc*(-192. +80.*qc -5.*qc*qc*qc)*x*x/11520.;
-    else{
-        integ= (24.*(1.+x*x) - (24.-12.*(-2.+qc*qc)*x*x +qc*(24.-12.*qc +qc*qc*qc)*x*x*x*x)*cos(qc*x) + 4.*x*(-6.*qc + (6. -6.*qc + qc*qc*qc)*x*x)*sin(qc*x))/(48.*x*x*x*x*x*x);
+    double integ=0;
+    for(int n=1; n<20; n++)
+    {
+        integ+= pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
     }
     //Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)
     integ /= 1.8031;
@@ -734,11 +739,12 @@ double Jfrac_low(double x, double mnu)
  */
 double specialJ(double x, double mnu)
 {
-  double specialJ = specialJ_fit(x);
   if( !All.slow_neutrinos_analytic ) {
-        specialJ -= Jfrac_low(x, mnu);
+   return Jfrac_high(x, mnu);
   }
-  return specialJ;
+  else {
+    return specialJ_fit(x);
+  }
 }
 
 #else //Now for single-component neutrinos
