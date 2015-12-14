@@ -42,6 +42,11 @@
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
 
 #define H100   All.Hubble /* 100 km/s/Mpc in units of 1/UnitTime. */
+void handler (const char * reason, const char * file, int line, int gsl_errno)
+{
+    printf("GSL_ERROR in file: %s, line %d, errno:%d\n",file, line, gsl_errno);
+    terminate(reason);
+}
 
 #ifdef HYBRID_NEUTRINOS
 //Fraction of neutrino mass not followed by the analytic integrator.
@@ -568,6 +573,7 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
            sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,nk);
            terminate(err);
    }
+   gsl_set_error_handler(handler);
    nk=nk_in;
     /*Construct delta_nu_init only if we are on the first processor.
      * This avoids races with the file access*/
