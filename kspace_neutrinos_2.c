@@ -914,7 +914,7 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
         * and signifying that we are ready to leave the relativistic regime*/
        delta_tot_init(nk_in, wavenum,delta_cdm_curr);
        /*Initialise delta_nu_last*/
-       get_delta_nu_combined(a, ia, wavenum, delta_nu_last,Omega0);
+       get_delta_nu_combined(exp(scalefact[ia-1])-2*FLOAT, ia, wavenum, delta_nu_last,Omega0);
   }
 
   /*If we get called twice with the same scale factor, do nothing*/
