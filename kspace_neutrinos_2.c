@@ -438,10 +438,6 @@ void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],con
 
 void save_delta_tot(int iia, char * savedir)
 {
-#ifdef HYBRID_NEUTRINOS
-    //Check whether we want to stop the particle neutrinos from being tracers.
-    set_slow_neutrinos_analytic();
-#endif
    if(ThisTask==0){
         FILE *fd;
         int i;
@@ -952,6 +948,10 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
                delta_tot[ik][ia] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
        }
        ia++;
+#ifdef HYBRID_NEUTRINOS
+    //Check whether we want to stop the particle neutrinos from being tracers.
+    set_slow_neutrinos_analytic();
+#endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
        save_delta_tot(ia-1, NULL);
    }
