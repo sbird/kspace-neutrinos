@@ -207,6 +207,8 @@ static int namax;
  * Current time corresponds to index ia (but is only recorded if sufficiently far from previous time).
  * Caution: ia here is different from Na in get_delta_nu (Na = ia+1).*/
 static int ia;
+/*Set to unity once the init routine has run*/
+static int delta_tot_init_done;
 /* Pointer to nk arrays of length namax containing the total power spectrum.*/
 static double **delta_tot;
 /* Array of length namax containing scale factors at which the power spectrum is stored*/
@@ -617,6 +619,7 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
    MPI_Bcast(scalefact,namax*(1+nk),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
    /*Finally delta_nu_init*/
    MPI_Bcast(delta_nu_init,nk,MPI_DOUBLE,0,MYMPI_COMM_WORLD);
+   delta_tot_init_done=1;
    return;
 
 }
@@ -904,7 +907,7 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
   for (ik = 0; ik < nk_in; ik++)
            wavenum[ik]=exp(logk[ik]);
   /* Get a delta_nu_curr from CAMB.*/
-  if(!ia){
+  if(!delta_tot_init_done){
        /*Initialise delta_tot, setting ia = 1
         * and signifying that we are ready to leave the relativistic regime*/
        delta_tot_init(nk_in, wavenum,delta_cdm_curr);
