@@ -8,7 +8,7 @@ struct __kspace_vars {
   double TimeTransfer;
   double OmegaBaryonCAMB;
   double InputSpectrum_UnitLength_in_cm;
-  /*Allow for three massive neutrino species:
+  /*kspace_varsow for three massive neutrino species:
    * Could be made configurable at some point
    * Neutrino masses are in eV*/
   #define NUSPECIES 3
@@ -29,5 +29,43 @@ struct __kspace_vars {
     double nu_crit_time;
 #endif
 } kspace_vars;
+
+void set_kspace_vars(char * tag[], void *addr[], int id [])
+{
+      strcpy(tag[nt], "KspaceTransferFunction");
+      addr[nt] = kspace_vars.KspaceTransferFunction;
+      id[nt++] = STRING;
+
+      strcpy(tag[nt], "TimeTransfer");
+      addr[nt] = &kspace_vars.TimeTransfer;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "OmegaBaryonCAMB");
+      addr[nt] = &kspace_vars.OmegaBaryonCAMB;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
+      addr[nt] = &kspace_vars.InputSpectrum_UnitLength_in_cm;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "MNue");
+      addr[nt] = &(kspace_vars.MNu[0]);
+      id[nt++] = REAL;
+      strcpy(tag[nt], "MNum");
+      addr[nt] = &(kspace_vars.MNu[1]);
+      id[nt++] = REAL;
+      strcpy(tag[nt], "MNut");
+      addr[nt] = &(kspace_vars.MNu[2]);
+      id[nt++] = REAL;
+#if defined HYBRID_NEUTRINOS
+    strcpy(tag[nt], "VCRIT");
+    addr[nt] = &(kspace_vars.vcrit);
+    id[nt++] = REAL;
+    strcpy(tag[nt], "NuPartTime");
+    addr[nt] = &(kspace_vars.nu_crit_time);
+    id[nt++] = REAL;
+#endif
+}
+
 
 #endif
