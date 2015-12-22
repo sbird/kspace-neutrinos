@@ -26,6 +26,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in)
         terminate(string);
     }
 
+    t_init->TimeTransfer = kspace_params.TimeTransfer;
     t_init->NPowerTable = 0;
     while(1){
         double k, T_cdm, T_b, dummy, T_nu, T_tot;

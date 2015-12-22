@@ -17,6 +17,8 @@ struct _delta_tot_table {
     int ia;
     /* MPI rank of this processor*/
     int ThisTask;
+    /*Prefactor for use in get_delta_nu. Should be 3/2 Omega_m H^2 /c */
+    double delta_nu_prefac;
     /*Set to unity once the init routine has run*/
     int delta_tot_init_done;
     /* Pointer to nk arrays of length namax containing the total power spectrum.*/
@@ -36,14 +38,17 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in);
 
 /*Initialise the data in delta_tot_init from the transfer table data in transfer_init.
  This is separate from allocate_delta_tot_table because we need some information not available when the memory needs to be allocated*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init);
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0);
 
 /*Function called by add_nu_power_to_rhogrid*/
 void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[]);
 
 /*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu);
+void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],double mnu);
 
+/*Function which wraps three get_delta_nu calls to get delta_nu three times,
+ * so that the final value is for all neutrino species*/
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[]);
 
 /*Save a single line in the delta_tot table to a file*/
 void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savedir);

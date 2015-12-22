@@ -54,7 +54,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0)
 {
     if(nk_in > d_tot->nk){
            char err[500];
@@ -66,14 +66,17 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    double OmegaNua3=OmegaNu(kspace_params.TimeTransfer)*pow(kspace_params.TimeTransfer,3);
+    const double OmegaNua3=OmegaNu(t_init->TimeTransfer)*pow(t_init->TimeTransfer,3);
+    const double OmegaNu_today = OmegaNu(1);
+    /*Set the prefactor for delta_nu*/
+    d_tot->delta_nu_prefac = 1.5 *Omega0 *H100*H100/LIGHT;
     int ik;
     /*Check that if we are restarting from a snapshot, we successfully read a table*/
-    if(fabs(kspace_vars.TimeBegin - kspace_params.TimeTransfer) >1e-4 && (!d_tot->ia))
+    if(fabs(kspace_vars.TimeBegin - t_init->TimeTransfer) >1e-4 && (!d_tot->ia))
         terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
     /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
         * so that it includes potential Rayleigh scattering. */
-    d_tot->scalefact[0]=log(kspace_params.TimeTransfer);
+    d_tot->scalefact[0]=log(t_init->TimeTransfer);
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
     gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
     for(ik=0;ik<d_tot->nk;ik++){
@@ -84,7 +87,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
             * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
             *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
             *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
-            double CDMtoTot=((kspace_vars.Omega0-kspace_vars.OmegaNu)+pow(T_nubyT_0,2)*OmegaNua3)/(kspace_vars.Omega0-kspace_vars.OmegaNu+OmegaNua3);
+            double CDMtoTot=((Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(Omega0-OmegaNu_today+OmegaNua3);
             /*We only want to use delta_cdm_curr if we are not restarting*/
             if(!d_tot->ia)
                     d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
@@ -106,13 +109,15 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 #endif
         save_all_nu_state(d_tot, NULL);
     }
+    /*Initialise delta_nu_last*/
+    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1])-2*FLOAT, d_tot->ia, wavenum, d_tot->delta_nu_last);
     d_tot->delta_tot_init_done=1;
     return;
 }
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0)
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[])
 {
     double Omega_nu_tot=OmegaNu(a);
     int mi;
@@ -131,7 +136,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
                    break;
              }
              if(mmi==mi)
-                get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single[mi],Omega0,kspace_params.MNu[mi]);
+                get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single[mi],kspace_params.MNu[mi]);
              for(ik=0; ik<d_tot->nk; ik++)
                  delta_nu_curr[ik]+=delta_nu_single[mmi][ik]*OmegaNu_frac;
          }
@@ -170,8 +175,6 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
        /*Initialise delta_tot, setting ia = 1
         * and signifying that we are ready to leave the relativistic regime*/
 //        delta_tot_init(d_tot, nk_in, wavenum,delta_cdm_curr, ThisTask, &transfer_init);
-       /*Initialise delta_nu_last*/
-//        get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1])-2*FLOAT, d_tot->ia, wavenum, d_tot->delta_nu_last,Omega0, ThisTask);
   }
 
   /*If we get called twice with the same scale factor, do nothing*/
@@ -194,7 +197,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
       d_tot->delta_tot[ik][d_tot->ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*d_tot->delta_nu_last[ik];
    }
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(d_tot, a, d_tot->ia+1, wavenum, delta_nu_curr,Omega0);
+   get_delta_nu_combined(d_tot, a, d_tot->ia+1, wavenum, delta_nu_curr);
    /*Update delta_nu_last*/
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
@@ -520,7 +523,7 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0,double mnu)
+void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],double mnu)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
@@ -565,16 +568,16 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[], 
             params.delta_tot=d_tot->delta_tot[ik];
             gsl_interp_init(params.spline,params.scale,params.delta_tot,Na);
             gsl_integration_qag (&F, log(A0), log(a), 0, 1e-6,GSL_VAL,6,w,&d_nu_tmp, &abserr);
-            delta_nu_curr[ik] += 1.5 *Omega0 *H100*H100/LIGHT*d_nu_tmp;
+            delta_nu_curr[ik] += d_tot->delta_nu_prefac * d_nu_tmp;
          }
          gsl_integration_workspace_free (w);
          gsl_interp_free(params.spline);
          gsl_interp_accel_free(params.acc);
    }
-  if(d_tot->ThisTask == 0){
+   if(d_tot->ThisTask == 0){
           printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
           for(ik=0; ik< 5; ik++)
           printf("k %g d_nu %g\n",wavenum[40*ik], delta_nu_curr[40*ik]);
-  }
+   }
    return;
 }
