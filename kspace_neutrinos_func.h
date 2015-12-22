@@ -2,6 +2,17 @@
 #define KSPACE_NEUTRINOS_FUNC
 /*File to define globally accessible functions for massive neutrinos. This is the header that should be included in proto.h*/
 
+/*We only need this for fftw_complex*/
+#ifdef NOTYPEPREFIX_FFTW
+#include        <fftw.h>
+#else
+#ifdef DOUBLEPRECISION_FFTW
+#include     <dfftw.h>	/* double precision FFTW */
+#else
+#include     <sfftw.h>
+#endif
+#endif
+
 /* Return the total matter density in all neutrino species.*/
 double OmegaNu(double a);
 /*The matter density in a single neutrino species */
@@ -28,14 +39,18 @@ void terminate(const char *);
 #error "KSPACE_NEUTRINOS_2 is incompatible with KSPACE_NEUTRINOS"
 #endif
 
-/*These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos*/
-void get_delta_nu_update(double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[], int ThisTask);
-double get_neutrino_powerspec(double kk_in, double SmoothK[], double SmoothPowerNu[],
-			      gsl_interp * SplinePowNu, gsl_interp_accel * acc_nu, double SmoothPower[],
-			      gsl_interp * SplinePow, gsl_interp_accel * acc, int nbins);
+/* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos*/
+/* Main function, called from pm_periodic.c. 
+   Computes the neutrino power, then adds it to the Fourier grid.*/
+void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass);
+
+/*Functions to load data for the neutrino powerspectrum from the disc*/
 void transfer_init_tabulate(int nk_in, int ThisTask);
 void save_all_nu_state(char * savedir);
 void read_all_nu_state(char * savedir, double Time);
+
+/*Private function needed for add_nu_power_to_rhogrid*/
+void get_delta_nu_update(double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[], int ThisTask);
 
 #endif //KSPACE_NEUTRINOS_2
 

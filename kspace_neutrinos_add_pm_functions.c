@@ -11,17 +11,6 @@
 #include "kspace_neutrinos_func.h"
 #include "kspace_neutrino_const.h"
 
-/*We only need this for fftw_complex*/
-#ifdef NOTYPEPREFIX_FFTW
-#include        <fftw.h>
-#else
-#ifdef DOUBLEPRECISION_FFTW
-#include     <dfftw.h>	/* double precision FFTW */
-#else
-#include     <sfftw.h>
-#endif
-#endif
-
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
 {
     FILE *fd;
@@ -212,6 +201,40 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
         if(count[i])
             keffs[i]/=count[i];
     }
+}
+
+
+
+/*Get the neutrino power spectrum. This will become:
+ * \delta_\nu = \delta_{CDM}(\vec{k}) * delta_\nu(k) / delta_{CDM} (k),
+ * thus we get the right powerspectrum.
+ * @param kk log(k) value to get delta_nu at
+ * @param logkk[] vector of k values corresponding to delta_nu_curr
+ * @param delta_nu_curr vector of delta_nu
+ * @param spline_nu interpolating spline for delta_nu_curr
+ * @param acc_nu accelerator for spline_nu
+ * @param delta_cdm_curr vector of delta_cdm
+ * @param spline_cdm interpolating spline for delta_cdm_curr
+ * @param acc accelerator for spline_cdm
+ * @param nbins number of bins in delta_nu_curr and delta_cdm_curr
+ * @returns delta_nu / delta_CDM
+ * */
+double get_neutrino_powerspec(double kk, double logkk[], double delta_nu_curr[], gsl_interp *spline_nu, gsl_interp_accel * acc_nu, double delta_cdm_curr[], gsl_interp *spline_cdm, gsl_interp_accel * acc,int nbins)
+{
+        double delta_cdm,delta_nu;
+        if(kk < logkk[0]){
+                char err[300];
+                snprintf(err,300,"trying to extract a k= %g < min stored = %g \n",kk,logkk[0]);
+                terminate(err);
+        }
+        /*This is just to guard against floating point roundoff*/
+        if( kk > logkk[nbins-1])
+                kk=logkk[nbins-1];
+        delta_cdm=gsl_interp_eval(spline_cdm,logkk, delta_cdm_curr,kk,acc);
+        delta_nu=gsl_interp_eval(spline_nu,logkk, delta_nu_curr, kk,acc_nu);
+        if(isnan(delta_cdm) || isnan(delta_nu))
+                terminate("delta_nu or delta_cdm is nan\n");
+        return delta_nu/delta_cdm;
 }
 
 #define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
