@@ -15,21 +15,8 @@
 
 /* Return the total matter density in all neutrino species.*/
 double OmegaNu(double a);
-/*The matter density in a single neutrino species */
-double OmegaNu_single(double a,double mnu, int sp);
-
-//Forward define terminate, because we'll need it.
-void terminate(const char *);
-#ifndef mymalloc
-#define mymalloc(x,y) malloc(y)
-#endif
-
-#ifndef myfree
-#define myfree(x) free(x)
-#endif
 
 #ifdef KSPACE_NEUTRINOS_2
-#include <gsl/gsl_interp.h>
 
 #ifdef NEUTRINOS
 #error "Cannot define particle based and Fourier-space neutrinos at the same time!"
@@ -46,11 +33,9 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
 
 /*Functions to load data for the neutrino powerspectrum from the disc*/
 void transfer_init_tabulate(int nk_in, int ThisTask);
-void save_all_nu_state(char * savedir);
-void read_all_nu_state(char * savedir, double Time);
 
-/*Private function needed for add_nu_power_to_rhogrid*/
-void get_delta_nu_update(double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[], int ThisTask);
+/*Forward define the hubble function*/
+double hubble_function(double a);
 
 #endif //KSPACE_NEUTRINOS_2
 

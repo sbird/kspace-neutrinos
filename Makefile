@@ -4,8 +4,8 @@ LFLAGS += -lgsl -lgslcblas -lpthread
 CFLAGS +=-O2 -ffast-math -g -c -Wall -fopenmp ${OPT}
 LFLAGS += -lm -lgomp
 
-OBJS = kspace_neutrinos_2.o kspace_neutrino_background.o kspace_neutrino_load.o kspace_neutrinos_add_pm_functions.o
-INCL = kspace_neutrino_const.h kspace_neutrinos_vars.h kspace_neutrinos_func.h Makefile
+OBJS = transfer_init.o delta_tot_table.o kspace_neutrino_background.o kspace_neutrino_load.o kspace_neutrinos_add_pm_functions.o
+INCL = kspace_neutrino_const.h kspace_neutrinos_vars.h kspace_neutrinos_func.h transfer_init.h delta_tot_table.h Makefile
 
 .PHONY : clean all test
 

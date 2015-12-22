@@ -10,6 +10,10 @@
 #include <mpi.h>
 #include "kspace_neutrinos_func.h"
 #include "kspace_neutrino_const.h"
+#include "transfer_init.h"
+#include "delta_tot_table.h"
+
+void terminate(const char *);
 
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
 {
@@ -237,6 +241,26 @@ double get_neutrino_powerspec(double kk, double logkk[], double delta_nu_curr[],
         return delta_nu/delta_cdm;
 }
 
+
+static _transfer_init_table transfer_init;
+
+static _delta_tot_table delta_tot_table;
+
+/** This function loads the initial transfer functions from CAMB transfer files.
+ * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
+ * Output stored in T_nu_init and friends and has length NPowerTable.
+ * Then, on all processors, it allocates memory for delta_tot_table.
+ * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.*/
+void transfer_init_tabulate(int nk_in, int ThisTask)
+{
+  /*We only need this for initialising delta_tot later, which is only done on task 0.
+   * So only read the transfer functions on that task*/
+    if(ThisTask == 0)
+        allocate_transfer_init_table(&transfer_init, nk_in);
+    allocate_delta_tot_table(&delta_tot_table, nk_in);
+}
+
+
 #define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
 
 /* This function adds the neutrino power spectrum to the
@@ -276,7 +300,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
   /*Get delta_cdm_curr , which is P(k)^1/2, and logkk*/
   rebin_power(logkk,delta_cdm_curr,TARGETBINS,keffs,sumpower,count,PMGRID, PMGRID, BoxSize);
   /*This sets up P_nu_curr.*/
-  get_delta_nu_update(Time, TARGETBINS, logkk, delta_cdm_curr,  delta_nu_curr, ThisTask);
+  get_delta_nu_update(&delta_tot_table, Time, TARGETBINS, logkk, delta_cdm_curr,  delta_nu_curr);
   for(i=0;i<TARGETBINS;i++){
           if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
                   char err[300];
