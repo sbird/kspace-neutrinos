@@ -7,7 +7,9 @@
 #include <string.h>
 #include <math.h>
 #include <gsl/gsl_interp.h>
+#include <mpi.h>
 #include "kspace_neutrinos_func.h"
+#include "kspace_neutrino_const.h"
 
 /*We only need this for fftw_complex*/
 #ifdef NOTYPEPREFIX_FFTW
@@ -19,11 +21,6 @@
 #include     <sfftw.h>
 #endif
 #endif
-
-//Forward define the Efstathiou power spectrum, but we want to remove this later
-double PowerSpec_Efstathiou(double k);
-/*Forward declaration of powerspec*/
-void powerspec(int flag, int *typeflag);
 
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
 {
@@ -91,8 +88,6 @@ void rebin_power(double logk[],double delta_cdm_curr[],const int nbins, double K
                         }
                         pk/=(count*scale);
                         kk/=count;
-                        //This is a correction from what is done in powerspec
-                        pk *= PowerSpec_Efstathiou(exp(kk));
                         SlogK[MaxIndex] = kk;
                         Spk[MaxIndex]=pk;
                         MaxIndex++;
@@ -133,6 +128,92 @@ void rebin_power(double logk[],double delta_cdm_curr[],const int nbins, double K
         return;
 }
 
+/*Helper function for 1D window function.*/
+inline fftw_real onedinvwindow(int kx, int n)
+{
+    //Return \pi x /(n sin(\pi x n)) unless x = 0, in which case return 1.
+    return kx ? M_PI*kx/(n*sin(M_PI*kx/(fftw_real)n)) : 1.0;
+}
+
+/*The inverse window function of the CiC procedure above. Need to deconvolve this for the power spectrum.
+  Only has an effect for k > Nyquist/4.*/
+fftw_real invwindow(int kx, int ky, int kz, int n)
+{
+    if(n == 0)
+        return 0;
+    fftw_real iwx = onedinvwindow(kx, n);
+    fftw_real iwy = onedinvwindow(ky, n);
+    fftw_real iwz = onedinvwindow(kz, n);
+    return pow(iwx*iwy*iwz,2);
+}
+
+/**Little macro to work the storage order of the FFT.*/
+#define KVAL(n) ((n)<=dims/2 ? (n) : ((n)-dims))
+
+/* This computes the power in an array on one processor, for an MPI transform.
+ * Normalisation and reduction is done in the caller.*/
+void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins, const int startslab, const int nslab, double *power, long long int *count, double *keffs, const double total_mass)
+{
+    /*First we sum the power on this processor, then we do an MPI_allgather*/
+    double powerpriv[nrbins];
+    double keffspriv[nrbins];
+    long long int countpriv[nrbins];
+    /*How many bins per unit (log) interval in k?*/
+    const int binsperunit=nrbins/ceil(log(sqrt(3)*dims/2.0));
+    /* Now we compute the powerspectrum in each direction.
+     * FFTW is unnormalised, so we need to scale by the length of the array
+     * (we do this later). */
+    memset(powerpriv, 0, nrbins*sizeof(double));
+    memset(countpriv, 0, nrbins*sizeof(long long int));
+    memset(keffspriv, 0, nrbins*sizeof(double));
+    /* Want P(k)= F(k).re*F(k).re+F(k).im*F(k).im
+     * Use the symmetry of the real fourier transform to half the final dimension.*/
+    for(int i=startslab; i<startslab+nslab;i++){
+        int indx=(i-startslab)*dims*(dims/2+1);
+        for(int j=0; j<dims; j++){
+            int indy=j*(dims/2+1);
+            /* The k=0 and N/2 mode need special treatment here, 
+                * as they alone are not doubled.*/
+            /*Do k=0 mode.*/
+            int index=indx+indy;
+            double kk=sqrt(pow(KVAL(i),2)+pow(KVAL(j),2));
+            //We don't want the 0,0,0 mode as that is just the mean of the field.
+            if (kk > 0) {
+                int psindex=floor(binsperunit*log(kk));
+                powerpriv[psindex] += (outfield[index].re*outfield[index].re+outfield[index].im*outfield[index].im)*pow(invwindow(KVAL(i),KVAL(j),0,dims),2);
+                keffspriv[psindex]+=kk;
+                countpriv[psindex]++;
+            }
+            /*Now do the k=N/2 mode*/
+            index=indx+indy+dims/2;
+            kk=sqrt(pow(KVAL(i),2)+pow(KVAL(j),2)+pow(KVAL(dims/2),2));
+            int psindex=floor(binsperunit*log(kk));
+            powerpriv[psindex] += (outfield[index].re*outfield[index].re+outfield[index].im*outfield[index].im)*pow(invwindow(KVAL(i),KVAL(j),KVAL(dims/2),dims),2);
+            keffspriv[psindex]+=kk;
+            countpriv[psindex]++;
+            /*Now do the rest. Because of the symmetry, each mode counts twice.*/
+            for(int k=1; k<dims/2; k++){
+                    index=indx+indy+k;
+                    kk=sqrt(pow(KVAL(i),2)+pow(KVAL(j),2)+pow(KVAL(k),2));
+                    int psindex=floor(binsperunit*log(kk));
+                    powerpriv[psindex]+=2*(outfield[index].re*outfield[index].re+outfield[index].im*outfield[index].im)*pow(invwindow(KVAL(i),KVAL(j),KVAL(k),dims),2);
+                    countpriv[psindex]+=2;
+                    keffspriv[psindex]+=2*kk;
+            }
+        }
+    }
+    /*Now sum the different contributions*/
+    MPI_Allgather(countpriv, nrbins * sizeof(long long), MPI_BYTE, count, nrbins * sizeof(long long), MPI_BYTE, MYMPI_COMM_WORLD);
+    MPI_Allgather(powerpriv, nrbins * sizeof(double), MPI_BYTE, power, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
+    MPI_Allgather(keffspriv, nrbins * sizeof(double), MPI_BYTE, keffs, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
+    /*Normalise by the total mass in the array*/
+    for(int i=0; i<nrbins;i++) {
+        power[i]/=total_mass*total_mass;
+        if(count[i])
+            keffs[i]/=count[i];
+    }
+}
+
 #define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
 
 /* This function adds the neutrino power spectrum to the
@@ -144,7 +225,7 @@ void rebin_power(double logk[],double delta_cdm_curr[],const int nbins, double K
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, double Kbin[], double SumPowerUncorrected[], long long int CountModes[], const int BINS_PS, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir)
+void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos 
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -161,21 +242,16 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
   double delta_cdm_curr[TARGETBINS];  /*A rebinned power spectrum, smoothed over several modes.*/
   double logkk[TARGETBINS];      /*log k values for the rebinned power spectrum*/
   double delta_nu_curr[TARGETBINS];  /*The square root of the neutrino power spectrum*/
+  /*Total power, before rebinning*/
+  double sumpower[PMGRID];
+  double keffs[PMGRID];
+  long long int count[PMGRID];
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
-   * Use the upper bits of flag to not save the potential.*/
-  int typelist2[6]={1,1,1,1,1,1};
-  /*Zero the power spectra now, because it only gets zerod inside powerspec
-   * during the foldonitself calculation, which is only called when mode=1*/
-  memset(SumPowerUncorrected, 0, BINS_PS*sizeof(double));
-  memset(CountModes, 0, BINS_PS*sizeof(long long int));
-  /*Get SumPower, which is P(k)*/
-  powerspec(1+ (2<<29),typelist2);
+   * This function stores the total power*no. modes.*/
+  total_powerspectrum(PMGRID, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, sumpower, count, keffs, total_mass);
   /*Get delta_cdm_curr , which is P(k)^1/2, and logkk*/
-  rebin_power(logkk,delta_cdm_curr,TARGETBINS,Kbin,SumPowerUncorrected,CountModes,BINS_PS, PMGRID, BoxSize);
-  /*Now we don't need SumPower[1] anymore: zero it again so it doesn't mess up state.*/
-  memset(SumPowerUncorrected, 0, BINS_PS*sizeof(double));
-  memset(CountModes, 0, BINS_PS*sizeof(long int));
+  rebin_power(logkk,delta_cdm_curr,TARGETBINS,keffs,sumpower,count,PMGRID, PMGRID, BoxSize);
   /*This sets up P_nu_curr.*/
   get_delta_nu_update(Time, TARGETBINS, logkk, delta_cdm_curr,  delta_nu_curr, ThisTask);
   for(i=0;i<TARGETBINS;i++){
@@ -195,13 +271,13 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
     for(x = 0; x < PMGRID; x++)
       for(z = 0; z < PMGRID / 2 + 1; z++)
         {
-           double kx,ky,kz,k2,smth;
-           int ip;
-           kx = x > PMGRID/2 ? x-PMGRID : x;
-           ky = y > PMGRID/2 ? y-PMGRID : y;
-           kz = z > PMGRID/2 ? z-PMGRID : z;
+          double kx,ky,kz,k2,smth;
+          int ip;
+          kx = x > PMGRID/2 ? x-PMGRID : x;
+          ky = y > PMGRID/2 ? y-PMGRID : y;
+          kz = z > PMGRID/2 ? z-PMGRID : z;
 
-          k2 = kx * kx + ky * ky + kz * kz;
+          k2 = kx*kx + ky*ky + kz*kz;
           if(k2 <= 0)
               continue;
           /*Change the units of k to match those of logkk*/

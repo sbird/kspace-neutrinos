@@ -7,7 +7,6 @@ double OmegaNu(double a);
 /*The matter density in a single neutrino species */
 double OmegaNu_single(double a,double mnu, int sp);
 
-
 //Forward define terminate, because we'll need it.
 void terminate(const char *);
 #ifndef mymalloc
@@ -37,6 +36,7 @@ double get_neutrino_powerspec(double kk_in, double SmoothK[], double SmoothPower
 void transfer_init_tabulate(int nk_in, int ThisTask);
 void save_all_nu_state(char * savedir);
 void read_all_nu_state(char * savedir, double Time);
+
 #endif //KSPACE_NEUTRINOS_2
 
 #endif //KSPACE_NEUTRINOS_FUNC
