@@ -1,4 +1,5 @@
-/*This file contains functions which interface closely with the PM grid in gadget.*/
+/*This file contains functions which interface closely with the PM grid in gadget.
+ add_nu_power_to_rhogrid is the main public function. */
 
 #ifdef KSPACE_NEUTRINOS_2
 
@@ -8,6 +9,7 @@
 #include <gsl/gsl_interp.h>
 #include "kspace_neutrinos_func.h"
 
+/*We only need this for fftw_complex*/
 #ifdef NOTYPEPREFIX_FFTW
 #include        <fftw.h>
 #else
@@ -18,9 +20,10 @@
 #endif
 #endif
 
+//Forward define the Efstathiou power spectrum, but we want to remove this later
+double PowerSpec_Efstathiou(double k);
 /*Forward declaration of powerspec*/
 void powerspec(int flag, int *typeflag);
-
 
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
 {
@@ -42,6 +45,92 @@ void save_nu_power(const double Time, const double logkk[], const double delta_n
     }
     fclose(fd);
     return;
+}
+
+#define MINMODES 1
+/*This function rebins Power[1] to have a constant lower number of bins
+ *
+ * @param logk stores the output wavenumbers
+ * @param delta_cdm_curr is the square root of the rebinned power
+ * @param nbins is the length of the output vectors
+ * @param Kbin is the wavenumbers of the input arrays
+ * @param SumPower is the input power, calculated in powerspec in pm_periodic
+ * @param CountModes is the number of modes in each bin in SumPower
+ * @param bins_ps the number of bins in SumPower. Defined as BINS_PS in pm_periodic.
+ * @param pmgrid is the number of bins in the fourier mesh, PMGRID in allvars.h
+ * */
+void rebin_power(double logk[],double delta_cdm_curr[],const int nbins, double Kbin[], double SumPower[], long long CountModes[], const int bins_ps, const int pmgrid, const double BoxSize)
+{
+        int i;
+        //Number of modes in a bin: CountModes[1]
+        //Total power, without dividing by the number of modes: SumPower[1]
+        int istart=0,iend=0;
+        /*We will have issues if count overflows a 64 bit integer. */
+        unsigned long long count=0;
+        /*This is a Fourier conversion factor */
+        const double scale=pow(2*M_PI/BoxSize,3);
+        double dlogK = (log(Kbin[0]*pmgrid)-log(Kbin[0]))/nbins;
+        double logK_A[bins_ps];
+        int MaxIndex=0;
+        double SlogK[nbins];
+        double Spk[nbins];
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
+        gsl_interp *spline;
+        for(i=0; i<bins_ps; i++)
+                logK_A[i] = log(Kbin[i]);
+        /*First smooth the array so that there are enough modes in each bin.
+         * These bins will be uneven, and their number will be uncertain, but less than nbins*/
+        while(iend < bins_ps){
+                count+=CountModes[iend];
+                iend++;
+                if (count >= MINMODES && (logK_A[iend-1]-logK_A[istart] >= dlogK)){
+                        double pk = 0,kk=0;
+                        for(i=istart;i<iend;i++){
+                                pk+=SumPower[i];
+                                kk+=logK_A[i]* CountModes[i];
+                        }
+                        pk/=(count*scale);
+                        kk/=count;
+                        //This is a correction from what is done in powerspec
+                        pk *= PowerSpec_Efstathiou(exp(kk));
+                        SlogK[MaxIndex] = kk;
+                        Spk[MaxIndex]=pk;
+                        MaxIndex++;
+                        istart=iend;
+                        count=0;
+                        if(MaxIndex >= nbins)
+                                break;
+                }
+        }
+        /*So now we have an array which is not zero, but which has an uncertain binning.
+         * Rebin it to a regular grid by interpolation, and find the exponent. */
+        for(i=0; i<nbins; i++)
+                logK_A[i] = log(Kbin[0])+dlogK*i-0.01;
+        /*Final term is just to guard against floating point roundoff*/
+        /*Allocate an interpolating spline to rebin this onto a regular grid.
+         * Use linear spline because the power spectrum will be jagged due to Rayleigh scattering.*/
+        spline=gsl_interp_alloc(gsl_interp_linear,MaxIndex);
+        if(spline == NULL || acc == NULL || gsl_interp_init(spline,SlogK,Spk,MaxIndex))
+                terminate("Error initialising and allocating memory for gsl interpolator.\n");
+
+        for(i=0; i< nbins; i++){
+                double x=logK_A[i];
+                if(x < SlogK[0])
+                        x=SlogK[0];
+                /*This will just be floating point roundoff*/
+                if(x > SlogK[MaxIndex-1])
+                        x=SlogK[MaxIndex-1];
+                logk[i]=logK_A[i];
+                delta_cdm_curr[i]=gsl_interp_eval(spline,SlogK,Spk,x,acc);
+                /*Guard against floating point negatives and nans*/
+                if (delta_cdm_curr[i] < 0)
+                    delta_cdm_curr[i] = 0;
+                delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]);
+        }
+        gsl_interp_free(spline);
+        gsl_interp_accel_free(acc);
+
+        return;
 }
 
 #define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
@@ -83,7 +172,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
   /*Get SumPower, which is P(k)*/
   powerspec(1+ (2<<29),typelist2);
   /*Get delta_cdm_curr , which is P(k)^1/2, and logkk*/
-  rebin_power(logkk,delta_cdm_curr,TARGETBINS,Kbin,SumPowerUncorrected,CountModes,BINS_PS, PMGRID);
+  rebin_power(logkk,delta_cdm_curr,TARGETBINS,Kbin,SumPowerUncorrected,CountModes,BINS_PS, PMGRID, BoxSize);
   /*Now we don't need SumPower[1] anymore: zero it again so it doesn't mess up state.*/
   memset(SumPowerUncorrected, 0, BINS_PS*sizeof(double));
   memset(CountModes, 0, BINS_PS*sizeof(long int));

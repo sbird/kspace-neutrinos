@@ -35,8 +35,6 @@ double get_neutrino_powerspec(double kk_in, double SmoothK[], double SmoothPower
 			      gsl_interp * SplinePowNu, gsl_interp_accel * acc_nu, double SmoothPower[],
 			      gsl_interp * SplinePow, gsl_interp_accel * acc, int nbins);
 void transfer_init_tabulate(int nk_in, int ThisTask);
-void rebin_power(double SmoothK[], double SmoothPower[], int nbins, double Kbin[], double SumPower[],
-		 long long CountModes[], int bins_ps, int pmgrid);
 void save_all_nu_state(char * savedir);
 void read_all_nu_state(char * savedir, double Time);
 #endif //KSPACE_NEUTRINOS_2
