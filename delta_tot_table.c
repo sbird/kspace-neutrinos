@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <mpi.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_interp.h>
@@ -57,47 +56,47 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Note delta_cdm_curr includes baryons*/
 void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
 {
-   if(nk_in > d_tot->nk){
+    if(nk_in > d_tot->nk){
            char err[500];
            sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk);
            terminate(err);
-   }
-   gsl_set_error_handler(handler);
-   d_tot->nk=nk_in;
+    }
+    gsl_set_error_handler(handler);
+    d_tot->nk=nk_in;
     /*Construct delta_nu_init from the transfer functions.*/
+    gsl_interp_accel *acc = gsl_interp_accel_alloc();
+    gsl_interp *spline;
+    double OmegaNua3=OmegaNu(kspace_params.TimeTransfer)*pow(kspace_params.TimeTransfer,3);
+    int ik;
+    /*Check that if we are restarting from a snapshot, we successfully read a table*/
+    if(fabs(kspace_vars.TimeBegin - kspace_params.TimeTransfer) >1e-4 && (!d_tot->ia))
+        terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
+    /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
+        * so that it includes potential Rayleigh scattering. */
+    d_tot->scalefact[0]=log(kspace_params.TimeTransfer);
+    spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
+    gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
+    for(ik=0;ik<d_tot->nk;ik++){
+            double T_nubyT_0 = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
+            /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
+            * The CAMB transfer functions are defined such that
+            * P_cdm ~ T_cdm^2 (and some other constant factors)
+            * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
+            *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
+            *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
+            double CDMtoTot=((kspace_vars.Omega0-kspace_vars.OmegaNu)+pow(T_nubyT_0,2)*OmegaNua3)/(kspace_vars.Omega0-kspace_vars.OmegaNu+OmegaNua3);
+            /*We only want to use delta_cdm_curr if we are not restarting*/
+            if(!d_tot->ia)
+                    d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
+            /* Also initialise delta_nu_init here to save time later.
+            * Use the first delta_tot, in case we are resuming.*/
+            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
+    }
+    gsl_interp_accel_free(acc);
+    gsl_interp_free(spline);
+    if(!d_tot->ia)
+            d_tot->ia=1;
     if(d_tot->ThisTask==0){
-        gsl_interp_accel *acc = gsl_interp_accel_alloc();
-        gsl_interp *spline;
-        double OmegaNua3=OmegaNu(kspace_params.TimeTransfer)*pow(kspace_params.TimeTransfer,3);
-        int ik;
-        /*Check that if we are restarting from a snapshot, we successfully read a table*/
-        if(fabs(kspace_vars.TimeBegin - kspace_params.TimeTransfer) >1e-4 && (!d_tot->ia))
-            terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
-        /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
-         * so that it includes potential Rayleigh scattering. */
-        d_tot->scalefact[0]=log(kspace_params.TimeTransfer);
-        spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
-        gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
-        for(ik=0;ik<d_tot->nk;ik++){
-               double T_nubyT_0 = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
-               /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
-                * The CAMB transfer functions are defined such that
-                * P_cdm ~ T_cdm^2 (and some other constant factors)
-                * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
-                *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
-                *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
-               double CDMtoTot=((kspace_vars.Omega0-kspace_vars.OmegaNu)+pow(T_nubyT_0,2)*OmegaNua3)/(kspace_vars.Omega0-kspace_vars.OmegaNu+OmegaNua3);
-               /*We only want to use delta_cdm_curr if we are not restarting*/
-               if(!d_tot->ia)
-                     d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
-               /* Also initialise delta_nu_init here to save time later.
-                * Use the first delta_tot, in case we are resuming.*/
-               d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
-        }
-        gsl_interp_accel_free(acc);
-        gsl_interp_free(spline);
-        if(!d_tot->ia)
-             d_tot->ia=1;
         /*Get a clean debug restart file*/
 #ifndef NOCALLSOFSYSTEM
         system("mv delta_tot_nu.txt delta_tot_nu.txt.bak");
@@ -106,16 +105,9 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         fclose(fd);
 #endif
         save_all_nu_state(d_tot, NULL);
-   }
-   /*Broadcast data to other processors*/
-   MPI_Bcast(&(d_tot->ia),1,MPI_INT,0,MYMPI_COMM_WORLD);
-   /*scalefact is a chunk of memory that also includes the delta_tot values*/
-   MPI_Bcast(d_tot->scalefact,d_tot->namax*(1+d_tot->nk),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
-   /*Finally delta_nu_init*/
-   MPI_Bcast(d_tot->delta_nu_init,d_tot->nk,MPI_DOUBLE,0,MYMPI_COMM_WORLD);
-   d_tot->delta_tot_init_done=1;
-   return;
-
+    }
+    d_tot->delta_tot_init_done=1;
+    return;
 }
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,

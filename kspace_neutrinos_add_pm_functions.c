@@ -13,6 +13,9 @@
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 
+#ifndef mymalloc
+#define mymalloc(x,y) malloc(y)
+#endif
 void terminate(const char *);
 
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
@@ -246,6 +249,17 @@ static _transfer_init_table transfer_init;
 
 static _delta_tot_table delta_tot_table;
 
+void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
+{
+  MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);
+  /*Allocate the memory unless we are on task 0, in which case it is already allocated*/
+  if(ThisTask!=0)
+    t_init->logk = (double *) mymalloc("Transfer_functions", 2*t_init->NPowerTable* sizeof(double));
+  t_init->T_nu=t_init->logk+t_init->NPowerTable;
+  /*Broadcast the arrays*/
+  MPI_Bcast(t_init->logk,2*(t_init->NPowerTable),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
+}
+
 /** This function loads the initial transfer functions from CAMB transfer files.
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu_init and friends and has length NPowerTable.
@@ -253,11 +267,15 @@ static _delta_tot_table delta_tot_table;
  * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.*/
 void transfer_init_tabulate(int nk_in, int ThisTask)
 {
-  /*We only need this for initialising delta_tot later, which is only done on task 0.
-   * So only read the transfer functions on that task*/
-    if(ThisTask == 0)
-        allocate_transfer_init_table(&transfer_init, nk_in);
-    allocate_delta_tot_table(&delta_tot_table, nk_in);
+  /*We only need this for initialising delta_tot later.
+   * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
+  if(ThisTask==0)
+    allocate_transfer_init_table(&transfer_init, nk_in);
+  broadcast_transfer_table(&transfer_init, ThisTask);
+  /*Set the private copy of the task in delta_tot_table*/
+  delta_tot_table.ThisTask = ThisTask;
+  /*Broadcast data to other processors*/
+  allocate_delta_tot_table(&delta_tot_table, nk_in);
 }
 
 
