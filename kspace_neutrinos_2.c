@@ -4,8 +4,9 @@
  * by integrating their energy density numerically.
  * The second contains routines for finding the neutrino power spectrum from a (non-linear) CDM power spectrum.
  */
-#include "allvars.h"
-#include "proto.h"
+#include "kspace_neutrinos_func.h"
+#include "kspace_neutrinos_vars.h"
+#include "kspace_neutrino_const.h"
 
 #ifdef KSPACE_NEUTRINOS_2
 #include <mpi.h>
@@ -17,31 +18,16 @@
 #include <sys/types.h>
 #include <glob.h>
 
-#ifdef NEUTRINOS
-#error "Cannot define particle based and Fourier-space neutrinos at the same time!"
-#endif
-
-#ifdef KSPACE_NEUTRINOS
-#error "KSPACE_NEUTRINOS_2 is incompatible with KSPACE_NEUTRINOS"
-#endif
-
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_sf_bessel.h>
-/* Note Omega0, the total non-relativistic matter, includes neutrinos (and radiation). */
-#define FLOAT   1e-6            /*Floating point accuracy*/
-#define BOLEVK 8.61734e-5        /*The Boltzmann constant in units of eV/K*/
-#define H0      (All.HubbleParam)                /* H0 in units of H100*/
-/*The time at which we first start our integrator:
- * NOTE! This is not All.TimeBegin, but the time of the transfer function file,
- * so that we can support restarting from snapshots.*/
-#define A0      (All.TimeTransfer)
-/*Light speed in internal units. C is defined in allvars.h to be lightspeed in cm/s*/
-#define LIGHT (C*All.UnitTime_in_s/All.UnitLength_in_cm)
-#define HBAR    6.582119e-16  /*hbar in units of eV s*/
 
-#define H100   All.Hubble /* 100 km/s/Mpc in units of 1/UnitTime. */
+//Forward define the hubble function
+double hubble_function(double a);
+//Forward define the Efstathiou power spectrum, but we want to remove this later
+double PowerSpec_Efstathiou(double k);
+
 void handler (const char * reason, const char * file, int line, int gsl_errno)
 {
     printf("GSL_ERROR in file: %s, line %d, errno:%d\n",file, line, gsl_errno);
@@ -55,139 +41,6 @@ double _nufrac_low(double mnu);
 double Jfrac_high(double x, double mnu);
 int set_slow_neutrinos_analytic();
 #endif
-/*Note q carries units of eV/c. kT/c has units of eV/c.
- * M_nu has units of eV  Here c=1. */
-double rho_nu_int(double q, void * params)
-{
-        double amnu = *((double *)params);
-        double epsilon = sqrt(q*q+amnu*amnu);
-        double f0 = 1./(exp(q/(BOLEVK*TNU))+1);
-        return q*q*epsilon*f0;
-}
-
-/* Tables for rho_nu: stores precomputed values between
- * simulation start and a M_nu = 20 kT_nu*/
-#define NRHOTAB 500
-double RhoNuLogA[NUSPECIES][NRHOTAB];
-double RhoNuTab[NUSPECIES][NRHOTAB];
-gsl_interp * RhoNuTab_interp[NUSPECIES];
-gsl_interp_accel * RhoNuTab_acc[NUSPECIES];
-#define GSL_VAL 200
-/*Get the conversion factor to go from (eV/c)^4 to g/cm^3
- * for a **single** neutrino species. */
-double get_rho_nu_conversion()
-{
-        /*q has units of eV/c, so rho_nu now has units of (eV/c)^4*/
-        double convert=4*M_PI*2; /* The factor of two is for antineutrinos*/
-        /*rho_nu_val now has units of eV^4*/
-        /*To get units of density, divide by (c*hbar)**3 in eV s and cm/s */
-        const double chbar=1./(2*M_PI*C*HBAR);
-        convert*=(chbar*chbar*chbar);
-        /*Now has units of (eV)/(cm^3)*/
-        /* 1 eV = 1.60217646 × 10-12 g cm^2 s^(-2) */
-        /* So 1eV/c^2 = 1.7826909604927859e-33 g*/
-        /*So this is rho_nu_val in g /cm^3*/
-        convert*=(1.60217646e-12/C/C);
-        return convert;
-}
-
-/*Seed a pre-computed table of rho_nu values for speed*/
-void tabulate_rho_nu(double af,double mnu,int sp)
-{
-     int i;
-     double abserr;
-     double logA0=log(A0);
-     double logaf=log(af);
-     gsl_function F;
-     gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
-     F.function = &rho_nu_int;
-     for(i=0; i< NRHOTAB; i++){
-        double param;
-        RhoNuLogA[sp][i]=logA0+i*(logaf-logA0)/(NRHOTAB-1);
-        param=mnu*exp(RhoNuLogA[sp][i]);
-        F.params = &param;
-        gsl_integration_qag (&F, 0, 500*BOLEVK*TNU,0 , 1e-9,GSL_VAL,6,w,&(RhoNuTab[sp][i]), &abserr);
-        RhoNuTab[sp][i]=RhoNuTab[sp][i]/pow(exp(RhoNuLogA[sp][i]),4)*get_rho_nu_conversion();
-     }
-     gsl_integration_workspace_free (w);
-     RhoNuTab_acc[sp] = gsl_interp_accel_alloc();
-     RhoNuTab_interp[sp]=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
-     if(!RhoNuTab_interp[sp] || !RhoNuTab_acc[sp] || gsl_interp_init(RhoNuTab_interp[sp],RhoNuLogA[sp],RhoNuTab[sp],NRHOTAB))
-         terminate("Could not initialise tables for RhoNu\n");
-     return;
-}
-
-/* Value of kT/aM_nu on which to switch from the
- * analytic expansion to the numerical integration*/
-#define NU_SW 50
-//1.878 82(24) x 10-29 h02 g/cm3 = 1.053 94(13) x 104 h02 eV/cm3
-/*Finds the physical density in neutrinos for a single neutrino species*/
-double rho_nu(double a,double mnu,int sp)
-{
-        double rho_nu_val;
-        double amnu=a*mnu;
-        const double kT=BOLEVK*TNU;
-        const double kTamnu2=(kT*kT/amnu/amnu);
-        /*Do it analytically if we are in a regime where we can
-         * The next term is 141682 (kT/amnu)^8.
-         * At kT/amnu = 8, higher terms are larger and the series stops converging.
-         * Don't go lower than 50 here. */
-        if(NU_SW*NU_SW*kTamnu2 < 1){
-            /*Heavily non-relativistic*/
-            /*The constants are Riemann zetas: 3,5,7 respectively*/
-            rho_nu_val=mnu*pow(kT/a,3)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
-        }
-        else if(amnu < 1e-6*kT){
-            /*Heavily relativistic: we could be more accurate here,
-             * but in practice this will only be called for massless neutrinos, so don't bother.*/
-            rho_nu_val=7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
-        }
-        else{
-            if(!(RhoNuTab_interp[sp]))
-                tabulate_rho_nu(NU_SW*kT/mnu,mnu,sp);
-            rho_nu_val=gsl_interp_eval(RhoNuTab_interp[sp],RhoNuLogA[sp],RhoNuTab[sp],log(a),RhoNuTab_acc[sp]);
-        }
-        return rho_nu_val;
-}
-
-/* Return the matter density in a single neutrino species.
- * Not externally callable*/
-double OmegaNu_single(double a,double mnu, int sp)
-{
-        double rhonu;
-        rhonu=rho_nu(a,mnu,sp);
-        rhonu /= (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY));
-        rhonu /= All.HubbleParam*All.HubbleParam;
-        //Remove neutrino density which is particle based, if necessary
-#ifdef HYBRID_NEUTRINOS
-        if(! All.slow_neutrinos_analytic){
-            if(!nufrac_low)
-                nufrac_low = _nufrac_low(mnu);
-            rhonu*=(1-nufrac_low);
-        }
-#endif
-        return rhonu;
-}
-
-/* Return the total matter density in neutrinos.
- * rho_nu and friends are not externally callable*/
-double OmegaNu(double a)
-{
-        double rhonu=0;
-        int mi;
-        double OmegaNu_one[NUSPECIES];
-        for(mi=0; mi<NUSPECIES; mi++){
-             int mmi;
-             for(mmi=0; mmi<mi; mmi++){
-                 if(fabs(All.MNu[mi] -All.MNu[mmi]) < FLOAT)
-                   break;
-             }
-             if(mmi==mi)
-                 OmegaNu_one[mi]=OmegaNu_single(a,All.MNu[mi],mi);
-            rhonu+=OmegaNu_one[mmi];
-        }
-        return rhonu;
-}
 
 /*Arrays to store the initial transfer functions from CAMB.
  * We store transfer functions because we want to use the
@@ -226,27 +79,27 @@ static double *delta_nu_last;
 
 
 /** This function loads the initial transfer functions from CAMB transfer files.
- * Note it uses the global parameter All.KspaceTransferFunction for the filename to read.
+ * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.
  * Output stored in T_nu_init and friends and has length NPowerTable. */
-void transfer_init_tabulate(int nk_in)
+void transfer_init_tabulate(int nk_in, int ThisTask)
 {
   FILE *fd;
   int count;
   char string[1000];
   /* We aren't interested in modes on scales larger than twice the boxsize*/
   /*Normally 1000*/
-  const double scale=(All.InputSpectrum_UnitLength_in_cm / All.UnitLength_in_cm);
-  const double kmin=M_PI/All.BoxSize*scale;
+  const double scale=(kspace_params.InputSpectrum_UnitLength_in_cm / kspace_vars.UnitLength_in_cm);
+  const double kmin=M_PI/kspace_vars.BoxSize*scale;
   /*We only need this for initialising delta_tot later, which is only done on task 0.
    * So only read the transfer functions on that task*/
   if(ThisTask==0){
      /*Set up the table length with the first file found*/
-     if(!(fd = fopen(All.KspaceTransferFunction, "r"))){
-         sprintf(string, "Can't read input transfer function in file '%s' on task %d\n", All.KspaceTransferFunction, ThisTask);
+     if(!(fd = fopen(kspace_params.KspaceTransferFunction, "r"))){
+         sprintf(string, "Can't read input transfer function in file '%s' on task %d\n", kspace_params.KspaceTransferFunction, ThisTask);
          terminate(string);
      }
-     if(All.TimeTransfer > All.TimeBegin + 1e-4){
-         snprintf(string, 1000,"Transfer function is at a=%g but you tried to start the simulation earlier, at a=%g\n", All.TimeTransfer, All.TimeBegin);
+     if(kspace_params.TimeTransfer > kspace_vars.TimeBegin + 1e-4){
+         snprintf(string, 1000,"Transfer function is at a=%g but you tried to start the simulation earlier, at a=%g\n", kspace_params.TimeTransfer, kspace_vars.TimeBegin);
          terminate(string);
      }
 
@@ -277,8 +130,8 @@ void transfer_init_tabulate(int nk_in)
      T_nu_init=logk_init+NPowerTable;
 
      /*Now open the file*/
-     if(!(fd = fopen(All.KspaceTransferFunction, "r"))){
-         sprintf(string, "Can't read input transfer function in file '%s' on task %d\n", All.KspaceTransferFunction, ThisTask);
+     if(!(fd = fopen(kspace_params.KspaceTransferFunction, "r"))){
+         sprintf(string, "Can't read input transfer function in file '%s' on task %d\n", kspace_params.KspaceTransferFunction, ThisTask);
          terminate(string);
      }
      count=0;
@@ -289,7 +142,7 @@ void transfer_init_tabulate(int nk_in)
        double T_0tot;
        /*We may have "faked" baryons by including them into the DM in Gadget.
         * In this case All.OmegaBaryon will be zero, but CAMB will have been fed a different value.
-        * For this reason we have the variable All.OmegaBaryonCAMB*/
+        * For this reason we have the variable kspace_params.OmegaBaryonCAMB*/
        char * ret;
        /* read transfer function file */
        ret=fgets(string,1000,fd);
@@ -305,7 +158,7 @@ void transfer_init_tabulate(int nk_in)
 
              /*Combine the massive and massless neutrinos.*/
              /*Set up the total transfer for all the species with particles*/
-             T_0tot=((All.Omega0-All.OmegaBaryonCAMB-All.OmegaNu)*T_cdm+All.OmegaBaryonCAMB*T_b)/(All.Omega0-All.OmegaNu);
+             T_0tot=((kspace_vars.Omega0-kspace_params.OmegaBaryonCAMB-kspace_vars.OmegaNu)*T_cdm+kspace_params.OmegaBaryonCAMB*T_b)/(kspace_vars.Omega0-kspace_vars.OmegaNu);
              T_nu_init[count]= T_nu/T_0tot;
              /*k has units of 1/Mpc, need 1/kpc */
              k /= scale; /* Convert to internal units*/
@@ -317,17 +170,17 @@ void transfer_init_tabulate(int nk_in)
          break;
      }
      if(count < NPowerTable){
-         sprintf(string, "Expected %d rows in  file '%s' but only found %d on task %d\n", NPowerTable, All.KspaceTransferFunction, count,ThisTask);
+         sprintf(string, "Expected %d rows in  file '%s' but only found %d on task %d\n", NPowerTable, kspace_params.KspaceTransferFunction, count,ThisTask);
          terminate(string);
      }
      fclose(fd);
    }
    /*Memory allocations need to be done on all processors*/
    nk=nk_in;
-   /*Allocate memory for delta_tot here, so that we can have further memory allocated and freed
+   /* Allocate memory for delta_tot here, so that we can have further memory allocated and freed
     * before delta_tot_init is called. The number nk here should be larger than the actual value needed.*/
    /*Allocate pointers to each k-vector*/
-   namax=ceil(100*(All.TimeMax-All.TimeTransfer))+2;
+   namax=ceil(100*(kspace_vars.TimeMax-kspace_params.TimeTransfer))+2;
    ia=0;
    delta_tot =(double **) mymalloc("kspace_delta_tot",nk*sizeof(double *));
    /*Allocate list of scale factors, and space for delta_tot, in one operation.*/
@@ -344,6 +197,118 @@ void transfer_init_tabulate(int nk_in)
    return;
 }
 
+
+
+/* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
+ * Must be called before delta_tot_init, or resuming wont work*/
+void read_all_nu_state(char * savedir, double Time)
+{
+    FILE* fd;
+    char * dfile;
+    if (savedir == NULL){
+        dfile = "delta_tot_nu.txt";
+    }
+    else{
+        int nbytes = sizeof(char)*(strlen(savedir)+25);
+        dfile = mymalloc("filename", nbytes);
+        if(!dfile){
+                char err[150];
+                snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
+                terminate(err);
+        }
+        dfile = strncpy(dfile, savedir, nbytes);
+        dfile = strncat(dfile, "delta_tot_nu.txt",25);
+    }
+    /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
+    if((fd = fopen(dfile, "r"))){
+            /*Read redshifts; Initial one is known already*/
+            int iia;
+            for(iia=0; iia< namax;iia++){
+                    double scale;
+                    int ik;
+                    if(fscanf(fd, "# %lg ", &scale) != 1)
+                            break;
+                    scalefact[iia]=scale;
+                    /*Only read until we reach the present day*/
+                    if(log(Time) <= scale)
+                            break;
+                    /*Read kvalues*/
+                    /*If we do not have a complete delta_tot for one redshift, we stop
+                    * unless this is the first line, in which case we use it to set nk */
+                    for(ik=0;ik<nk; ik++){
+                            if(fscanf(fd, "%lg ", &(delta_tot[ik][iia])) != 1){
+                                if(iia != 0){
+                                    char err[150];
+                                    snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(scalefact[iia]));
+                                    terminate(err);
+                                }
+                                else{
+                                    nk = ik+1;
+                                    break;
+                                }
+                            }
+                    }
+            }
+            /*If our table starts at a different time from the simulation, stop.*/
+            if(fabs(scalefact[0] - log(kspace_params.TimeTransfer)) > 1e-4){
+                    char err[250];
+                    snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(scalefact[0]),kspace_params.TimeTransfer);
+                    terminate(err);
+            }
+
+            if(iia > 0)
+                    ia=iia;
+            printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
+            fclose(fd);
+    }
+    if (savedir != NULL)
+        myfree(dfile);
+}
+
+
+void save_delta_tot(int iia, char * savedir)
+{
+        FILE *fd;
+        int i;
+        char * dfile;
+        //NULL means use current directory
+        if (savedir == NULL){
+            dfile = "delta_tot_nu.txt";
+        }
+        else{
+            int nbytes = sizeof(char)*(strlen(savedir)+25);
+            dfile = mymalloc("filename", nbytes);
+            if(!dfile){
+                    char err[150];
+                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
+                    terminate(err);
+            }
+            dfile = strncpy(dfile, savedir, nbytes);
+            dfile = strncat(dfile, "delta_tot_nu.txt",25);
+        }
+        if(!(fd = fopen(dfile, "a")))
+             terminate("Could not open delta_tot_nu.txt for writing!\n");
+        /*Write log scale factor*/
+        fprintf(fd, "# %le ", scalefact[iia]);
+        /*Write kvalues*/
+        for(i=0;i<nk; i++)
+                fprintf(fd,"%le ",delta_tot[i][iia]);
+        fprintf(fd,"\n");
+        fclose(fd);
+        if(savedir != NULL)
+            myfree(dfile);
+   return;
+}
+
+/* Function to save all the internal state of the neutrino integrator to disc.
+ * Must be called for resume to work*/
+void save_all_nu_state(char * savedir)
+{
+    int ik;
+    for(ik=0; ik< ia; ik++)
+         save_delta_tot(ik, savedir);
+}
+
 #define MINMODES 1
 /*This function rebins Power[1] to have a constant lower number of bins
  *
@@ -354,8 +319,9 @@ void transfer_init_tabulate(int nk_in)
  * @param SumPower is the input power, calculated in powerspec in pm_periodic
  * @param CountModes is the number of modes in each bin in SumPower
  * @param bins_ps the number of bins in SumPower. Defined as BINS_PS in pm_periodic.
+ * @param pmgrid is the number of bins in the fourier mesh, PMGRID in allvars.h
  * */
-void rebin_power(double logk[],double delta_cdm_curr[],int nbins, double Kbin[], double SumPower[], long long CountModes[], int bins_ps)
+void rebin_power(double logk[],double delta_cdm_curr[],int nbins, double Kbin[], double SumPower[], long long CountModes[], int bins_ps, int pmgrid)
 {
         int i;
         //Number of modes in a bin: CountModes[1]
@@ -364,8 +330,8 @@ void rebin_power(double logk[],double delta_cdm_curr[],int nbins, double Kbin[],
         /*We will have issues if count overflows a 64 bit integer. */
         unsigned long long count=0;
         /*This is a Fourier conversion factor */
-        const double scale=pow(2*M_PI/All.BoxSize,3);
-        double dlogK = (log(Kbin[0]*PMGRID)-log(Kbin[0]))/nbins;
+        const double scale=pow(2*M_PI/kspace_vars.BoxSize,3);
+        double dlogK = (log(Kbin[0]*pmgrid)-log(Kbin[0]))/nbins;
         double logK_A[bins_ps];
         int MaxIndex=0;
         double SlogK[nbins];
@@ -429,57 +395,11 @@ void rebin_power(double logk[],double delta_cdm_curr[],int nbins, double Kbin[],
         return;
 }
 
-#if defined(PMGRID)
 double fslength(double ai, double af,double mnu);
 double find_ai(double af, double k, double kfsl,double mnu);
 double specialJ(double x, double mnu);
 double specialJ_fit(double x);
-void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu);
-
-void save_delta_tot(int iia, char * savedir)
-{
-   if(ThisTask==0){
-        FILE *fd;
-        int i;
-        char * dfile;
-        //NULL means use current directory
-        if (savedir == NULL){
-            dfile = "delta_tot_nu.txt";
-        }
-        else{
-            int nbytes = sizeof(char)*(strlen(savedir)+25);
-            dfile = mymalloc("filename", nbytes);
-            if(!dfile){
-                    char err[150];
-                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
-                    terminate(err);
-            }
-            dfile = strncpy(dfile, savedir, nbytes);
-            dfile = strncat(dfile, "delta_tot_nu.txt",25);
-        }
-        if(!(fd = fopen(dfile, "a")))
-             terminate("Could not open delta_tot_nu.txt for writing!\n");
-        /*Write log scale factor*/
-        fprintf(fd, "# %le ", scalefact[iia]);
-        /*Write kvalues*/
-        for(i=0;i<nk; i++)
-                fprintf(fd,"%le ",delta_tot[i][iia]);
-        fprintf(fd,"\n");
-        fclose(fd);
-        if(savedir != NULL)
-            myfree(dfile);
-   }
-   return;
-}
-
-/* Function to save all the internal state of the neutrino integrator to disc.
- * Must be called for resume to work*/
-void save_all_nu_state(char * savedir)
-{
-    int ik;
-    for(ik=0; ik< ia; ik++)
-         save_delta_tot(ik, savedir);
-}
+void get_delta_nu(double a, int Na, double wavenum[], double delta_nu_curr[],const double Omega0,double mnu, int ThisTask);
 
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
  * where it is kT / (a^2 m_nu^2 + (kT)^2)^(1/2)
@@ -490,79 +410,11 @@ inline double kTbyaM(double amnu)
   return kT/amnu;
 }
 
-/* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
- * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(char * savedir)
-{
-   if(ThisTask==0){
-        FILE* fd;
-        char * dfile;
-        if (savedir == NULL){
-            dfile = "delta_tot_nu.txt";
-        }
-        else{
-            int nbytes = sizeof(char)*(strlen(savedir)+25);
-            dfile = mymalloc("filename", nbytes);
-            if(!dfile){
-                    char err[150];
-                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
-                    terminate(err);
-            }
-            dfile = strncpy(dfile, savedir, nbytes);
-            dfile = strncat(dfile, "delta_tot_nu.txt",25);
-        }
-        /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
-        if((fd = fopen(dfile, "r"))){
-             /*Read redshifts; Initial one is known already*/
-             int iia;
-             for(iia=0; iia< namax;iia++){
-                     double scale;
-                     int ik;
-                     if(fscanf(fd, "# %lg ", &scale) != 1)
-                             break;
-                     scalefact[iia]=scale;
-                     /*Only read until we reach the present day*/
-                     if(log(All.Time) <= scale)
-                             break;
-                     /*Read kvalues*/
-                     /*If we do not have a complete delta_tot for one redshift, we stop
-                      * unless this is the first line, in which case we use it to set nk */
-                     for(ik=0;ik<nk; ik++){
-                             if(fscanf(fd, "%lg ", &(delta_tot[ik][iia])) != 1){
-                                 if(iia != 0){
-                                     char err[150];
-                                     snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(scalefact[iia]));
-                                     terminate(err);
-                                 }
-                                 else{
-                                     nk = ik+1;
-                                     break;
-                                 }
-                             }
-                     }
-             }
-             /*If our table starts at a different time from the simulation, stop.*/
-             if(fabs(scalefact[0] - log(All.TimeTransfer)) > 1e-4){
-                     char err[250];
-                     snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(scalefact[0]),All.TimeTransfer);
-                     terminate(err);
-             }
-
-             if(iia > 0)
-                     ia=iia;
-             printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
-             fclose(fd);
-        }
-        if (savedir != NULL)
-            myfree(dfile);
-    }
-}
-
 /* Constructor. transfer_init_tabulate must be called before this function.
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
+void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[], int ThisTask)
 {
    if(nk_in > nk){
            char err[500];
@@ -576,14 +428,14 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
    if(ThisTask==0){
         gsl_interp_accel *acc = gsl_interp_accel_alloc();
         gsl_interp *spline;
-        double OmegaNua3=OmegaNu(All.TimeTransfer)*pow(All.TimeTransfer,3);
+        double OmegaNua3=OmegaNu(kspace_params.TimeTransfer)*pow(kspace_params.TimeTransfer,3);
         int ik;
         /*Check that if we are restarting from a snapshot, we successfully read a table*/
-        if(fabs(All.TimeBegin - All.TimeTransfer) >1e-4 && (!ia))
+        if(fabs(kspace_vars.TimeBegin - kspace_params.TimeTransfer) >1e-4 && (!ia))
             terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
         /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
          * so that it includes potential Rayleigh scattering. */
-        scalefact[0]=log(All.TimeTransfer);
+        scalefact[0]=log(kspace_params.TimeTransfer);
         spline=gsl_interp_alloc(gsl_interp_cspline,NPowerTable);
         gsl_interp_init(spline,logk_init,T_nu_init,NPowerTable);
         for(ik=0;ik<nk;ik++){
@@ -594,7 +446,7 @@ void delta_tot_init(int nk_in, double wavenum[], double delta_cdm_curr[])
                 * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
                 *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
                 *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
-               double CDMtoTot=((All.Omega0-All.OmegaNu)+pow(T_nubyT_0,2)*OmegaNua3)/(All.Omega0-All.OmegaNu+OmegaNua3);
+               double CDMtoTot=((kspace_vars.Omega0-kspace_vars.OmegaNu)+pow(T_nubyT_0,2)*OmegaNua3)/(kspace_vars.Omega0-kspace_vars.OmegaNu+OmegaNua3);
                /*We only want to use delta_cdm_curr if we are not restarting*/
                if(!ia)
                      delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
@@ -675,19 +527,19 @@ double specialJ_fit(double x)
 
 #ifdef HYBRID_NEUTRINOS
 /*Function to decide whether slow neutrinos are treated analytically or not.
- * Sets All.slow_neutrinos_analytic.
+ * Sets kspace_vars.slow_neutrinos_analytic.
  * Should be called every few timesteps.*/
 int set_slow_neutrinos_analytic()
 {
     double val=1;
     //Just use a redshift cut for now. Really we want something more sophisticated,
     //based on the shot noise and average overdensity.
-    if (All.Time > All.nu_crit_time){
-        if(All.slow_neutrinos_analytic && ThisTask==0)
+    if (kspace_vars.Time > kspace_vars.nu_crit_time){
+        if(kspace_vars.slow_neutrinos_analytic && ThisTask==0)
             printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low);
         val = 0;
     }
-    All.slow_neutrinos_analytic = val;
+    kspace_vars.slow_neutrinos_analytic = val;
     return val;
 }
 
@@ -701,7 +553,7 @@ double fermi_dirac_kernel(double x, void * params)
 //This is integral f_0(q) q^2 dq between 0 and qc to compute the fraction of OmegaNu which is in particles.
 double _nufrac_low(double mnu)
 {
-    double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
+    double qc = mnu * kspace_vars.vcrit/LIGHT/(BOLEVK*TNU);
     /*These functions are so smooth that we don't need much space*/
     gsl_integration_workspace * w = gsl_integration_workspace_alloc (100);
     double abserr;
@@ -726,7 +578,7 @@ double II(double x, double qc, int n)
 //It gives the fraction of the integral that is due to neutrinos above a certain threshold.
 double Jfrac_high(double x, double mnu)
 {
-    double qc = mnu * All.vcrit/LIGHT/(BOLEVK*TNU);
+    double qc = mnu * kspace_vars.vcrit/LIGHT/(BOLEVK*TNU);
     double integ=0;
     for(int n=1; n<20; n++)
     {
@@ -744,7 +596,7 @@ double Jfrac_high(double x, double mnu)
  */
 double specialJ(double x, double mnu)
 {
-  if( !All.slow_neutrinos_analytic ) {
+  if( !kspace_vars.slow_neutrinos_analytic ) {
    return Jfrac_high(x, mnu);
   }
   else {
@@ -795,7 +647,7 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0,double mnu)
+void get_delta_nu(double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0,double mnu, int ThisTask)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
@@ -856,7 +708,7 @@ void get_delta_nu(double a, int Na, double wavenum[],  double delta_nu_curr[],co
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value isfor all neutrino species*/
-void get_delta_nu_combined(double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0)
+void get_delta_nu_combined(double a, int Na, double wavenum[],  double delta_nu_curr[],const double Omega0, int ThisTask)
 {
     double Omega_nu_tot=OmegaNu(a);
     int mi;
@@ -867,15 +719,15 @@ void get_delta_nu_combined(double a, int Na, double wavenum[],  double delta_nu_
     /*Get each neutrinos species and density separately and add them to the total.
      * Neglect perturbations in massless neutrinos.*/
     for(mi=0;mi< NUSPECIES; mi++){
-         if(All.MNu[mi] > 0){
+         if(kspace_params.MNu[mi] > 0){
              int ik,mmi;
-             double OmegaNu_frac=OmegaNu_single(a,All.MNu[mi],mi)/Omega_nu_tot;
+             double OmegaNu_frac=OmegaNu_single(a,kspace_params.MNu[mi],mi)/Omega_nu_tot;
              for(mmi=0; mmi<mi; mmi++){
-                 if(fabs(All.MNu[mi] -All.MNu[mmi]) < FLOAT)
+                 if(fabs(kspace_params.MNu[mi] -kspace_params.MNu[mmi]) < FLOAT)
                    break;
              }
              if(mmi==mi)
-                get_delta_nu(a, Na, wavenum, delta_nu_single[mi],Omega0,All.MNu[mi]);
+                get_delta_nu(a, Na, wavenum, delta_nu_single[mi],Omega0,kspace_params.MNu[mi], ThisTask);
              for(ik=0; ik<nk; ik++)
                  delta_nu_curr[ik]+=delta_nu_single[mmi][ik]*OmegaNu_frac;
          }
@@ -899,12 +751,12 @@ void get_delta_nu_combined(double a, int Na, double wavenum[],  double delta_nu_
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
 ******************************************************************************************************/
-void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_curr[], double delta_nu_curr[])
+void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_curr[], double delta_nu_curr[], int ThisTask)
 {
   int ik;
   double wavenum[nk_in];
   const double OmegaNua3=OmegaNu(a)*pow(a,3);
-  const double Omega0 = All.Omega0 - All.OmegaNu + OmegaNua3;
+  const double Omega0 = kspace_vars.Omega0 - kspace_vars.OmegaNu + OmegaNua3;
   const double fnu = OmegaNua3/Omega0;
   for (ik = 0; ik < nk_in; ik++)
            wavenum[ik]=exp(logk[ik]);
@@ -912,9 +764,9 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
   if(!delta_tot_init_done){
        /*Initialise delta_tot, setting ia = 1
         * and signifying that we are ready to leave the relativistic regime*/
-       delta_tot_init(nk_in, wavenum,delta_cdm_curr);
+       delta_tot_init(nk_in, wavenum,delta_cdm_curr, ThisTask);
        /*Initialise delta_nu_last*/
-       get_delta_nu_combined(exp(scalefact[ia-1])-2*FLOAT, ia, wavenum, delta_nu_last,Omega0);
+       get_delta_nu_combined(exp(scalefact[ia-1])-2*FLOAT, ia, wavenum, delta_nu_last,Omega0, ThisTask);
   }
 
   /*If we get called twice with the same scale factor, do nothing*/
@@ -937,7 +789,7 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
       delta_tot[ik][ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*delta_nu_last[ik];
    }
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(a, ia+1, wavenum, delta_nu_curr,Omega0);
+   get_delta_nu_combined(a, ia+1, wavenum, delta_nu_curr,Omega0, ThisTask);
    /*Update delta_nu_last*/
    for (ik = 0; ik < nk; ik++)
        delta_nu_last[ik]=delta_nu_curr[ik];
@@ -953,7 +805,8 @@ void get_delta_nu_update(double a, int nk_in, double logk[], double delta_cdm_cu
     set_slow_neutrinos_analytic();
 #endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
-       save_delta_tot(ia-1, NULL);
+       if(ThisTask==0)
+        save_delta_tot(ia-1, NULL);
    }
    return;
 }
@@ -990,7 +843,5 @@ double get_neutrino_powerspec(double kk, double logkk[], double delta_nu_curr[],
         return delta_nu/delta_cdm;
 }
 
-
-#endif //PMGRID
 
 #endif //KSPACE_NEUTRINOS_2

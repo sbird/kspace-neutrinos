@@ -1,19 +1,18 @@
 #ifndef KSPACE_NEUTRINO_VARS
 #define KSPACE_NEUTRINO_VARS
 
+  /* for three massive neutrino species:
+   * Could be made configurable at some point
+   * Neutrino masses are in eV*/
+  #define NUSPECIES 3
+
 //Global variables that need to be set from a parameter file
-struct __kspace_vars {
-  double OmegaNu;
+struct __kspace_params {
   char	KspaceTransferFunction[500];
   double TimeTransfer;
   double OmegaBaryonCAMB;
   double InputSpectrum_UnitLength_in_cm;
-  /*kspace_varsow for three massive neutrino species:
-   * Could be made configurable at some point
-   * Neutrino masses are in eV*/
-  #define NUSPECIES 3
   double MNu[NUSPECIES];
-#endif
 #if defined HYBRID_NEUTRINOS
     /*Two parameters for the hybrid neutrinos.
     If this is true, then we proceed using the analytic method for all neutrinos.
@@ -28,44 +27,37 @@ struct __kspace_vars {
     //Ultimately we want something better than this.
     double nu_crit_time;
 #endif
+} kspace_params;
+
+//These are global variables that come from the All structure.
+struct __kspace_vars {
+  double OmegaNu;
+  double HubbleParam;
+  double UnitLength_in_cm;
+  double UnitTime_in_s;
+  double Hubble;
+  double BoxSize;
+  double TimeBegin;
+  double Omega0;
+  double TimeMax;
 } kspace_vars;
 
-void set_kspace_vars(char * tag[], void *addr[], int id [])
-{
-      strcpy(tag[nt], "KspaceTransferFunction");
-      addr[nt] = kspace_vars.KspaceTransferFunction;
-      id[nt++] = STRING;
+// static int ThisTask=0;
 
-      strcpy(tag[nt], "TimeTransfer");
-      addr[nt] = &kspace_vars.TimeTransfer;
-      id[nt++] = REAL;
+/* Note Omega0, the total non-relativistic matter, includes neutrinos (and radiation). */
+#define H0      (kspace_vars.HubbleParam)                /* H0 in units of H100*/
 
-      strcpy(tag[nt], "OmegaBaryonCAMB");
-      addr[nt] = &kspace_vars.OmegaBaryonCAMB;
-      id[nt++] = REAL;
+/*Light speed in internal units. C is defined in allvars.h to be lightspeed in cm/s*/
+#define LIGHT (C*kspace_vars.UnitTime_in_s/kspace_vars.UnitLength_in_cm)
 
-      strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
-      addr[nt] = &kspace_vars.InputSpectrum_UnitLength_in_cm;
-      id[nt++] = REAL;
+#define H100   kspace_vars.Hubble /* 100 km/s/Mpc in units of 1/UnitTime. */
+/*The time at which we first start our integrator:
+ * NOTE! This is not All.TimeBegin, but the time of the transfer function file,
+ * so that we can support restarting from snapshots.*/
+#define A0      (kspace_params.TimeTransfer)
 
-      strcpy(tag[nt], "MNue");
-      addr[nt] = &(kspace_vars.MNu[0]);
-      id[nt++] = REAL;
-      strcpy(tag[nt], "MNum");
-      addr[nt] = &(kspace_vars.MNu[1]);
-      id[nt++] = REAL;
-      strcpy(tag[nt], "MNut");
-      addr[nt] = &(kspace_vars.MNu[2]);
-      id[nt++] = REAL;
-#if defined HYBRID_NEUTRINOS
-    strcpy(tag[nt], "VCRIT");
-    addr[nt] = &(kspace_vars.vcrit);
-    id[nt++] = REAL;
-    strcpy(tag[nt], "NuPartTime");
-    addr[nt] = &(kspace_vars.nu_crit_time);
-    id[nt++] = REAL;
-#endif
-}
+//Function which sets the above variables
+int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
 
 
 #endif
