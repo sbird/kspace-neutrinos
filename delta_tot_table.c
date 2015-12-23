@@ -54,7 +54,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0)
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0, _omega_nu * omnu)
 {
     if(nk_in > d_tot->nk){
            char err[500];
@@ -66,8 +66,8 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    const double OmegaNua3=OmegaNu(t_init->TimeTransfer)*pow(t_init->TimeTransfer,3);
-    const double OmegaNu_today = OmegaNu(1);
+    const double OmegaNua3=OmegaNu(omnu, t_init->TimeTransfer)*pow(t_init->TimeTransfer,3);
+    const double OmegaNu_today = OmegaNu(omnu, 1);
     /*Set the prefactor for delta_nu*/
     d_tot->delta_nu_prefac = 1.5 *Omega0 *H100*H100/LIGHT;
     int ik;
@@ -110,36 +110,28 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         save_all_nu_state(d_tot, NULL);
     }
     /*Initialise delta_nu_last*/
-    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1])-2*FLOAT, d_tot->ia, wavenum, d_tot->delta_nu_last);
+    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1])-2*FLOAT, d_tot->ia, wavenum, d_tot->delta_nu_last, omnu);
     d_tot->delta_tot_init_done=1;
     return;
 }
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[])
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu)
 {
-    double Omega_nu_tot=OmegaNu(a);
-    int mi;
-    double delta_nu_single[NUSPECIES][d_tot->nk];
+    double Omega_nu_tot=OmegaNu(omnu, a);
     /*Initialise delta_nu_curr*/
-    for(mi=0;mi<d_tot->nk;mi++)
-        delta_nu_curr[mi]=0;
+    memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
     /*Get each neutrinos species and density separately and add them to the total.
      * Neglect perturbations in massless neutrinos.*/
-    for(mi=0;mi< NUSPECIES; mi++){
-         if(kspace_params.MNu[mi] > 0){
-             int ik,mmi;
-             double OmegaNu_frac=OmegaNu_single(a,kspace_params.MNu[mi],mi)/Omega_nu_tot;
-             for(mmi=0; mmi<mi; mmi++){
-                 if(fabs(kspace_params.MNu[mi] -kspace_params.MNu[mmi]) < FLOAT)
-                   break;
-             }
-             if(mmi==mi)
-                get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single[mi],kspace_params.MNu[mi]);
-             for(ik=0; ik<d_tot->nk; ik++)
-                 delta_nu_curr[ik]+=delta_nu_single[mmi][ik]*OmegaNu_frac;
-         }
+    for(int mi=0; mi<NUSPECIES; mi++) {
+            if(omnu->nu_degeneracies[mi] > 0) {
+                 double delta_nu_single[d_tot->nk];
+                 double omeganu = omnu->nu_degeneracies[mi] * omega_nu_single(omnu->RhoNuTab[mi], a);
+                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->MNu[mi]);
+                 for(int ik=0; ik<d_tot->nk; ik++)
+                    delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
+            }
     }
     return;
 }
@@ -160,12 +152,12 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
 ******************************************************************************************************/
-void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double logk[], double delta_cdm_curr[], double delta_nu_curr[])
+void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double logk[], double delta_cdm_curr[], double delta_nu_curr[], _omega_nu * omnu)
 {
   int ik;
   double wavenum[nk_in];
-  const double OmegaNua3=OmegaNu(a)*pow(a,3);
-  const double Omega0 = kspace_vars.Omega0 - kspace_vars.OmegaNu + OmegaNua3;
+  const double OmegaNua3=OmegaNu(omnu, a)*pow(a,3);
+  const double Omega0 = kspace_vars.Omega0 - OmegaNu(omnu, 1) + OmegaNua3;
   const double fnu = OmegaNua3/Omega0;
   for (ik = 0; ik < nk_in; ik++)
            wavenum[ik]=exp(logk[ik]);
@@ -197,7 +189,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
       d_tot->delta_tot[ik][d_tot->ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*d_tot->delta_nu_last[ik];
    }
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(d_tot, a, d_tot->ia+1, wavenum, delta_nu_curr);
+   get_delta_nu_combined(d_tot, a, d_tot->ia+1, wavenum, delta_nu_curr, omnu);
    /*Update delta_nu_last*/
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];

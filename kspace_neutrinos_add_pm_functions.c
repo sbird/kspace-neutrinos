@@ -249,6 +249,8 @@ static _transfer_init_table transfer_init;
 
 static _delta_tot_table delta_tot_table;
 
+static _omega_nu omeganu_table;
+
 void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
 {
   MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);
@@ -290,13 +292,15 @@ void transfer_init_tabulate(int nk_in, int ThisTask)
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
+void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double MNu [])
 {
+  if(omeganu_table.RhoNuTab[0] == 0)
+      init_omega_nu(&omeganu_table, MNu);
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos 
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
-  const double OmegaNua3 = OmegaNu(Time)*pow(Time,3);
+  const double OmegaNua3 = OmegaNu(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu / M_cdm */
-  const double kspace_prefac = OmegaNua3/(Omega0-OmegaNu(1));
+  const double kspace_prefac = OmegaNua3/(Omega0-OmegaNu(&omeganu_table, 1));
   int i,x,y,z;
   /*Calculate the power for kspace neutrinos*/
   /* Interpolation structures for the GSL*/
@@ -318,7 +322,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, c
   /*Get delta_cdm_curr , which is P(k)^1/2, and logkk*/
   rebin_power(logkk,delta_cdm_curr,TARGETBINS,keffs,sumpower,count,PMGRID, PMGRID, BoxSize);
   /*This sets up P_nu_curr.*/
-  get_delta_nu_update(&delta_tot_table, Time, TARGETBINS, logkk, delta_cdm_curr,  delta_nu_curr);
+  get_delta_nu_update(&delta_tot_table, Time, TARGETBINS, logkk, delta_cdm_curr,  delta_nu_curr, &omeganu_table);
   for(i=0;i<TARGETBINS;i++){
           if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
                   char err[300];

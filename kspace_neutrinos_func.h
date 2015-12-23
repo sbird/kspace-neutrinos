@@ -14,7 +14,7 @@
 #endif
 
 /* Return the total matter density in all neutrino species.*/
-double OmegaNu(double a);
+// double OmegaNu(double a);
 
 #ifdef KSPACE_NEUTRINOS_2
 
@@ -29,7 +29,7 @@ double OmegaNu(double a);
 /* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos*/
 /* Main function, called from pm_periodic.c. 
    Computes the neutrino power, then adds it to the Fourier grid.*/
-void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass);
+void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double MNu []);
 
 /*Functions to load data for the neutrino powerspectrum from the disc*/
 void transfer_init_tabulate(int nk_in, int ThisTask);
