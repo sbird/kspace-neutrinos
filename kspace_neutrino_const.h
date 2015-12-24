@@ -1,7 +1,7 @@
 #ifndef KSPACE_NEUTRINO_CONSTANTS
 #define KSPACE_NEUTRINO_CONSTANTS
 /*This file defines constants specific to the neutrinos.
- * It is separate from kspace_neutrinos_private.h in that those constants are also defined in gadget*/
+ * It is separate from gadget_defines.h in that those constants are also defined in gadget*/
 
 /* for three massive neutrino species:
  * Could be made configurable at some point

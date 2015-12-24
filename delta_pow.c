@@ -2,7 +2,7 @@
 #include <gsl/gsl_interp.h>
 #include <math.h>
 #include "delta_pow.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 
 void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins)
 {

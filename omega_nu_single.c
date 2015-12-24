@@ -1,7 +1,7 @@
 #include "omega_nu_single.h"
 
 #include "kspace_neutrino_const.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 
 #include <math.h>
 #include <gsl/gsl_integration.h>

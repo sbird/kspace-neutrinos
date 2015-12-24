@@ -7,7 +7,7 @@
 #include <math.h>
 #include "kspace_neutrinos_func.h"
 #include "kspace_neutrino_const.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 #include "delta_pow.h"

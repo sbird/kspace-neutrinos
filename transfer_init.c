@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "transfer_init.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 
 
 /** This function loads the initial transfer functions from CAMB transfer files.

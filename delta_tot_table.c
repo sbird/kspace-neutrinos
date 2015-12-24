@@ -14,7 +14,7 @@
 #include <gsl/gsl_sf_bessel.h>
 
 #include "delta_tot_table.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 #include "kspace_neutrino_const.h"
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory

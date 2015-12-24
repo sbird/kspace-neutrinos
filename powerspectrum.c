@@ -2,7 +2,7 @@
 #include <string.h>
 #include <gsl/gsl_interp.h>
 #include "powerspectrum.h"
-#include "kspace_neutrinos_private.h"
+#include "gadget_defines.h"
 
 /*Helper function for 1D window function.*/
 inline fftw_real onedinvwindow(int kx, int n)
