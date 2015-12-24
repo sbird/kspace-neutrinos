@@ -47,6 +47,6 @@ typedef struct _omega_nu _omega_nu;
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0);
 
 /* Return the total matter density in neutrinos.*/
-double OmegaNu(_omega_nu *omnu, double a);
+double get_omega_nu(_omega_nu *omnu, double a);
 
 #endif

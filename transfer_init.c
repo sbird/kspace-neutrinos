@@ -74,7 +74,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
         if(k > kmin){
             /*Combine the massive and massless neutrinos.*/
             /*Set up the total transfer for all the species with particles*/
-            T_0tot=((omnu->Omega0-OmegaBaryonCAMB-OmegaNu(omnu, 1))*T_cdm+OmegaBaryonCAMB*T_b)/(omnu->Omega0-OmegaNu(omnu, 1));
+            T_0tot=((omnu->Omega0-OmegaBaryonCAMB-get_omega_nu(omnu, 1))*T_cdm+OmegaBaryonCAMB*T_b)/(omnu->Omega0-get_omega_nu(omnu, 1));
             t_init->T_nu[count]= T_nu/T_0tot;
             /*k has units of 1/Mpc, need 1/kpc */
             k /= scale; /* Convert to internal units*/

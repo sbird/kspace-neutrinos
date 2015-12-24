@@ -66,8 +66,8 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    const double OmegaNua3=OmegaNu(omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
-    const double OmegaNu_today = OmegaNu(omnu, 1);
+    const double OmegaNua3=get_omega_nu(omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
+    const double OmegaNu_today = get_omega_nu(omnu, 1);
     /*Set the prefactor for delta_nu*/
     d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
     d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
@@ -117,7 +117,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
  * so that the final value is for all neutrino species*/
 void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu)
 {
-    double Omega_nu_tot=OmegaNu(omnu, a);
+    double Omega_nu_tot=get_omega_nu(omnu, a);
     /*Initialise delta_nu_curr*/
     memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
     /*Get each neutrinos species and density separately and add them to the total.
@@ -154,8 +154,8 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
 {
   int ik;
   double wavenum[nk_in];
-  const double OmegaNua3=OmegaNu(omnu, a)*pow(a,3);
-  const double OmegaMa = omnu->Omega0 - OmegaNu(omnu, 1) + OmegaNua3;
+  const double OmegaNua3=get_omega_nu(omnu, a)*pow(a,3);
+  const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
   const double fnu = OmegaNua3/OmegaMa;
   for (ik = 0; ik < nk_in; ik++)
            wavenum[ik]=exp(logk[ik]);

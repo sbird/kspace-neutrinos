@@ -300,9 +300,9 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos 
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
-  const double OmegaNua3 = OmegaNu(&omeganu_table, Time)*pow(Time,3);
+  const double OmegaNua3 = get_omega_nu(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu / M_cdm */
-  const double kspace_prefac = OmegaNua3/(omeganu_table.Omega0-OmegaNu(&omeganu_table, 1));
+  const double kspace_prefac = OmegaNua3/(omeganu_table.Omega0-get_omega_nu(&omeganu_table, 1));
   int i,x,y,z;
   /*Calculate the power for kspace neutrinos*/
   /* Interpolation structures for the GSL*/

@@ -35,7 +35,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
 }
 /* Return the total matter density in neutrinos.
  * rho_nu and friends are not externally callable*/
-double OmegaNu(_omega_nu *omnu, double a)
+double get_omega_nu(_omega_nu *omnu, double a)
 {
         double rhonu=0;
         for(int mi=0; mi<NUSPECIES; mi++) {
