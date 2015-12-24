@@ -8,15 +8,15 @@
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in)
+void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, _omega_nu * omnu)
 {
     FILE *fd;
     int count;
     char string[1000];
     /* We aren't interested in modes on scales larger than twice the boxsize*/
     /*Normally 1000*/
-    const double scale=(kspace_params.InputSpectrum_UnitLength_in_cm / kspace_vars.UnitLength_in_cm);
-    const double kmin=M_PI/kspace_vars.BoxSize*scale;
+    const double scale=(InputSpectrum_UnitLength_in_cm / UnitLength_in_cm);
+    const double kmin=M_PI/BoxSize*scale;
     /*Set up the table length with the first file found*/
     if(!(fd = fopen(kspace_params.KspaceTransferFunction, "r"))){
         snprintf(string, 1000, "Can't read input transfer function in file '%s'\n", kspace_params.KspaceTransferFunction);
@@ -73,10 +73,9 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in)
     /* read transfer function file from CAMB */
     if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &T_g, &T_rnu, &T_nu, &T_tot) == 7){
         if(k > kmin){
-
             /*Combine the massive and massless neutrinos.*/
             /*Set up the total transfer for all the species with particles*/
-            T_0tot=((kspace_vars.Omega0-kspace_params.OmegaBaryonCAMB-kspace_vars.OmegaNu)*T_cdm+kspace_params.OmegaBaryonCAMB*T_b)/(kspace_vars.Omega0-kspace_vars.OmegaNu);
+            T_0tot=((omnu->Omega0-OmegaBaryonCAMB-OmegaNu(omnu, 1))*T_cdm+OmegaBaryonCAMB*T_b)/(omnu->Omega0-OmegaNu(omnu, 1));
             t_init->T_nu[count]= T_nu/T_0tot;
             /*k has units of 1/Mpc, need 1/kpc */
             k /= scale; /* Convert to internal units*/

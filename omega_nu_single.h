@@ -38,11 +38,13 @@ struct _omega_nu {
      */
     int nu_degeneracies[NUSPECIES];
     double MNu[NUSPECIES];
+    /*Matter fraction*/
+    double Omega0;
 };
 typedef struct _omega_nu _omega_nu;
 
 /*Initialise the above structure, allocating memory for the subclass rho_nu_single*/
-void init_omega_nu(_omega_nu * omnu, const double MNu[]);
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0);
 
 /* Return the total matter density in neutrinos.*/
 double OmegaNu(_omega_nu *omnu, double a);

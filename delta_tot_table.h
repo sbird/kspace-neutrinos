@@ -45,7 +45,7 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
 
 /*Initialise the data in delta_tot_init from the transfer table data in transfer_init.
  This is separate from allocate_delta_tot_table because we need some information not available when the memory needs to be allocated*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm);
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm);
 
 /*Function called by add_nu_power_to_rhogrid*/
 void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[], _omega_nu * omnu);

@@ -9,6 +9,7 @@
 #include <mpi.h>
 #include "kspace_neutrinos_func.h"
 #include "kspace_neutrino_const.h"
+#include "kspace_neutrinos_vars.h"
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 
@@ -266,17 +267,19 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * Output stored in T_nu_init and friends and has length NPowerTable.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.*/
-void transfer_init_tabulate(const int nk_in, const int ThisTask, const double TimeTransfer)
+void transfer_init_tabulate(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0)
 {
+  if(omeganu_table.RhoNuTab[0] == 0)
+      init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0)
-    allocate_transfer_init_table(&transfer_init, nk_in);
+    allocate_transfer_init_table(&transfer_init, nk_in, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, &omeganu_table);
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
   /*Broadcast data to other processors*/
-  allocate_delta_tot_table(&delta_tot_table, nk_in, TimeTransfer);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer);
 }
 
 
@@ -291,15 +294,13 @@ void transfer_init_tabulate(const int nk_in, const int ThisTask, const double Ti
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double MNu [])
+void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
 {
-  if(omeganu_table.RhoNuTab[0] == 0)
-      init_omega_nu(&omeganu_table, MNu);
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos 
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
   const double OmegaNua3 = OmegaNu(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu / M_cdm */
-  const double kspace_prefac = OmegaNua3/(Omega0-OmegaNu(&omeganu_table, 1));
+  const double kspace_prefac = OmegaNua3/(omeganu_table.Omega0-OmegaNu(&omeganu_table, 1));
   int i,x,y,z;
   /*Calculate the power for kspace neutrinos*/
   /* Interpolation structures for the GSL*/

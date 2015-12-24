@@ -29,10 +29,10 @@
 /* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos*/
 /* Main function, called from pm_periodic.c. 
    Computes the neutrino power, then adds it to the Fourier grid.*/
-void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double MNu []);
+void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass);
 
 /*Functions to load data for the neutrino powerspectrum from the disc*/
-void transfer_init_tabulate(const int nk_in, const int ThisTask, const double TimeTransfer);
+void transfer_init_tabulate(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0);
 
 #endif //KSPACE_NEUTRINOS_2
 

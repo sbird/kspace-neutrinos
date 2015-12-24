@@ -32,14 +32,8 @@ struct __kspace_params {
 
 //These are global variables that come from the All structure.
 struct __kspace_vars {
-  double OmegaNu;
   double HubbleParam;
-  double UnitLength_in_cm;
-  double UnitTime_in_s;
-  double Hubble;
-  double BoxSize;
   double TimeBegin;
-  double Omega0;
   double TimeMax;
 } kspace_vars;
 

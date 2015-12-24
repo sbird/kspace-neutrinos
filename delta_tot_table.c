@@ -56,7 +56,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm)
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm)
 {
     if(nk_in > d_tot->nk){
            char err[500];
@@ -72,7 +72,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     const double OmegaNu_today = OmegaNu(omnu, 1);
     /*Set the prefactor for delta_nu*/
     d_tot->light = C * UnitTime_in_s/UnitLength_in_cm;
-    d_tot->delta_nu_prefac = 1.5 *Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
+    d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
     int ik;
     if(d_tot->TimeTransfer > kspace_vars.TimeBegin + 1e-4){
         char string[1000];
@@ -96,7 +96,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
             * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
             *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
             *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
-            double CDMtoTot=((Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(Omega0-OmegaNu_today+OmegaNua3);
+            double CDMtoTot=((omnu->Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(omnu->Omega0-OmegaNu_today+OmegaNua3);
             /*We only want to use delta_cdm_curr if we are not restarting*/
             if(!d_tot->ia)
                     d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
@@ -166,8 +166,8 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
   int ik;
   double wavenum[nk_in];
   const double OmegaNua3=OmegaNu(omnu, a)*pow(a,3);
-  const double Omega0 = kspace_vars.Omega0 - OmegaNu(omnu, 1) + OmegaNua3;
-  const double fnu = OmegaNua3/Omega0;
+  const double OmegaMa = omnu->Omega0 - OmegaNu(omnu, 1) + OmegaNua3;
+  const double fnu = OmegaNua3/OmegaMa;
   for (ik = 0; ik < nk_in; ik++)
            wavenum[ik]=exp(logk[ik]);
   /* Get a delta_nu_curr from CAMB.*/

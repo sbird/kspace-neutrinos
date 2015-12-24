@@ -9,8 +9,10 @@
 #include <gsl/gsl_errno.h>
 
 
-void init_omega_nu(_omega_nu * omnu, const double MNu[])
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
 {
+    /*Store matter fraction*/
+    omnu->Omega0 = Omega0;
     /*First compute which neutrinos are degenerate with each other*/
     for(int mi=0; mi<NUSPECIES; mi++){
         int mmi;
