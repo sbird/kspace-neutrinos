@@ -32,7 +32,7 @@
 void add_nu_power_to_rhogrid(int save, const double Time, const double Omega0, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double MNu []);
 
 /*Functions to load data for the neutrino powerspectrum from the disc*/
-void transfer_init_tabulate(int nk_in, int ThisTask);
+void transfer_init_tabulate(const int nk_in, const int ThisTask, const double TimeTransfer);
 
 #endif //KSPACE_NEUTRINOS_2
 

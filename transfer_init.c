@@ -22,12 +22,6 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in)
         snprintf(string, 1000, "Can't read input transfer function in file '%s'\n", kspace_params.KspaceTransferFunction);
         terminate(string);
     }
-    if(kspace_params.TimeTransfer > kspace_vars.TimeBegin + 1e-4){
-        snprintf(string, 1000,"Transfer function is at a=%g but you tried to start the simulation earlier, at a=%g\n", kspace_params.TimeTransfer, kspace_vars.TimeBegin);
-        terminate(string);
-    }
-
-    t_init->TimeTransfer = kspace_params.TimeTransfer;
     t_init->NPowerTable = 0;
     while(1){
         double k, T_cdm, T_b, dummy, T_nu, T_tot;

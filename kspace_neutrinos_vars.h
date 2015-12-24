@@ -43,20 +43,6 @@ struct __kspace_vars {
   double TimeMax;
 } kspace_vars;
 
-// static int ThisTask=0;
-
-/* Note Omega0, the total non-relativistic matter, includes neutrinos (and radiation). */
-#define H0      (kspace_vars.HubbleParam)                /* H0 in units of H100*/
-
-/*Light speed in internal units. C is defined in allvars.h to be lightspeed in cm/s*/
-#define LIGHT (C*kspace_vars.UnitTime_in_s/kspace_vars.UnitLength_in_cm)
-
-#define H100   kspace_vars.Hubble /* 100 km/s/Mpc in units of 1/UnitTime. */
-/*The time at which we first start our integrator:
- * NOTE! This is not All.TimeBegin, but the time of the transfer function file,
- * so that we can support restarting from snapshots.*/
-#define A0      (kspace_params.TimeTransfer)
-
 //Function which sets the above variables
 int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
 

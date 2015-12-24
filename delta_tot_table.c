@@ -21,14 +21,16 @@
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory
  * before we have the information needed to initialise it*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in)
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer)
 {
    /*Memory allocations need to be done on all processors*/
    d_tot->nk=nk_in;
+   /*Store starting time*/
+   d_tot->TimeTransfer = TimeTransfer;
    /* Allocate memory for delta_tot here, so that we can have further memory allocated and freed
     * before delta_tot_init is called. The number nk here should be larger than the actual value needed.*/
    /*Allocate pointers to each k-vector*/
-   d_tot->namax=ceil(100*(kspace_vars.TimeMax-kspace_params.TimeTransfer))+2;
+   d_tot->namax=ceil(100*(kspace_vars.TimeMax-TimeTransfer))+2;
    d_tot->ia=0;
    d_tot->delta_tot =(double **) mymalloc("kspace_delta_tot",nk_in*sizeof(double *));
    /*Allocate list of scale factors, and space for delta_tot, in one operation.*/
@@ -54,7 +56,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0, _omega_nu * omnu)
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm)
 {
     if(nk_in > d_tot->nk){
            char err[500];
@@ -66,17 +68,24 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    const double OmegaNua3=OmegaNu(omnu, t_init->TimeTransfer)*pow(t_init->TimeTransfer,3);
+    const double OmegaNua3=OmegaNu(omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
     const double OmegaNu_today = OmegaNu(omnu, 1);
     /*Set the prefactor for delta_nu*/
-    d_tot->delta_nu_prefac = 1.5 *Omega0 *H100*H100/LIGHT;
+    d_tot->light = C * UnitTime_in_s/UnitLength_in_cm;
+    d_tot->delta_nu_prefac = 1.5 *Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
     int ik;
+    if(d_tot->TimeTransfer > kspace_vars.TimeBegin + 1e-4){
+        char string[1000];
+        snprintf(string, 1000,"Transfer function is at a=%g but you tried to start the simulation earlier, at a=%g\n", d_tot->TimeTransfer, kspace_vars.TimeBegin);
+        terminate(string);
+    }
+
     /*Check that if we are restarting from a snapshot, we successfully read a table*/
-    if(fabs(kspace_vars.TimeBegin - t_init->TimeTransfer) >1e-4 && (!d_tot->ia))
+    if(fabs(kspace_vars.TimeBegin - d_tot->TimeTransfer) >1e-4 && (!d_tot->ia))
         terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n");
     /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
         * so that it includes potential Rayleigh scattering. */
-    d_tot->scalefact[0]=log(t_init->TimeTransfer);
+    d_tot->scalefact[0]=log(d_tot->TimeTransfer);
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
     gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
     for(ik=0;ik<d_tot->nk;ik++){
@@ -297,9 +306,9 @@ void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
                     }
             }
             /*If our table starts at a different time from the simulation, stop.*/
-            if(fabs(d_tot->scalefact[0] - log(kspace_params.TimeTransfer)) > 1e-4){
+            if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
                     char err[250];
-                    snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(d_tot->scalefact[0]),kspace_params.TimeTransfer);
+                    snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
                     terminate(err);
             }
 
@@ -331,8 +340,7 @@ double Jfrac_high(double x, double mnu);
 int set_slow_neutrinos_analytic();
 #endif
 
-double fslength(double ai, double af,double mnu);
-double find_ai(double af, double k, double kfsl,double mnu);
+double fslength(double ai, double af,double mnu, const double light);
 double specialJ(double x, double mnu);
 double specialJ_fit(double x);
 
@@ -358,7 +366,7 @@ Free-streaming length for a non-relativistic particle of momentum q = T0, from s
 Result is in Unit_Length.
 ******************************************************************************************************/
 
-double fslength(double ai, double af,double mnu)
+double fslength(double ai, double af,double mnu, const double light)
 {
   double abserr;
   double fslength_val;
@@ -368,7 +376,7 @@ double fslength(double ai, double af,double mnu)
   F.params = &mnu;
   gsl_integration_qag (&F, log(ai), log(af), 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
   gsl_integration_workspace_free (w);
-  return LIGHT*fslength_val;
+  return light*fslength_val;
 }
 
 /**************************************************************************************************
@@ -489,6 +497,7 @@ struct _delta_nu_int_params
     /*Current wavenumber*/
     double k;
     double mnu;
+    double light;
     gsl_interp_accel *acc;
     gsl_interp *spline;
     /*Make sure this is at the same k as above*/
@@ -502,7 +511,7 @@ double get_delta_nu_int(double logai, void * params)
 {
     delta_nu_int_params * p = (delta_nu_int_params *) params;
     double ai = exp(logai);
-    double fsl_aia = fslength(ai, p->a,p->mnu);
+    double fsl_aia = fslength(ai, p->a,p->mnu, p->light);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
     return fsl_aia/(ai*hubble_function(ai)) *specialJ(p->k*fsl_aia, p->mnu) * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
 }
@@ -522,9 +531,9 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[], 
   if(d_tot->ThisTask == 0)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
-  fsl_A0a = fslength(A0, a,mnu);
+  fsl_A0a = fslength(d_tot->TimeTransfer, a,mnu, d_tot->light);
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
-  deriv_prefac = A0*(hubble_function(A0)/LIGHT)/kTbyaM(A0*mnu);
+  deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)/kTbyaM(d_tot->TimeTransfer*mnu);
 
   for (ik = 0; ik < d_tot->nk; ik++) {
       /* Initial condition piece, assuming linear evolution of delta with a up to startup redshift */
@@ -553,13 +562,14 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[], 
               terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
         params.a=a;
         params.scale=d_tot->scalefact;
+        params.light = d_tot->light;
         params.mnu=mnu;
         for (ik = 0; ik < d_tot->nk; ik++) {
             double abserr,d_nu_tmp;
             params.k=wavenum[ik];
             params.delta_tot=d_tot->delta_tot[ik];
             gsl_interp_init(params.spline,params.scale,params.delta_tot,Na);
-            gsl_integration_qag (&F, log(A0), log(a), 0, 1e-6,GSL_VAL,6,w,&d_nu_tmp, &abserr);
+            gsl_integration_qag (&F, log(d_tot->TimeTransfer), log(a), 0, 1e-6,GSL_VAL,6,w,&d_nu_tmp, &abserr);
             delta_nu_curr[ik] += d_tot->delta_nu_prefac * d_nu_tmp;
          }
          gsl_integration_workspace_free (w);

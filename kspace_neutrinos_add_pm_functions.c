@@ -266,7 +266,7 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * Output stored in T_nu_init and friends and has length NPowerTable.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.*/
-void transfer_init_tabulate(int nk_in, int ThisTask)
+void transfer_init_tabulate(const int nk_in, const int ThisTask, const double TimeTransfer)
 {
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
@@ -276,7 +276,7 @@ void transfer_init_tabulate(int nk_in, int ThisTask)
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
   /*Broadcast data to other processors*/
-  allocate_delta_tot_table(&delta_tot_table, nk_in);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, TimeTransfer);
 }
 
 

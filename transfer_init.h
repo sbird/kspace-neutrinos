@@ -8,7 +8,6 @@
  * in the initial conditions is included in the neutrino and radiation components. */
 struct _transfer_init_table {
     int NPowerTable;
-    double TimeTransfer;
     double *logk;
     double *T_nu;
 };
