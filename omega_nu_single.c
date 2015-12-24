@@ -2,6 +2,7 @@
 
 #include "kspace_neutrino_const.h"
 #include "kspace_neutrinos_vars.h"
+#include "kspace_neutrinos_private.h"
 
 #include <math.h>
 #include <gsl/gsl_integration.h>

@@ -60,14 +60,4 @@ struct __kspace_vars {
 //Function which sets the above variables
 int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
 
-//Forward define terminate, because we'll need it.
-void terminate(const char *);
-#ifndef mymalloc
-#define mymalloc(x,y) malloc(y)
-#endif
-
-#ifndef myfree
-#define myfree(x) free(x)
-#endif
-
 #endif

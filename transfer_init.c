@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "transfer_init.h"
+#include "kspace_neutrinos_private.h"
 #include "kspace_neutrinos_vars.h"
 
 

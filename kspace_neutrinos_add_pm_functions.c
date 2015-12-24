@@ -2,7 +2,6 @@
  add_nu_power_to_rhogrid is the main public function. */
 
 #ifdef KSPACE_NEUTRINOS_2
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
