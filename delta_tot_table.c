@@ -69,7 +69,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     const double OmegaNua3=OmegaNu(omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
     const double OmegaNu_today = OmegaNu(omnu, 1);
     /*Set the prefactor for delta_nu*/
-    d_tot->light = C * UnitTime_in_s/UnitLength_in_cm;
+    d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
     d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
     /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
         * so that it includes potential Rayleigh scattering. */

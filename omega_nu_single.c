@@ -7,6 +7,7 @@
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
 
+#define HBAR    6.582119e-16  /*hbar in units of eV s*/
 
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
 {
@@ -67,13 +68,13 @@ double get_rho_nu_conversion()
         double convert=4*M_PI*2; /* The factor of two is for antineutrinos*/
         /*rho_nu_val now has units of eV^4*/
         /*To get units of density, divide by (c*hbar)**3 in eV s and cm/s */
-        const double chbar=1./(2*M_PI*C*HBAR);
+        const double chbar=1./(2*M_PI*LIGHTCGS*HBAR);
         convert*=(chbar*chbar*chbar);
         /*Now has units of (eV)/(cm^3)*/
         /* 1 eV = 1.60217646 × 10-12 g cm^2 s^(-2) */
         /* So 1eV/c^2 = 1.7826909604927859e-33 g*/
         /*So this is rho_nu_val in g /cm^3*/
-        convert*=(1.60217646e-12/C/C);
+        convert*=(1.60217646e-12/LIGHTCGS/LIGHTCGS);
         return convert;
 }
 

@@ -10,13 +10,13 @@
 #include "kspace_neutrinos_func.h"
 #include "kspace_neutrino_const.h"
 #include "kspace_neutrinos_vars.h"
+#include "kspace_neutrinos_private.h"
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 
-#ifndef mymalloc
-#define mymalloc(x,y) malloc(y)
+#ifndef MYMPI_COMM_WORLD
+#define MYMPI_COMM_WORLD MPI_COMM_WORLD
 #endif
-void terminate(const char *);
 
 void save_nu_power(const double Time, const double logkk[], const double delta_nu[],const int nbins, const int snapnum, const char * OutputDir)
 {
