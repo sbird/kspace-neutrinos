@@ -14,6 +14,6 @@ struct _transfer_init_table {
 };
 typedef struct _transfer_init_table _transfer_init_table;
 
-void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, _omega_nu * omnu);
+void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const char * KspaceTransferFunction, _omega_nu * omnu);
 
 #endif //TRANSFER_INIT_H

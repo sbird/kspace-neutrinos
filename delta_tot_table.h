@@ -41,7 +41,7 @@ struct _delta_tot_table {
 typedef struct _delta_tot_table _delta_tot_table;
 
 /*This function allocates memory for delta_tot_table*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer);
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax);
 
 /*Initialise the data in delta_tot_init from the transfer table data in transfer_init.
  This is separate from allocate_delta_tot_table because we need some information not available when the memory needs to be allocated*/

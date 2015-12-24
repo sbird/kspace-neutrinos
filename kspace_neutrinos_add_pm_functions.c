@@ -264,9 +264,8 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
 
 /** This function loads the initial transfer functions from CAMB transfer files.
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
- * Output stored in T_nu_init and friends and has length NPowerTable.
- * Then, on all processors, it allocates memory for delta_tot_table.
- * Note it uses the global parameter kspace_params.KspaceTransferFunction for the filename to read.*/
+ * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
+ * Then, on all processors, it allocates memory for delta_tot_table.*/
 void transfer_init_tabulate(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0)
 {
   if(omeganu_table.RhoNuTab[0] == 0)
@@ -274,12 +273,15 @@ void transfer_init_tabulate(const int nk_in, const int ThisTask,const double Box
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0)
-    allocate_transfer_init_table(&transfer_init, nk_in, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, &omeganu_table);
+    allocate_transfer_init_table(&transfer_init, nk_in, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, kspace_params.KspaceTransferFunction, &omeganu_table);
+  /*Broadcast data to other processors*/
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  /*Broadcast data to other processors*/
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask);
+  /*Check that if we are restarting from a snapshot, we successfully read a table*/
+/*   if(fabs(kspace_vars.TimeBegin - d_tot->TimeTransfer) >1e-4 && (!d_tot->ia)) */
+/*      terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n"); */
 }
 
 

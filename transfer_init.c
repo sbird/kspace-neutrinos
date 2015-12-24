@@ -2,13 +2,12 @@
 #include <math.h>
 #include "transfer_init.h"
 #include "kspace_neutrinos_private.h"
-#include "kspace_neutrinos_vars.h"
 
 
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, _omega_nu * omnu)
+void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const char * KspaceTransferFunction, _omega_nu * omnu)
 {
     FILE *fd;
     int count;
@@ -18,8 +17,8 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
     const double scale=(InputSpectrum_UnitLength_in_cm / UnitLength_in_cm);
     const double kmin=M_PI/BoxSize*scale;
     /*Set up the table length with the first file found*/
-    if(!(fd = fopen(kspace_params.KspaceTransferFunction, "r"))){
-        snprintf(string, 1000, "Can't read input transfer function in file '%s'\n", kspace_params.KspaceTransferFunction);
+    if(!(fd = fopen(KspaceTransferFunction, "r"))){
+        snprintf(string, 1000, "Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
         terminate(string);
     }
     t_init->NPowerTable = 0;
@@ -48,8 +47,8 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
     t_init->T_nu=t_init->logk+t_init->NPowerTable;
 
     /*Now open the file*/
-    if(!(fd = fopen(kspace_params.KspaceTransferFunction, "r"))){
-        sprintf(string, "Can't read input transfer function in file '%s'\n", kspace_params.KspaceTransferFunction);
+    if(!(fd = fopen(KspaceTransferFunction, "r"))){
+        sprintf(string, "Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
         terminate(string);
     }
     count=0;
@@ -60,7 +59,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
     double T_0tot;
     /*We may have "faked" baryons by including them into the DM in Gadget.
     * In this case All.OmegaBaryon will be zero, but CAMB will have been fed a different value.
-    * For this reason we have the variable kspace_params.OmegaBaryonCAMB*/
+    * For this reason we have the variable OmegaBaryonCAMB*/
     char * ret;
     /* read transfer function file */
     ret=fgets(string,1000,fd);
@@ -87,7 +86,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
         break;
     }
     if(count < t_init->NPowerTable){
-        sprintf(string, "Expected %d rows in  file '%s' but only found %d\n", t_init->NPowerTable, kspace_params.KspaceTransferFunction, count);
+        sprintf(string, "Expected %d rows in  file '%s' but only found %d\n", t_init->NPowerTable, KspaceTransferFunction, count);
         terminate(string);
     }
     fclose(fd);

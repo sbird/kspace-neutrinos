@@ -2,10 +2,7 @@
 #define KSPACE_NEUTRINO_VARS
 
 #include <stdlib.h>
-  /* for three massive neutrino species:
-   * Could be made configurable at some point
-   * Neutrino masses are in eV*/
-  #define NUSPECIES 3
+#include "kspace_neutrino_const.h"
 
 //Global variables that need to be set from a parameter file
 struct __kspace_params {
@@ -29,13 +26,6 @@ struct __kspace_params {
     double nu_crit_time;
 #endif
 } kspace_params;
-
-//These are global variables that come from the All structure.
-struct __kspace_vars {
-  double HubbleParam;
-  double TimeBegin;
-  double TimeMax;
-} kspace_vars;
 
 //Function which sets the above variables
 int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);

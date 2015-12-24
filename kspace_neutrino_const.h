@@ -17,6 +17,10 @@
 #define  HUBBLE          3.2407789e-18	/* in h/sec */
 #endif
 
+/* for three massive neutrino species:
+ * Could be made configurable at some point
+ * Neutrino masses are in eV*/
+#define NUSPECIES 3
 
 #ifndef TNU 
 /* Note there is a slight correction from 4/11
