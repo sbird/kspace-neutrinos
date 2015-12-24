@@ -1,6 +1,6 @@
 /*Global header, to be included in gadget's pm code. This defines the external interface to the kspace neutrino code*/
-#ifndef KSPACE_NEUTRINOS_FUNC
-#define KSPACE_NEUTRINOS_FUNC
+#ifndef KSPACE_NEUTRINOS_GLOBAL
+#define KSPACE_NEUTRINOS_GLOBAL
 
 /* Return the total matter density in all neutrino species.*/
 double OmegaNu(double a);
@@ -28,17 +28,22 @@ double OmegaNu(double a);
 
 #include <mpi.h>
 
-//This needs to change to match gadget
+/*This needs to change to match gadget.*/
 #define MYMPI_COMM_WORLD MPI_COMM_WORLD
 
-/*This sets up various structures for the kspace neutrinos, and allocates memory*/
+/* This sets up various structures for the kspace neutrinos, and allocates memory. */
 void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0);
 
-/* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos*/
+/* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos. */
 /* Main function, called from pm_periodic.c. 
    Computes the neutrino power, then adds it to the Fourier grid.*/
 void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass);
 
+/* Function which sets up the parameter reader to read kspace neutrino parameters from the parameter file. 
+ * It will store them in a static variable, kspace_params, in the translation unit where the function is defined
+ * (which is the same as the above functions). */
+int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
+
 #endif //KSPACE_NEUTRINOS_2
 
-#endif //KSPACE_NEUTRINOS_FUNC
+#endif //KSPACE_NEUTRINOS_GLOBAL

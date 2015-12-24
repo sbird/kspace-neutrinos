@@ -3,14 +3,77 @@
 
 #ifdef KSPACE_NEUTRINOS_2
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "kspace_neutrinos_func.h"
-#include "kspace_neutrinos_vars.h"
+#include "kspace_neutrino_const.h"
 #include "kspace_neutrinos_private.h"
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 #include "delta_pow.h"
 #include "powerspectrum.h"
+
+//Global variables that need to be set from a parameter file
+struct __kspace_params {
+  char	KspaceTransferFunction[500];
+  double TimeTransfer;
+  double OmegaBaryonCAMB;
+  double InputSpectrum_UnitLength_in_cm;
+  double MNu[NUSPECIES];
+#if defined HYBRID_NEUTRINOS
+    /*Two parameters for the hybrid neutrinos.
+    If this is true, then we proceed using the analytic method for all neutrinos.
+    If this is false, then we cut off the analytic method at q < qcrit (specified using vcrit, below) and use
+    particles for the slower neutrinos.*/
+    int slow_neutrinos_analytic;
+    /*Critical velocity above which to treat neutrinos with particles.
+    Note this is unperturbed velocity *TODAY*
+    To get velocity at redshift z, multiply by (1+z)*/
+    double vcrit;
+    //Time at which to turn on the particle neutrinos.
+    //Ultimately we want something better than this.
+    double nu_crit_time;
+#endif
+} kspace_params;
+
+//Setup the config files to load the needed variables
+int set_kspace_vars(char * tag[], void *addr[], int id [], int nt)
+{
+      strcpy(tag[nt], "KspaceTransferFunction");
+      addr[nt] = kspace_params.KspaceTransferFunction;
+      id[nt++] = STRING;
+
+      strcpy(tag[nt], "TimeTransfer");
+      addr[nt] = &kspace_params.TimeTransfer;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "OmegaBaryonCAMB");
+      addr[nt] = &kspace_params.OmegaBaryonCAMB;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
+      addr[nt] = &kspace_params.InputSpectrum_UnitLength_in_cm;
+      id[nt++] = REAL;
+
+      strcpy(tag[nt], "MNue");
+      addr[nt] = &(kspace_params.MNu[0]);
+      id[nt++] = REAL;
+      strcpy(tag[nt], "MNum");
+      addr[nt] = &(kspace_params.MNu[1]);
+      id[nt++] = REAL;
+      strcpy(tag[nt], "MNut");
+      addr[nt] = &(kspace_params.MNu[2]);
+      id[nt++] = REAL;
+#if defined HYBRID_NEUTRINOS
+    strcpy(tag[nt], "VCRIT");
+    addr[nt] = &(kspace_params.vcrit);
+    id[nt++] = REAL;
+    strcpy(tag[nt], "NuPartTime");
+    addr[nt] = &(kspace_params.nu_crit_time);
+    id[nt++] = REAL;
+#endif
+    return nt;
+}
 
 static _transfer_init_table transfer_init;
 
@@ -50,7 +113,6 @@ void transfer_init_tabulate(const int nk_in, const int ThisTask,const double Box
 /*   if(fabs(kspace_vars.TimeBegin - d_tot->TimeTransfer) >1e-4 && (!d_tot->ia)) */
 /*      terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n"); */
 }
-
 
 #define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
 

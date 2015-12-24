@@ -29,4 +29,8 @@ void terminate(const char *);
 void * mymalloc(const char *, size_t size);
 void myfree(void * ptr);
 
+//These are defined in begrun.c
+#define STRING 2
+#define REAL 1
+
 #endif //KSPACE_NEUTRINOS_FUNC
