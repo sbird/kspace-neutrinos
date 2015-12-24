@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "kspace_neutrinos_func.h"
+#include "kspace_neutrinos_2.h"
 #include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
 #include "transfer_init.h"

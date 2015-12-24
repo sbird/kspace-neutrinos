@@ -2,7 +2,7 @@
 #define POWERSPEC_H
 
 /*So that fftw_complex is defined*/
-#include "kspace_neutrinos_func.h"
+#include "kspace_neutrinos_2.h"
 
 /* Compute the total powerspectrum from a Fourier-transformed density field in outfield, and store it in power.
  * Before use you may wish to normalise by dividing by count*count*/
