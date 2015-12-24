@@ -32,6 +32,9 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
         if(omnu->nu_degeneracies[mi])
             omnu->RhoNuTab[mi] = (_rho_nu_single *) mymalloc("RhoNuTab", sizeof(_rho_nu_single));
     }
+#ifdef HYBRID_NEUTRINOS
+    omnu->neutrinos_not_analytic = 0;
+#endif
 }
 /* Return the total matter density in neutrinos.
  * rho_nu and friends are not externally callable*/
@@ -104,6 +107,9 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      rho_nu_tab->interp=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
      if(!rho_nu_tab->interp || !rho_nu_tab->acc || gsl_interp_init(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,NRHOTAB))
          terminate("Could not initialise tables for RhoNu\n");
+#ifdef HYBRID_NEUTRINOS
+     rho_nu_tab->nufrac_low=0;
+#endif
      return;
 }
 
@@ -136,19 +142,67 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
         return rho_nu_val;
 }
 
+#ifdef HYBRID_NEUTRINOS
+
+//Fermi-Dirac kernel for below
+double fermi_dirac_kernel(double x, void * params)
+{
+  return x * x / (exp(x) + 1);
+}
+
+/* Fraction of neutrinos not followed analytically
+ * This is integral f_0(q) q^2 dq between 0 and qc to compute the fraction of OmegaNu which is in particles.*/
+double nufrac_low(const double mnu, const double vcrit, const double light)
+{
+    const double qc = mnu * vcrit / light / (BOLEVK*TNU);
+    /*These functions are so smooth that we don't need much space*/
+    gsl_integration_workspace * w = gsl_integration_workspace_alloc (100);
+    double abserr;
+    gsl_function F;
+    F.function = &fermi_dirac_kernel;
+    F.params = NULL;
+    double total_fd;
+    gsl_integration_qag (&F, 0, qc, 0, 1e-6,100,GSL_INTEG_GAUSS61, w,&(total_fd), &abserr);
+    //divided by the total F-D probability (which is 3 Zeta(3)/2 ~ 1.8 if MAX_FERMI_DIRAC is large enough
+    total_fd /= 1.5*1.202056903159594;
+    gsl_integration_workspace_free (w);
+    return total_fd;
+}
+
+/*Function to decide whether slow neutrinos are treated analytically or not.
+ * Sets the neutrino fraction to ignore .
+ * Should be called every few timesteps.*/
+int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light)
+{
+    /*Just use a redshift cut for now. Really we want something more sophisticated,
+     * based on the shot noise and average overdensity.*/
+    if (a > omnu->nu_crit_time){
+/*         if(d_tot->slow_neutrinos_analytic && d_tot->ThisTask==0) */
+/*             printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low); */
+        if(omnu->neutrinos_not_analytic) {
+            for(int mi=0; mi<NUSPECIES; mi++) {
+                if(omnu->nu_degeneracies[mi] > 0 && !omnu->RhoNuTab[mi]->nufrac_low)
+                    omnu->RhoNuTab[mi]->nufrac_low = nufrac_low(omnu->MNu[mi], omnu->vcrit, light);
+            }
+            omnu->neutrinos_not_analytic = 1;
+        }
+        return 0;
+    }
+    return 1;
+}
+
+#endif
+
 /* Return the matter density in a single neutrino species.
  * Not externally callable*/
 double omega_nu_single(_rho_nu_single * rho_nu_tab, double a)
 {
         double rhonu=rho_nu(rho_nu_tab, a);
         rhonu /= rho_nu_tab->omega_prefac; 
-        //Remove neutrino density which is particle based, if necessary
 #ifdef HYBRID_NEUTRINOS
-        if(! All.slow_neutrinos_analytic){
-            if(!nufrac_low)
-                nufrac_low = _nufrac_low(mnu);
-            rhonu*=(1-nufrac_low);
-        }
+        /* Remove neutrino density which is particle based, if necessary.
+         * nufrac_low will be zero until */
+        rhonu*=(1-rho_nu_tab->nufrac_low);
 #endif
         return rhonu;
 }

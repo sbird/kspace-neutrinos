@@ -126,7 +126,13 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
             if(omnu->nu_degeneracies[mi] > 0) {
                  double delta_nu_single[d_tot->nk];
                  double omeganu = omnu->nu_degeneracies[mi] * omega_nu_single(omnu->RhoNuTab[mi], a);
-                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->MNu[mi]);
+#ifdef HYBRID_NEUTRINOS
+                 /*Pass a positive value to get_delta_nu if we are making some neutrinos particles.*/
+                 double vcrit = omnu->neutrinos_not_analytic ? omnu->vcrit : -1;
+#else
+                 double vcrit = 0;
+#endif
+                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->MNu[mi], vcrit);
                  for(int ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
@@ -200,7 +206,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
        d_tot->ia++;
 #ifdef HYBRID_NEUTRINOS
     //Check whether we want to stop the particle neutrinos from being tracers.
-    set_slow_neutrinos_analytic();
+    slow_neutrinos_analytic(omnu, a, d_tot->light);
 #endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
        if(d_tot->ThisTask==0)
@@ -322,15 +328,11 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
 /*What follows are private functions for the integration routine get_delta_nu*/
 
 #ifdef HYBRID_NEUTRINOS
-//Fraction of neutrino mass not followed by the analytic integrator.
-static double nufrac_low=0;
-double _nufrac_low(double mnu);
-double Jfrac_high(double x, double mnu);
-int set_slow_neutrinos_analytic();
+double Jfrac_high(double x, double vcmnu);
 #endif
 
 double fslength(double ai, double af,double mnu, const double light);
-double specialJ(double x, double mnu);
+double specialJ(double x, double vcmnu);
 double specialJ_fit(double x);
 
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
@@ -390,59 +392,22 @@ double specialJ_fit(double x)
 }
 
 #ifdef HYBRID_NEUTRINOS
-/*Function to decide whether slow neutrinos are treated analytically or not.
- * Sets kspace_vars.slow_neutrinos_analytic.
- * Should be called every few timesteps.*/
-int set_slow_neutrinos_analytic()
-{
-    double val=1;
-    //Just use a redshift cut for now. Really we want something more sophisticated,
-    //based on the shot noise and average overdensity.
-    if (kspace_vars.Time > kspace_vars.nu_crit_time){
-        if(kspace_vars.slow_neutrinos_analytic && d_tot->ThisTask==0)
-            printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low);
-        val = 0;
-    }
-    kspace_vars.slow_neutrinos_analytic = val;
-    return val;
-}
 
-
-//Fermi-Dirac kernel for below
-double fermi_dirac_kernel(double x, void * params)
-{
-  return x * x / (exp(x) + 1);
-}
-
-//This is integral f_0(q) q^2 dq between 0 and qc to compute the fraction of OmegaNu which is in particles.
-double _nufrac_low(double mnu)
-{
-    double qc = mnu * kspace_vars.vcrit/LIGHT/(BOLEVK*TNU);
-    /*These functions are so smooth that we don't need much space*/
-    gsl_integration_workspace * w = gsl_integration_workspace_alloc (100);
-    double abserr;
-    gsl_function F;
-    F.function = &fermi_dirac_kernel;
-    F.params = NULL;
-    double total_fd;
-    gsl_integration_qag (&F, 0, qc, 0, 1e-6,100,GSL_INTEG_GAUSS61, w,&(total_fd), &abserr);
-    //divided by the total F-D probability (which is 3 Zeta(3)/2 ~ 1.8 if MAX_FERMI_DIRAC is large enough
-    total_fd /= 1.5*1.202056903159594;
-    gsl_integration_workspace_free (w);
-    return total_fd;
-}
-
-//Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.
+/*Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.*/
 double II(double x, double qc, int n)
 {
     return (n*n+n*n*n*qc+n*qc*x*x - x*x)* qc*gsl_sf_bessel_j0(qc*x) + (2*n+n*n*qc+qc*x*x)*cos(qc*x);
 }
 
-//This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
-//It gives the fraction of the integral that is due to neutrinos above a certain threshold.
-double Jfrac_high(double x, double mnu)
+/* Fourier transform of truncated Fermi Dirac distribution, with support on q > qc only.
+ * qc is a dimensionless momentum (normalized to TNU),
+ * mnu is in eV. x has units of inverse dimensionless momentum
+ * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
+ * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
+ * Arguments: vcmnu is vcrit*mnu/LIGHT */
+double Jfrac_high(double x, double vcmnubylight)
 {
-    double qc = mnu * kspace_vars.vcrit/LIGHT/(BOLEVK*TNU);
+    double qc = vcmnubylight/(BOLEVK*TNU);
     double integ=0;
     for(int n=1; n<20; n++)
     {
@@ -453,15 +418,11 @@ double Jfrac_high(double x, double mnu)
     return integ;
 }
 
-/* Fourier transform of truncated Fermi Dirac distribution, with support on q > qc only.
-    qc is a dimensionless momentum (normalized to TNU),
-    Uses an expansion of the FD distribution for qc << 1, very accurate for qc <= 1
-    mnu is in eV. x has units of inverse dimensionless momentum
- */
-double specialJ(double x, double mnu)
+/*Function that picks whether to use the truncated integrator or not*/
+double specialJ(double x, double vcmnubylight)
 {
-  if( !kspace_vars.slow_neutrinos_analytic ) {
-   return Jfrac_high(x, mnu);
+  if( vcmnubylight > 0 ) {
+   return Jfrac_high(x, vcmnubylight);
   }
   else {
     return specialJ_fit(x);
@@ -470,7 +431,7 @@ double specialJ(double x, double mnu)
 
 #else //Now for single-component neutrinos
 
-double specialJ(double x, double mnu)
+double specialJ(double x, double vcmnu)
 {
     return specialJ_fit(x);
 }
@@ -492,6 +453,9 @@ struct _delta_nu_int_params
     /*Make sure this is at the same k as above*/
     double * delta_tot;
     double * scale;
+#ifdef HYBRID_NEUTRINOS
+    double vcrit;
+#endif
 };
 typedef struct _delta_nu_int_params delta_nu_int_params;
 
@@ -502,7 +466,12 @@ double get_delta_nu_int(double logai, void * params)
     double ai = exp(logai);
     double fsl_aia = fslength(ai, p->a,p->mnu, p->light);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
-    return fsl_aia/(ai*hubble_function(ai)) *specialJ(p->k*fsl_aia, p->mnu) * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
+#ifdef HYBRID_NEUTRINOS
+    double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu/p->light);
+#else
+    double specJ = specialJ_fit(p->k*fsl_aia);
+#endif
+    return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
 }
 
 
@@ -513,7 +482,7 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],double mnu)
+void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],double mnu, double vcrit)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
@@ -531,7 +500,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[], 
        * This will be good if all species have similar masses, or
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
-      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, mnu)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, vcrit*mnu/d_tot->light)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /*If only one time given, we are still at the initial time*/
   if(Na > 1){
@@ -553,6 +522,9 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[], 
         params.scale=d_tot->scalefact;
         params.light = d_tot->light;
         params.mnu=mnu;
+#ifdef HYBRID_NEUTRINOS
+        params.vcrit = vcrit;
+#endif
         for (ik = 0; ik < d_tot->nk; ik++) {
             double abserr,d_nu_tmp;
             params.k=wavenum[ik];

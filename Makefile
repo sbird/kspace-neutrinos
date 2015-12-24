@@ -1,4 +1,5 @@
 OPT   +=  -DKSPACE_NEUTRINOS_2  # Enable kspace neutrinos
+OPT   += -DHYBRID_NEUTRINOS
 
 LFLAGS += -lgsl -lgslcblas -lpthread
 CFLAGS +=-O2 -ffast-math -g -c -Wall -fopenmp ${OPT}

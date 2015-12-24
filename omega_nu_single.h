@@ -19,6 +19,13 @@ struct _rho_nu_single {
     double mnu;
     /*Prefactor to turn density into matter density omega*/
     double omega_prefac;
+#ifdef HYBRID_NEUTRINOS
+    /* If this is zero, then we proceed using the analytic method for all neutrinos.
+    If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.
+    Instead cut off the analytic method at q < qcrit (specified using vcrit, below) and use
+    particles for the slower neutrinos.*/
+    double nufrac_low;
+#endif
 };
 typedef struct _rho_nu_single _rho_nu_single;
 
@@ -34,12 +41,22 @@ double omega_nu_single(_rho_nu_single * rho_nu_tab, double a);
 struct _omega_nu {
     /*Pointers to the array of structures we use to store rho_nu*/
     _rho_nu_single * RhoNuTab[NUSPECIES];
-    /* Which species have the same mass and can thus be counted together.
-     */
+    /* Which species have the same mass and can thus be counted together.*/
     int nu_degeneracies[NUSPECIES];
     double MNu[NUSPECIES];
     /*Matter fraction*/
     double Omega0;
+#ifdef HYBRID_NEUTRINOS
+    /*Are the neutrinos still analytic?*/
+    int neutrinos_not_analytic;
+    /* Critical velocity above which to treat neutrinos with particles.
+    Note this is unperturbed velocity *TODAY*
+    To get velocity at redshift z, multiply by (1+z)*/
+    double vcrit;
+    /* Time at which to turn on the particle neutrinos.
+     * Ultimately we want something better than this.*/
+    double nu_crit_time;
+#endif
 };
 typedef struct _omega_nu _omega_nu;
 
@@ -48,5 +65,10 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0);
 
 /* Return the total matter density in neutrinos.*/
 double get_omega_nu(_omega_nu *omnu, double a);
+
+#ifdef HYBRID_NEUTRINOS
+/*Check whether the neutrinos are analytic or not*/
+int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light);
+#endif
 
 #endif

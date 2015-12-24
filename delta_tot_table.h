@@ -37,6 +37,12 @@ struct _delta_tot_table {
      * NOTE! This is not All.TimeBegin, but the time of the transfer function file,
      * so that we can support restarting from snapshots.*/
     double TimeTransfer;
+#ifdef HYBRID_NEUTRINOS
+    /* Critical velocity above which to treat neutrinos with particles.
+    Note this is unperturbed velocity *TODAY*
+    To get velocity at redshift z, multiply by (1+z)*/
+    double vcrit;
+#endif /* HYBRID_NEUTRINOS*/
 };
 typedef struct _delta_tot_table _delta_tot_table;
 
@@ -51,7 +57,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double wavenum[], double P_cdm_curr[], double delta_nu_curr[], _omega_nu * omnu);
 
 /*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],double mnu);
+void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
@@ -66,5 +72,9 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir);
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
 void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time);
+
+#ifdef HYBRID_NEUTRINOS
+int set_slow_neutrinos_analytic(_delta_tot_table * d_tot, const double Time);
+#endif //HYBRID_NEUTRINOS
 
 #endif

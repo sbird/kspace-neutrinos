@@ -1,4 +1,4 @@
-/*This file contains functions which interface closely with the PM grid in gadget.
+/*This file contains functions which need to be called from the PM code in Gadget.
  add_nu_power_to_rhogrid is the main public function. */
 
 #ifdef KSPACE_NEUTRINOS_2
@@ -21,11 +21,6 @@ struct __kspace_params {
   double InputSpectrum_UnitLength_in_cm;
   double MNu[NUSPECIES];
 #if defined HYBRID_NEUTRINOS
-    /*Two parameters for the hybrid neutrinos.
-    If this is true, then we proceed using the analytic method for all neutrinos.
-    If this is false, then we cut off the analytic method at q < qcrit (specified using vcrit, below) and use
-    particles for the slower neutrinos.*/
-    int slow_neutrinos_analytic;
     /*Critical velocity above which to treat neutrinos with particles.
     Note this is unperturbed velocity *TODAY*
     To get velocity at redshift z, multiply by (1+z)*/
