@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "kspace_neutrinos_vars.h"
-#include "kspace_neutrinos_func.h"
 
 //These are defined in begrun.c
 #define STRING 2
