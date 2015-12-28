@@ -94,6 +94,12 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
      rho_nu_tab->omega_prefac = (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY))*HubbleParam*HubbleParam;
+#ifdef HYBRID_NEUTRINOS
+     rho_nu_tab->nufrac_low=0;
+#endif
+     /*Shortcircuit if we don't need to do the integration*/
+     if(mnu < 1e-6*BOLEVK*TNU || logaf < logA0)
+         return;
      for(i=0; i< NRHOTAB; i++){
         double param;
         rho_nu_tab->loga[i]=logA0+i*(logaf-logA0)/(NRHOTAB-1);
@@ -107,9 +113,6 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      rho_nu_tab->interp=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
      if(!rho_nu_tab->interp || !rho_nu_tab->acc || gsl_interp_init(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,NRHOTAB))
          terminate("Could not initialise tables for RhoNu\n");
-#ifdef HYBRID_NEUTRINOS
-     rho_nu_tab->nufrac_low=0;
-#endif
      return;
 }
 
@@ -126,15 +129,15 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
          * The next term is 141682 (kT/amnu)^8.
          * At kT/amnu = 8, higher terms are larger and the series stops converging.
          * Don't go lower than 50 here. */
-        if(NU_SW*NU_SW*kTamnu2 < 1){
-            /*Heavily non-relativistic*/
-            /*The constants are Riemann zetas: 3,5,7 respectively*/
-            rho_nu_val=rho_nu_tab->mnu*pow(kT/a,3)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
-        }
-        else if(amnu < 1e-6*kT){
+        if(amnu < 1e-6*kT){
             /*Heavily relativistic: we could be more accurate here,
              * but in practice this will only be called for massless neutrinos, so don't bother.*/
             rho_nu_val=7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
+        }
+        else if(NU_SW*NU_SW*kTamnu2 < 1){
+            /*Heavily non-relativistic*/
+            /*The constants are Riemann zetas: 3,5,7 respectively*/
+            rho_nu_val=rho_nu_tab->mnu*pow(kT/a,3)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
         }
         else{
             rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,log(a),rho_nu_tab->acc);
