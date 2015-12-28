@@ -2,7 +2,7 @@ OPT   +=  -DKSPACE_NEUTRINOS_2  # Enable kspace neutrinos
 OPT   += -DHYBRID_NEUTRINOS
 
 LFLAGS += -lgsl -lgslcblas -lpthread
-CFLAGS +=-O2 -ffast-math -g -c -Wall -fopenmp ${OPT}
+CFLAGS +=-O2 -ffast-math -g -Wall -fopenmp ${OPT}
 LFLAGS += -lm -lgomp
 
 OBJS = transfer_init.o delta_tot_table.o powerspectrum.o delta_pow.o kspace_neutrinos_2.o omega_nu_single.o
@@ -12,16 +12,14 @@ INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h 
 
 all: ${OBJS}
 
-test: btest
+test: omega_nu_single_test #transfer_init_test
 	./$^
 
 %.o: %.c ${INCL}
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
-test.o: test.cpp ${INCL}
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $< -o $@
+%_test: %_test.c %.o gadget_defines.o
+	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) 
 
-btest: test.o ${OBJS}
-	${LINK} ${LFLAGS} -lboost_unit_test_framework $^ -o  $@
 clean:
 	rm -f $(OBJS)

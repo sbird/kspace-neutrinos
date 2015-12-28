@@ -6,7 +6,7 @@
  * Take care that the constants are in sync with the rest of gadget!*/
 
 /*Speed of light in cm/s: in allvars.h this is called 'C'*/
-#define  LIGHTCGS           2.9979e10
+#define  LIGHTCGS           2.997926e10
 
 #define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */
 
