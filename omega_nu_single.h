@@ -43,7 +43,6 @@ struct _omega_nu {
     _rho_nu_single * RhoNuTab[NUSPECIES];
     /* Which species have the same mass and can thus be counted together.*/
     int nu_degeneracies[NUSPECIES];
-    double MNu[NUSPECIES];
     /*Matter fraction*/
     double Omega0;
 #ifdef HYBRID_NEUTRINOS
@@ -61,7 +60,7 @@ struct _omega_nu {
 typedef struct _omega_nu _omega_nu;
 
 /*Initialise the above structure, allocating memory for the subclass rho_nu_single*/
-void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0);
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, const double a0, const double HubbleParam);
 
 /* Return the total matter density in neutrinos.*/
 double get_omega_nu(_omega_nu *omnu, double a);

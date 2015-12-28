@@ -9,7 +9,7 @@
 
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
 
-void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, const double a0, const double HubbleParam)
 {
     /*Store matter fraction*/
     omnu->Omega0 = Omega0;
@@ -29,8 +29,13 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0)
     }
     /*Now allocate a table for the species we want*/
     for(int mi=0; mi<NUSPECIES; mi++){
-        if(omnu->nu_degeneracies[mi])
+        if(omnu->nu_degeneracies[mi]) {
             omnu->RhoNuTab[mi] = (_rho_nu_single *) mymalloc("RhoNuTab", sizeof(_rho_nu_single));
+            rho_nu_init(omnu->RhoNuTab[mi], a0, MNu[mi], HubbleParam);
+        }
+        else {
+            omnu->RhoNuTab[mi] = NULL;
+        }
     }
 #ifdef HYBRID_NEUTRINOS
     omnu->neutrinos_not_analytic = 0;
@@ -185,7 +190,7 @@ int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light
         if(omnu->neutrinos_not_analytic) {
             for(int mi=0; mi<NUSPECIES; mi++) {
                 if(omnu->nu_degeneracies[mi] > 0 && !omnu->RhoNuTab[mi]->nufrac_low)
-                    omnu->RhoNuTab[mi]->nufrac_low = nufrac_low(omnu->MNu[mi], omnu->vcrit, light);
+                    omnu->RhoNuTab[mi]->nufrac_low = nufrac_low(omnu->RhoNuTab[mi]->mnu, omnu->vcrit, light);
             }
             omnu->neutrinos_not_analytic = 1;
         }

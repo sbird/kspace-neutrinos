@@ -37,12 +37,12 @@ static void test_omega_nu_single(void **state) {
     assert_true(rho_nu_tab.mnu == mnu);
     /*Check everything initialised ok*/
     double omnuz0 = omega_nu_single(&rho_nu_tab, 1);
-    printf("val: %g %g\n", omnuz0, mnu/93.14/hubble/hubble);
     /*Check redshift scaling*/
     assert_true(omnuz0/pow(0.5,3) - omega_nu_single(&rho_nu_tab, 0.5) < 1e-6*omnuz0);
     /*Check not just a^-3 scaling*/
     assert_true(omnuz0/pow(0.01,3) <  omega_nu_single(&rho_nu_tab, 0.01));
     /*This fails...is it the right value?*/
+    printf("val: %g %g\n", omnuz0, mnu/93.14/hubble/hubble);
     assert_true((omnuz0 - mnu/93.14/hubble/hubble) < 1e-6*omnuz0);
 }
 
@@ -54,11 +54,50 @@ static void test_massless_omega_nu_single(void **state) {
     /*Initialise*/
     double HubbleParam = 0.7;
     rho_nu_init(&rho_nu_tab_nomass, 0.01, 0., HubbleParam);
-    /*Need floating point macro*/
+    /*Check gives the right value*/
     double omnunomassz0 = omega_nu_single(&rho_nu_tab_nomass, 1);
-    printf("val: %g %g\n", omnunomassz0, OMEGAR*7./8.*pow(pow(4/11.,1/3.)*1.00381,4));
     assert_true(omnunomassz0 - OMEGAR*7./8.*pow(pow(4/11.,1/3.)*1.00381,4)< 1e-5*omnunomassz0);
     assert_true(omnunomassz0/pow(0.5,4) == omega_nu_single(&rho_nu_tab_nomass, 0.5));
+}
+
+static void test_omega_nu_init_degenerate(void **state) {
+    /*Check we correctly initialise omega_nu with degenerate neutrinos*/
+    _omega_nu omnu;
+    /*Initialise*/
+    double MNu[3] = {0.2,0.2,0.2};
+    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    /*Check that we initialised the right number of arrays*/
+    assert_int_equal(omnu.nu_degeneracies[0], 3);
+    assert_int_equal(omnu.nu_degeneracies[1], 0);
+    assert_true(omnu.RhoNuTab[0]);
+    assert_false(omnu.RhoNuTab[1]);
+    assert_true(omnu.Omega0 == 0.3);
+}
+
+static void test_omega_nu_init_nondeg(void **state) {
+    /*Now check that it works with a non-degenerate set*/
+    _omega_nu omnu;
+    /*Initialise*/
+    double MNu[3] = {0.2,0.1,0.3};
+    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    /*Check that we initialised the right number of arrays*/
+    for(int i=0; i<3; i++) {
+        assert_int_equal(omnu.nu_degeneracies[i], 1);
+        assert_true(omnu.RhoNuTab[i]);
+    }
+}
+
+static void test_get_omega_nu(void **state) {
+    /*Check that we get the right answer from get_omega_nu, in terms of rho_nu*/
+    _omega_nu omnu;
+    /*Initialise*/
+    double MNu[3] = {0.2,0.1,0.3};
+    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    double total =0;
+    for(int i=0; i<3; i++) {
+        total += omega_nu_single(omnu.RhoNuTab[i], 0.5);
+    }
+    assert_true(get_omega_nu(&omnu, 0.5) - total < 1e-6*total);
 }
 
 int main(void) {
@@ -66,6 +105,9 @@ int main(void) {
         cmocka_unit_test(test_rho_nu_init),
         cmocka_unit_test(test_omega_nu_single),
         cmocka_unit_test(test_massless_omega_nu_single),
+        cmocka_unit_test(test_omega_nu_init_degenerate),
+        cmocka_unit_test(test_omega_nu_init_nondeg),
+        cmocka_unit_test(test_get_omega_nu),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
