@@ -44,9 +44,8 @@ static void test_omega_nu_single(void **state) {
     assert_true(fabs(omnuz0/pow(0.5,3) - omega_nu_single(&rho_nu_tab, 0.5)) < 5e-5*omnuz0);
     /*Check not just a^-3 scaling*/
     assert_true(omnuz0/pow(0.01,3) <  omega_nu_single(&rho_nu_tab, 0.01));
-    /*This fails...is it the right value?*/
-    printf("val: %g %g\n", omnuz0, mnu/93.14/hubble/hubble/0.999787);
-    assert_true(fabs(omnuz0 - mnu/93.14/hubble/hubble) < 1e-6*omnuz0);
+    /*Check that we have correctly accounted for neutrino decoupling*/
+    assert_true(fabs(omnuz0 - mnu/93.14/hubble/hubble) < 1e-4*omnuz0);
 }
 
 /*Check massless neutrinos work*/

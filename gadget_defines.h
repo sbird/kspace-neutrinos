@@ -13,8 +13,11 @@
 /* Note there is a slight correction from 4/11
  * due to the neutrinos being slightly coupled at e+- annihilation.
  * See Mangano et al 2005 (hep-ph/0506164)
- *The correction is (3.046/3)^(1/4), for N_eff = 3.046 */
-#define TNU     (T_CMB0*pow(4/11.,1/3.)*1.00381)              /* Neutrino + antineutrino background temperature in Kelvin */
+ * We use the CLASS default value, chosen so that omega_nu = m_nu / 93.14 h^2
+ * At time of writing this is T_nu / T_gamma = 0.71611.
+ * See https://github.com/lesgourg/class_public/blob/master/explanatory.ini
+ */
+#define TNU     (T_CMB0*pow(4/11.,1/3.)*1.00328)              /* Neutrino + antineutrino background temperature in Kelvin */
 
 #define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/
 #define  HUBBLE          3.24077929e-18	/* 100 km/s in h/sec */
