@@ -35,15 +35,18 @@ static void test_omega_nu_single(void **state) {
     /*Initialise*/
     rho_nu_init(&rho_nu_tab, 0.01, mnu, hubble);
     assert_true(rho_nu_tab.mnu == mnu);
+    /*This is the critical density at z=0:
+     * we allow it to change by what is (at the time of writing) the uncertainty on G.*/
+    assert_true(fabs(rho_nu_tab.omega_prefac - 1.8784e-29*hubble*hubble) < 5e-5*rho_nu_tab.omega_prefac);
     /*Check everything initialised ok*/
     double omnuz0 = omega_nu_single(&rho_nu_tab, 1);
     /*Check redshift scaling*/
-    assert_true(omnuz0/pow(0.5,3) - omega_nu_single(&rho_nu_tab, 0.5) < 1e-6*omnuz0);
+    assert_true(fabs(omnuz0/pow(0.5,3) - omega_nu_single(&rho_nu_tab, 0.5)) < 5e-5*omnuz0);
     /*Check not just a^-3 scaling*/
     assert_true(omnuz0/pow(0.01,3) <  omega_nu_single(&rho_nu_tab, 0.01));
     /*This fails...is it the right value?*/
-    printf("val: %g %g\n", omnuz0, mnu/93.14/hubble/hubble);
-    assert_true((omnuz0 - mnu/93.14/hubble/hubble) < 1e-6*omnuz0);
+    printf("val: %g %g\n", omnuz0, mnu/93.14/hubble/hubble/0.999787);
+    assert_true(fabs(omnuz0 - mnu/93.14/hubble/hubble) < 1e-6*omnuz0);
 }
 
 /*Check massless neutrinos work*/
