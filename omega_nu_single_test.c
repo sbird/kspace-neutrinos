@@ -37,7 +37,7 @@ static void test_omega_nu_single(void **state) {
     assert_true(rho_nu_tab.mnu == mnu);
     /*This is the critical density at z=0:
      * we allow it to change by what is (at the time of writing) the uncertainty on G.*/
-    assert_true(fabs(rho_nu_tab.omega_prefac - 1.8784e-29*hubble*hubble) < 5e-5*rho_nu_tab.omega_prefac);
+    assert_true(fabs(rho_nu_tab.rhocrit - 1.8784e-29*hubble*hubble) < 5e-5*rho_nu_tab.rhocrit);
     /*Check everything initialised ok*/
     double omnuz0 = omega_nu_single(&rho_nu_tab, 1);
     /*Check redshift scaling*/

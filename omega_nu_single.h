@@ -18,7 +18,7 @@ struct _rho_nu_single {
     /*Neutrino mass for this structure*/
     double mnu;
     /*Prefactor to turn density into matter density omega*/
-    double omega_prefac;
+    double rhocrit;
 #ifdef HYBRID_NEUTRINOS
     /* If this is zero, then we proceed using the analytic method for all neutrinos.
     If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.

@@ -98,7 +98,7 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      F.function = &rho_nu_int;
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
-     rho_nu_tab->omega_prefac = (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY))*HubbleParam*HubbleParam;
+     rho_nu_tab->rhocrit = (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY))*HubbleParam*HubbleParam;
 #ifdef HYBRID_NEUTRINOS
      rho_nu_tab->nufrac_low=0;
 #endif
@@ -206,7 +206,7 @@ int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light
 double omega_nu_single(_rho_nu_single * rho_nu_tab, double a)
 {
         double rhonu=rho_nu(rho_nu_tab, a);
-        rhonu /= rho_nu_tab->omega_prefac; 
+        rhonu /= rho_nu_tab->rhocrit;
 #ifdef HYBRID_NEUTRINOS
         /* Remove neutrino density which is particle based, if necessary.
          * nufrac_low will be zero until */
