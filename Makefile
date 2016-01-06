@@ -12,7 +12,7 @@ INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h 
 
 all: ${OBJS}
 
-test: omega_nu_single_test transfer_init_test
+test: omega_nu_single_test transfer_init_test powerspectrum_test
 	for test in $^ ; do ./$$test ; done
 
 %.o: %.c ${INCL}
@@ -21,5 +21,10 @@ test: omega_nu_single_test transfer_init_test
 %_test: %_test.c %.o omega_nu_single.o gadget_defines.o
 	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) 
 
+#This needs MPI
+#The fftw link must match the include in powerspectrum_test.c
+powerspectrum_test: powerspectrum_test.c powerspectrum.o gadget_defines.o
+	mpicc $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) -lsfftw -lsrfftw
+
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) gadget_defines.o
