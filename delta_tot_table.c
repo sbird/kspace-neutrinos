@@ -132,7 +132,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
 #else
                  double vcrit = 0;
 #endif
-                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->MNu[mi], vcrit);
+                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->RhoNuTab[mi]->mnu, vcrit);
                  for(int ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
