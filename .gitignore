@@ -1,4 +1,8 @@
 *.o
 .*.swp
 .*.swo
+*.gcno
+*.gcda
+*.gcov
+.gdb_history
 *_test
