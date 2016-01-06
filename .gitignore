@@ -6,3 +6,4 @@
 *.gcov
 .gdb_history
 *_test
+powerspec_nu_5
