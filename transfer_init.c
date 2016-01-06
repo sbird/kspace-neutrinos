@@ -92,3 +92,8 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
     fclose(fd);
     return;
 }
+
+void free_transfer_init_table(_transfer_init_table *t_init)
+{
+    myfree(t_init->logk);
+}
