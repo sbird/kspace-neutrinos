@@ -44,6 +44,14 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
    d_tot->delta_nu_last=d_tot->delta_nu_init+nk_in;
 }
 
+/*Free memory for delta_tot_table.*/
+void free_delta_tot_table(_delta_tot_table *d_tot)
+{
+    myfree(d_tot->delta_tot);
+    myfree(d_tot->scalefact);
+    myfree(d_tot->delta_nu_init);
+}
+
 void handler (const char * reason, const char * file, int line, int gsl_errno)
 {
     printf("GSL_ERROR in file: %s, line %d, errno:%d\n",file, line, gsl_errno);
