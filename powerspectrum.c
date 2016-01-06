@@ -7,7 +7,7 @@
 /*Helper function for 1D window function.*/
 inline fftw_real onedinvwindow(int kx, int n)
 {
-    //Return \pi x /(n sin(\pi x n)) unless x = 0, in which case return 1.
+    //Return \pi x /(n sin(\pi x / n)) unless x = 0, in which case return 1.
     return kx ? M_PI*kx/(n*sin(M_PI*kx/(fftw_real)n)) : 1.0;
 }
 
@@ -85,8 +85,10 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
     /*Normalise by the total mass in the array*/
     for(int i=0; i<nrbins;i++) {
         power[i]/=total_mass*total_mass;
-        if(count[i])
+        if(count[i]) {
             keffs[i]/=count[i];
+            power[i] /= count[i];
+        }
     }
 }
 

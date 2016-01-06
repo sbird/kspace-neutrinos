@@ -39,9 +39,9 @@ static void test_total_powerspectrum(void **state) {
     assert_true(fabs(keffs[2]-1.73205) < 1e-5);
     assert_true(count[1]==12);
     assert_true(count[0]==6);
-    assert_true(fabs(pow[0]/count[0]-0.0677526) < 1e-5*0.04);
-    assert_true(fabs(pow[1]/count[1]-0.000565561) < 1e-5*0.005);
-    assert_true(fabs(pow[2]/count[2]-0.000860793) < 1e-5*0.003);
+    assert_true(fabs(pow[0]-0.0677526) < 1e-5*0.04);
+    assert_true(fabs(pow[1]-0.000565561) < 1e-5*0.005);
+    assert_true(fabs(pow[2]-0.000860793) < 1e-5*0.003);
     assert_true(fabs(pow[9]) < 1e-6);
     rfftwnd_destroy_plan(pl);
 }
