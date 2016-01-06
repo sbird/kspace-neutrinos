@@ -48,7 +48,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
         int indx=(i-startslab)*dims*(dims/2+1);
         for(int j=0; j<dims; j++){
             int indy=j*(dims/2+1);
-            /* The k=0 and N/2 mode need special treatment here, 
+            /* The k=0 and N/2 mode need special treatment here,
                 * as they alone are not doubled.*/
             /*Do k=0 mode.*/
             int index=indx+indy;
@@ -79,7 +79,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
         }
     }
     /*Now sum the different contributions*/
-    MPI_Allgather(countpriv, nrbins * sizeof(long long), MPI_BYTE, count, nrbins * sizeof(long long), MPI_BYTE, MYMPI_COMM_WORLD);
+    MPI_Allgather(countpriv, nrbins * sizeof(long long int), MPI_BYTE, count, nrbins * sizeof(long long int), MPI_BYTE, MYMPI_COMM_WORLD);
     MPI_Allgather(powerpriv, nrbins * sizeof(double), MPI_BYTE, power, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
     MPI_Allgather(keffspriv, nrbins * sizeof(double), MPI_BYTE, keffs, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
     /*Normalise by the total mass in the array*/
