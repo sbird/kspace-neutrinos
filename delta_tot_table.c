@@ -151,20 +151,20 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
  * int ia is the number of already "recorded" time steps, i.e. scalefact[0...ia-1] is recorded.
  * Current time corresponds to index ia (but is only recorded if sufficiently far from previous time).
  * Caution: ia here is different from Na in get_delta_nu (Na = ia+1).
+ * @param d_tot contains the state of the integrator; samples of the total power spectrum at earlier times.
+ * @param omnu contains an object for computing OmegaNu, the matter density in neutrinos.
  * @param a is the current scale factor
- * @param logk is an array of length nk containing (natural) log k
+ * @param nk_in is the number of k bins in delta_cdm_curr and keff.
+ * @param keff is an array of length nk containing (natural) log k
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
 ******************************************************************************************************/
-void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double logk[], double delta_cdm_curr[], double delta_nu_curr[], _omega_nu * omnu)
+void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double delta_cdm_curr[], double delta_nu_curr[])
 {
   int ik;
-  double wavenum[nk_in];
   const double OmegaNua3=get_omega_nu(omnu, a)*pow(a,3);
   const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
   const double fnu = OmegaNua3/OmegaMa;
-  for (ik = 0; ik < nk_in; ik++)
-           wavenum[ik]=exp(logk[ik]);
   /* Get a delta_nu_curr from CAMB.*/
   if(!d_tot->delta_tot_init_done){
       terminate("Should have called delta_tot_init first\n");
@@ -193,7 +193,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double lo
       d_tot->delta_tot[ik][d_tot->ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*d_tot->delta_nu_last[ik];
    }
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(d_tot, a, d_tot->ia+1, wavenum, delta_nu_curr, omnu);
+   get_delta_nu_combined(d_tot, a, d_tot->ia+1, keff, delta_nu_curr, omnu);
    /*Update delta_nu_last*/
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
