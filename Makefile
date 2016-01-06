@@ -23,7 +23,7 @@ test: omega_nu_single_test transfer_init_test powerspectrum_test delta_pow_test
 
 #This needs MPI
 #The fftw link must match the include in powerspectrum_test.c
-powerspectrum_test: powerspectrum_test.c powerspectrum.o gadget_defines.o
+powerspectrum_test: powerspectrum_test.c powerspectrum.o omega_nu_single.o gadget_defines.o
 	mpicc $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) -lsfftw -lsrfftw
 
 clean:
