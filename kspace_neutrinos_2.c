@@ -91,10 +91,10 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.*/
-void transfer_init_tabulate(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0)
+void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0, const double HubbleParam)
 {
   if(omeganu_table.RhoNuTab[0] == 0)
-      init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0);
+      init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0)

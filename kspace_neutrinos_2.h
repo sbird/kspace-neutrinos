@@ -32,7 +32,7 @@ double OmegaNu(double a);
 #define MYMPI_COMM_WORLD MPI_COMM_WORLD
 
 /* This sets up various structures for the kspace neutrinos, and allocates memory. */
-void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0);
+void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0, const double HubbleParam);
 
 /* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos. */
 /* Main function, called from pm_periodic.c. 
