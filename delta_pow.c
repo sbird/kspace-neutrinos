@@ -37,7 +37,12 @@ void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], d
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk)
 {
         double delta_cdm,delta_nu;
-        if(kk < d_pow->logkk[0]){
+        /* Floating point roundoff and the binning means there may be a mode just beyond the box size.
+         * For now we assume P(k) is constant on these large scales.*/
+        if(kk < d_pow->logkk[0] && kk > d_pow->logkk[0]*0.5 ){
+            kk = d_pow->logkk[0];
+        }
+        if(kk < d_pow->logkk[0]*0.5){
                 char err[300];
                 snprintf(err,300,"trying to extract a k= %g < min stored = %g \n",kk,d_pow->logkk[0]);
                 terminate(err);
