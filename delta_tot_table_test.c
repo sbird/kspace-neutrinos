@@ -14,31 +14,6 @@
  *to avoid accidentally using it anywhere except in tests.*/
 void init_hubble_function(_omega_nu * omnu, const double UnitTime_in_s);
 
-#if 0
-/*Update the last value of delta_tot in the table with a new value computed
- from the given delta_cdm_curr and delta_nu_curr.
- If overwrite is true, overwrite the existing final entry.*/
-void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite);
-
-/*Function called by add_nu_power_to_rhogrid*/
-void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
-
-/*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
-
-/*Function which wraps three get_delta_nu calls to get delta_nu three times,
- * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
-
-/*Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
-double specialJ(double x, double vcmnubylight);
-
-/* Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
- * Result is in Unit_Length.*/
-double fslength(double ai, double af,double mnu, const double light);
-
-#endif
-
 /*A struct to hold some useful pointers*/
 struct _test_state {
     _delta_pow * d_pow;
@@ -135,6 +110,75 @@ static void test_delta_tot_init(void **state)
         assert_true(fabs(d_tot.delta_tot[ik][0]/delta_tot_before-1) < 1e-4);
     }
     free_delta_tot_table(&d_tot);
+}
+
+/*Check that the fits to the special J function are accurate, by doing explicit integration.*/
+static void test_specialJ(void **state)
+{
+    /*Check against mathematica computed values:
+    Integrate[(Sinc[q*x])*(q^2/(Exp[q] + 1)), {q, 0, Infinity}]*/
+    assert_true(specialJ(0,-1) == 1);
+    assert_true(fabs(specialJ(1,-1) - 0.2117) < 1e-3);
+    assert_true(fabs(specialJ(2,-1) - 0.0223807) < 1e-3);
+    assert_true(fabs(specialJ(0.5,-1) - 0.614729) < 1e-3);
+    assert_true(fabs(specialJ(0.3,-1) - 0.829763) < 1e-3);
+}
+
+/* Check that we accurately work out the free-streaming length.
+ * Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
+ * The 'light' argument defines the units.
+ * Test values use the following mathematica snippet:
+ kB = 8.61734*10^(-5);
+ Tnu = 2.7255*(4/11.)^(1/3.)*1.00328;
+ omegar = 5.04672*10^(-5);
+ Hubble[a_] := 3.085678*10^(21)/10^5*3.24077929*10^(-18)*Sqrt[0.2793/a^3 + (1 - 0.2793) + omegar/a^4]
+  fs[a_, Mnu_] := kB*Tnu/(a*Mnu)/(a*Hubble[a])
+  fslength[ai_, af_, Mnu_] := 299792*NIntegrate[fs[Exp[loga], Mnu], {loga, Log[ai], Log[af]}]
+ */
+static void test_fslength(void **state)
+{
+    /*Note that MNu is the mass of a single neutrino species:
+     *we use large masses so that we don't have to compute omega_nu in mathematica.*/
+    assert_true(fabs(fslength(0.5, 1,0.45, 299792.)/ 1272.92 -1 ) < 1e-5);
+    assert_true(fabs(fslength(0.1, 0.5,0.6, 299792.)/ 5427.8 -1 ) < 1e-5);
+}
+
+static void test_get_delta_nu_update(void **state)
+{
+    /*Initialise stuff*/
+    test_state * ts = (test_state *) *state;
+    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
+    _omega_nu * omnu = (_omega_nu *) ts->omnu;
+    _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
+    _delta_tot_table d_tot;
+    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1);
+    /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
+     * Must be called before delta_tot_init, or resuming wont work*/
+    read_all_nu_state(&d_tot, "testdata/", 0.33333333);
+    /*Then init delta_tot*/
+    const double UnitLength_in_cm = 3.085678e21;
+    const double UnitTime_in_s = UnitLength_in_cm / 1e5;
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer, omnu, UnitTime_in_s, UnitLength_in_cm);
+    /*Check that we will actually do something*/
+    assert_true(log(0.3333333)-d_tot.scalefact[d_tot.ia-1] > 1e-5);
+    /*So now we have a fully initialised d_tot. Update it!*/
+    double delta_nu_curr[d_pow->nbins];
+    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr);
+    /*Check that we did indeed update*/
+    assert_true(d_tot.ia == 25);
+    /*Check that we get the same answer as the saved powerspectrum*/
+    for(int ik=0; ik < d_tot.nk; ik++) {
+        assert_true(fabs(delta_nu_curr[ik]/ d_pow->delta_nu_curr[ik] -1) < 1e-2);
+    }
+    /*Throw out the last stored power spectrum and try again, so that we will perform a save*/
+    d_tot.ia--;
+    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr);
+    assert_true(d_tot.ia == 25);
+    /*Check that we get the same answer as the saved powerspectrum*/
+    for(int ik=0; ik < d_tot.nk; ik++) {
+        /*Be a bit more generous with the error as we have fewer datapoints now*/
+        assert_true(fabs(delta_nu_curr[ik]/ d_pow->delta_nu_curr[ik] -1) < 3e-2);
+    }
 }
 
 /*We are using delta_pow as a source for the current state of the integrator*/
@@ -243,6 +287,9 @@ int main(void) {
         cmocka_unit_test(test_allocate_delta_tot_table),
         cmocka_unit_test(test_save_resume),
         cmocka_unit_test(test_delta_tot_init),
+        cmocka_unit_test(test_specialJ),
+        cmocka_unit_test(test_fslength),
+        cmocka_unit_test(test_get_delta_nu_update),
     };
     return cmocka_run_group_tests(tests, setup_delta_pow, teardown_delta_pow);
 }

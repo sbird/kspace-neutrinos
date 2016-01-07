@@ -61,7 +61,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
 /* Constructor. transfer_init_tabulate must be called before this function.
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
- * Note delta_cdm_curr includes baryons*/
+ * Note delta_cdm_curr includes baryons, and is only used if not resuming.*/
 void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm)
 {
     if(nk_in > d_tot->nk){
@@ -359,8 +359,6 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
 double Jfrac_high(double x, double vcmnu);
 #endif
 
-double fslength(double ai, double af,double mnu, const double light);
-double specialJ(double x, double vcmnu);
 double specialJ_fit(double x);
 
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
