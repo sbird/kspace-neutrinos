@@ -51,6 +51,7 @@ static void test_omega_nu_single(void **state) {
 /*Check massless neutrinos work*/
 #define STEFAN_BOLTZMANN 5.670373e-5
 #define OMEGAR (4*STEFAN_BOLTZMANN*8*M_PI*GRAVITY/(3*LIGHTCGS*LIGHTCGS*LIGHTCGS*HUBBLE*HUBBLE*HubbleParam*HubbleParam)*pow(T_CMB0,4))
+
 static void test_massless_omega_nu_single(void **state) {
     _rho_nu_single rho_nu_tab_nomass;
     /*Initialise*/
@@ -99,7 +100,18 @@ static void test_get_omega_nu(void **state) {
     for(int i=0; i<3; i++) {
         total += omega_nu_single(omnu.RhoNuTab[i], 0.5);
     }
-    assert_true(get_omega_nu(&omnu, 0.5) - total < 1e-6*total);
+    assert_true(fabs(get_omega_nu(&omnu, 0.5) - total) < 1e-6*total);
+}
+
+static void test_get_omegag(void **state) {
+    /*Check that we get the right answer from get_omegag*/
+    _omega_nu omnu;
+    /*Initialise*/
+    double MNu[3] = {0.2,0.1,0.3};
+    const double HubbleParam = 0.7;
+    init_omega_nu(&omnu, MNu, 0.3, 0.01, HubbleParam);
+    const double omegag = OMEGAR/pow(0.5,4);
+    assert_true(fabs(get_omegag(&omnu, 0.5)/omegag -1)< 1e-6);
 }
 
 int main(void) {
@@ -110,6 +122,7 @@ int main(void) {
         cmocka_unit_test(test_omega_nu_init_degenerate),
         cmocka_unit_test(test_omega_nu_init_nondeg),
         cmocka_unit_test(test_get_omega_nu),
+        cmocka_unit_test(test_get_omegag),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

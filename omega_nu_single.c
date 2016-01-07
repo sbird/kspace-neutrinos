@@ -8,11 +8,14 @@
 #include <gsl/gsl_errno.h>
 
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
+#define STEFAN_BOLTZMANN 5.670373e-5
 
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, const double a0, const double HubbleParam)
 {
     /*Store matter fraction*/
     omnu->Omega0 = Omega0;
+    /*Store conversion between rho and omega*/
+    omnu->rhocrit = (3 * HUBBLE * HubbleParam * HUBBLE * HubbleParam)/ (8 * M_PI * GRAVITY);
     /*First compute which neutrinos are degenerate with each other*/
     for(int mi=0; mi<NUSPECIES; mi++){
         int mmi;
@@ -52,6 +55,13 @@ double get_omega_nu(_omega_nu *omnu, double a)
                  rhonu += omnu->nu_degeneracies[mi] * omega_nu_single(omnu->RhoNuTab[mi], a);
         }
         return rhonu;
+}
+
+/*Return the photon density*/
+double get_omegag(_omega_nu * omnu, double a)
+{
+    double omegag = 4*STEFAN_BOLTZMANN/(LIGHTCGS*LIGHTCGS*LIGHTCGS)*pow(T_CMB0,4)/omnu->rhocrit;
+    return omegag/pow(a,4);
 }
 
 /* Value of kT/aM_nu on which to switch from the

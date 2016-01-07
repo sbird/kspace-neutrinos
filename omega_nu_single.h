@@ -45,6 +45,8 @@ struct _omega_nu {
     int nu_degeneracies[NUSPECIES];
     /*Matter fraction*/
     double Omega0;
+    /*Prefactor to turn density into matter density omega*/
+    double rhocrit;
 #ifdef HYBRID_NEUTRINOS
     /*Are the neutrinos still analytic?*/
     int neutrinos_not_analytic;
@@ -64,6 +66,9 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, co
 
 /* Return the total matter density in neutrinos.*/
 double get_omega_nu(_omega_nu *omnu, double a);
+
+/*Return the photon matter density*/
+double get_omegag(_omega_nu * omnu, double a);
 
 #ifdef HYBRID_NEUTRINOS
 /*Check whether the neutrinos are analytic or not*/
