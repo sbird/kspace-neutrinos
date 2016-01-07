@@ -69,10 +69,11 @@ static void test_save_resume(void **state)
         assert_true(d_tot.delta_nu_init[ik] > 0);
         assert_true(d_tot.delta_nu_last[ik] > 0);
     }
-    /*Check saving works: we should have saved a table in delta_tot_init, so try to load it again.*/
+    /*Check saving works: we should also have saved a table in delta_tot_init, but save one in the test data directory and try to load it again.*/
+    save_all_nu_state(&d_tot, "testdata/");
     _delta_tot_table d_tot2;
     allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1);
-    read_all_nu_state(&d_tot2, NULL, 0.33333333);
+    read_all_nu_state(&d_tot2, "testdata/", 0.33333333);
     assert_true(d_tot.ia == d_tot2.ia);
     assert_true(d_tot.nk == d_tot2.nk);
     for(int i=1; i < d_tot.ia; i++) {
