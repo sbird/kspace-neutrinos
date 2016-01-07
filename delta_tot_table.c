@@ -148,6 +148,24 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
     return;
 }
 
+/*Update the last value of delta_tot in the table with a new value computed
+ from the given delta_cdm_curr and delta_nu_curr.
+ If overwrite is true, overwrite the existing final entry.*/
+void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
+{
+  const double OmegaNua3=get_omega_nu(omnu, a)*pow(a,3);
+  const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
+  const double fnu = OmegaNua3/OmegaMa;
+  if(!overwrite)
+    d_tot->ia++;
+  /*Update the scale factor*/
+  d_tot->scalefact[d_tot->ia-1] = log(a);
+  /* Update delta_tot(a)*/
+  for (int ik = 0; ik < d_tot->nk; ik++){
+    d_tot->delta_tot[ik][d_tot->ia-1] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
+  }
+}
+
 /** Callable function to calculate the power spectra.
  * Calls the rest of the code internally.
  * In reality we will be given P_cdm(current) but not delta_tot.
@@ -170,9 +188,6 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
 void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double delta_cdm_curr[], double delta_nu_curr[])
 {
   int ik;
-  const double OmegaNua3=get_omega_nu(omnu, a)*pow(a,3);
-  const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
-  const double fnu = OmegaNua3/OmegaMa;
   /* Get a delta_nu_curr from CAMB.*/
   if(!d_tot->delta_tot_init_done){
       terminate("Should have called delta_tot_init first\n");
@@ -188,20 +203,14 @@ void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, in
        return;
   }
 
-  /* We need some estimate for delta_tot(current time) to obtain delta_nu(current time).
+   /*We need some estimate for delta_tot(current time) to obtain delta_nu(current time).
      Even though delta_tot(current time) is not directly used (the integrand vanishes at a = a(current)),
      it is indeed needed for interpolation */
-  /* It was checked that using delta_tot(current time) = delta_cdm(current time) leads to no more than 2%
+   /*It was checked that using delta_tot(current time) = delta_cdm(current time) leads to no more than 2%
      error on delta_nu (and moreover for large k). A simple estimate for delta_nu decreases the maximum
      relative error on delta_nu to ~1E-4. So we only need one step. */
-   d_tot->scalefact[d_tot->ia] = log(a);
-   /* First estimate for delta_tot(a) */
-   for (ik = 0; ik < d_tot->nk; ik++) {
-      /*Guard against floating point zeros*/
-      d_tot->delta_tot[ik][d_tot->ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*d_tot->delta_nu_last[ik];
-   }
-   /*Increment number of stored spectra, although the last one is not yet final.*/
-   d_tot->ia++;
+   /*This increments the number of stored spectra, although the last one is not yet final.*/
+   update_delta_tot(d_tot, omnu, a, delta_cdm_curr, d_tot->delta_nu_last, 0);
    /*Get the new delta_nu_curr*/
    get_delta_nu_combined(d_tot, a, keff, delta_nu_curr, omnu);
    /*Update delta_nu_last*/
@@ -209,10 +218,8 @@ void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, in
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
    /* Decide whether we save the current time or not */
    if (a > exp(d_tot->scalefact[d_tot->ia-2]) + 0.01) {
-       /* If so update delta_tot(a) correctly */
-       for (ik = 0; ik < d_tot->nk; ik++){
-               d_tot->delta_tot[ik][d_tot->ia-1] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
-       }
+       /* If so update delta_tot(a) correctly, overwriting current power spectrum */
+       update_delta_tot(d_tot, omnu, a, delta_cdm_curr, delta_nu_curr, 1);
 #ifdef HYBRID_NEUTRINOS
     //Check whether we want to stop the particle neutrinos from being tracers.
     slow_neutrinos_analytic(omnu, a, d_tot->light);

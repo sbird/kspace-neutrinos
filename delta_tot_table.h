@@ -56,6 +56,11 @@ void free_delta_tot_table(_delta_tot_table *d_tot);
  This is separate from allocate_delta_tot_table because we need some information not available when the memory needs to be allocated*/
 void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm);
 
+/*Update the last value of delta_tot in the table with a new value computed
+ from the given delta_cdm_curr and delta_nu_curr.
+ If overwrite is true, overwrite the existing final entry.*/
+void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite);
+
 /*Function called by add_nu_power_to_rhogrid*/
 void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
 
