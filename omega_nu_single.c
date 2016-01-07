@@ -91,8 +91,9 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
 {
      int i;
      double abserr;
-     const double logA0=log(a0);
-     const double logaf=log(NU_SW*BOLEVK*TNU/mnu);
+     /*Make the table over a slightly wider range than requested, in case there is roundoff error*/
+     const double logA0=log(a0)-log(1.2);
+     const double logaf=log(NU_SW*BOLEVK*TNU/mnu)+log(1.2);
      gsl_function F;
      gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
      F.function = &rho_nu_int;
