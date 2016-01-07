@@ -32,7 +32,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const
         break;
         /* Skip comments*/
         if(string[0] == '#')
-        continue;
+            continue;
         if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &dummy, &dummy, &T_nu, &T_tot) == 7){
         if(k > kmin)
             t_init->NPowerTable++;

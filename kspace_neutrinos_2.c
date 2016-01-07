@@ -143,7 +143,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
   }
   /*This sets up P_nu_curr.*/
-  get_delta_nu_update(&delta_tot_table, &omeganu_table, Time, TARGETBINS, keff, delta_cdm_curr,  delta_nu_curr);
+  get_delta_nu_update(&delta_tot_table, Time, TARGETBINS, keff, delta_cdm_curr,  delta_nu_curr);
   for(i=0;i<TARGETBINS;i++){
           if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
                   char err[300];
