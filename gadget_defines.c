@@ -29,17 +29,13 @@ void myfree(void * ptr)
  * We COULD just use an internal version, but then we would break compatibility if anyone has
  * used an odd hubble history for eg, some dark energy model. */
 static _omega_nu omnu;
-static double m_HubbleParam;
+static double m_Hubble;
 
-void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam)
+void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam, const double UnitTime_in_s)
 {
     init_omega_nu(&omnu, MNu, Omega0, a0, HubbleParam);
-    m_HubbleParam = HubbleParam;
-
+    m_Hubble = HUBBLE * UnitTime_in_s;
 }
-
-#define STEFAN_BOLTZMANN 5.670373e-5
-#define OMEGAR (4*STEFAN_BOLTZMANN*8*M_PI*GRAVITY/(3*LIGHTCGS*LIGHTCGS*LIGHTCGS*HUBBLE*HUBBLE*m_HubbleParam*m_HubbleParam)*pow(T_CMB0,4))
 
 double hubble_function(double a)
 {
@@ -51,6 +47,6 @@ double hubble_function(double a)
     /*Neutrinos*/
     omega_tot += get_omega_nu(&omnu, a) - get_omega_nu(&omnu, 1)/pow(a,3);
     /*Radiation*/
-    omega_tot += OMEGAR/pow(a,4);
-    return m_HubbleParam * HUBBLE * sqrt(omega_tot);
+    omega_tot += get_omegag(&omnu, a);
+    return m_Hubble * sqrt(omega_tot);
 }
