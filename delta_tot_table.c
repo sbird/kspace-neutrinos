@@ -79,30 +79,32 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Set the prefactor for delta_nu*/
     d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
     d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
-    /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
+    /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
+    spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
+    gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
+    for(int ik=0;ik<d_tot->nk;ik++){
+            double T_nubyT_0 = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
+            /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
+            * The CAMB transfer functions are defined such that
+            * P_cdm ~ T_cdm^2 (and some other constant factors)
+            * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
+            *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
+            *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
+            double CDMtoTot=((omnu->Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(omnu->Omega0-OmegaNu_today+OmegaNua3);
+            /* Also initialise delta_nu_init here to save time later.
+            * Use the first delta_tot, in case we are resuming.*/
+            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
+            /*If we are not restarting, also initialise the first delta_tot*/
+            if(d_tot->ia == 0)
+                d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
+    }
+    gsl_interp_accel_free(acc);
+    gsl_interp_free(spline);
+
+    /*If we are not restarting, make sure we set the scale factor*/
     if(d_tot->ia == 0) {
         d_tot->scalefact[0]=log(d_tot->TimeTransfer);
-        spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
-        gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
-        for(int ik=0;ik<d_tot->nk;ik++){
-                double T_nubyT_0 = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
-                /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
-                * The CAMB transfer functions are defined such that
-                * P_cdm ~ T_cdm^2 (and some other constant factors)
-                * then P_t = (Omega_cdm P_cdm + Omega_nu P_nu)/(Omega_cdm + Omega_nu)
-                *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
-                *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
-                double CDMtoTot=((omnu->Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(omnu->Omega0-OmegaNu_today+OmegaNua3);
-                /*We only want to use delta_cdm_curr if we are not restarting*/
-                if(!d_tot->ia)
-                        d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
-                /* Also initialise delta_nu_init here to save time later.
-                * Use the first delta_tot, in case we are resuming.*/
-                d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
-        }
-        gsl_interp_accel_free(acc);
-        gsl_interp_free(spline);
         d_tot->ia=1;
     }
     if(d_tot->ThisTask==0){
