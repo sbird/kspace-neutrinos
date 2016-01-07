@@ -12,6 +12,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <unistd.h>
 
 #include "delta_tot_table.h"
 #include "gadget_defines.h"
@@ -111,13 +112,6 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         d_tot->ia=1;
     }
     if(d_tot->ThisTask==0){
-        /*Get a clean debug restart file*/
-#ifndef NOCALLSOFSYSTEM
-        system("mv delta_tot_nu.txt delta_tot_nu.txt.bak");
-#else
-        fd=fopen("delta_tot_nu.txt","w");
-        fclose(fd);
-#endif
         save_all_nu_state(d_tot, NULL);
     }
     /*Initialise delta_nu_last*/
@@ -235,41 +229,6 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
    return;
 }
 
-/*Save a single delta_nu power spectrum into a file*/
-void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savedir)
-{
-        FILE *fd;
-        int i;
-        char * dfile;
-        //NULL means use current directory
-        if (savedir == NULL){
-            dfile = "delta_tot_nu.txt";
-        }
-        else{
-            int nbytes = sizeof(char)*(strlen(savedir)+25);
-            dfile = mymalloc("filename", nbytes);
-            if(!dfile){
-                    char err[150];
-                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
-                    terminate(err);
-            }
-            dfile = strncpy(dfile, savedir, nbytes);
-            dfile = strncat(dfile, "delta_tot_nu.txt",25);
-        }
-        if(!(fd = fopen(dfile, "a")))
-             terminate("Could not open delta_tot_nu.txt for writing!\n");
-        /*Write log scale factor*/
-        fprintf(fd, "# %le ", d_tot->scalefact[iia]);
-        /*Write kvalues*/
-        for(i=0;i<d_tot->nk; i++)
-                fprintf(fd,"%le ",d_tot->delta_tot[i][iia]);
-        fprintf(fd,"\n");
-        fclose(fd);
-        if(savedir != NULL)
-            myfree(dfile);
-   return;
-}
-
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
 void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
@@ -344,13 +303,72 @@ void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
         myfree(dfile);
 }
 
+/*Save a single delta_nu power spectrum into a file*/
+void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savefile)
+{
+    FILE *fd;
+    int i;
+    char * dfile;
+    //NULL means use current directory
+    if (savefile == NULL){
+        dfile = "delta_tot_nu.txt";
+    }
+    else {
+        dfile = savefile;
+    }
+    if(!(fd = fopen(dfile, "a"))) {
+            char err[300];
+            snprintf(err,300,"Could not open %s for writing!\n",dfile);
+            terminate(err);
+    }
+    /*Write log scale factor*/
+    fprintf(fd, "# %le ", d_tot->scalefact[iia]);
+    /*Write kvalues*/
+    for(i=0;i<d_tot->nk; i++)
+            fprintf(fd,"%le ",d_tot->delta_tot[i][iia]);
+    fprintf(fd,"\n");
+    fclose(fd);
+    return;
+}
+
 /* Function to save all the internal state of the neutrino integrator to disc.
  * Must be called for resume to work*/
 void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
 {
+
     int ik;
+    char * savefile;
+    if(savedir) {
+            int nbytes = sizeof(char)*(strlen(savedir)+25);
+            savefile = mymalloc("filename", nbytes);
+            if(!savefile){
+                    char err[150];
+                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
+                    terminate(err);
+            }
+            savefile = strncpy(savefile, savedir, nbytes);
+            savefile = strncat(savefile, "delta_tot_nu.txt",25);
+    }
+    else {
+        savefile = "delta_tot_nu.txt";
+    }
+    /*Get a clean debug restart file*/
+    /*Check whether old file exists*/
+    if(access( savefile, F_OK ) != -1 ) {
+        /*If it does make the new file name and rename the file*/
+        int nbytes = sizeof(char)*(strlen(savefile)+6);
+        char * bak_savefile = mymalloc("filename2", nbytes);
+        if(bak_savefile) {
+            bak_savefile = strncpy(bak_savefile, savefile, strlen(savefile));
+            bak_savefile = strncat(bak_savefile, ".bak",6);
+            rename(savefile, bak_savefile);
+            myfree(bak_savefile);
+        }
+    }
     for(ik=0; ik< d_tot->ia; ik++)
-         save_delta_tot(d_tot, ik, savedir);
+         save_delta_tot(d_tot, ik, savefile);
+    if(savedir)
+        myfree(savefile);
 }
 
 /*What follows are private functions for the integration routine get_delta_nu*/
