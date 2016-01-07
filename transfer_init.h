@@ -10,6 +10,7 @@
 struct _transfer_init_table {
     int NPowerTable;
     double *logk;
+    /*This is T_nu / (T_not-nu), where T_not-nu is a weighted average of T_cdm and T_baryon*/
     double *T_nu;
 };
 typedef struct _transfer_init_table _transfer_init_table;
