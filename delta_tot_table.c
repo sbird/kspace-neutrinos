@@ -377,6 +377,8 @@ double fslength(double ai, double af,double mnu, const double light)
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
   F.function = &fslength_int;
   F.params = &mnu;
+  if(ai >= af)
+      return 0;
   gsl_integration_qag (&F, log(ai), log(af), 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
   gsl_integration_workspace_free (w);
   return light*fslength_val;
