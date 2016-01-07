@@ -359,7 +359,7 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
         int nbytes = sizeof(char)*(strlen(savefile)+6);
         char * bak_savefile = mymalloc("filename2", nbytes);
         if(bak_savefile) {
-            bak_savefile = strncpy(bak_savefile, savefile, strlen(savefile));
+            bak_savefile = strncpy(bak_savefile, savefile, strlen(savefile)+1);
             bak_savefile = strncat(bak_savefile, ".bak",6);
             rename(savefile, bak_savefile);
             myfree(bak_savefile);
