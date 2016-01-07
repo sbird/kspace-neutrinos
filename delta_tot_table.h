@@ -31,6 +31,8 @@ struct _delta_tot_table {
     /*Pointer to array of length nk storing the last neutrino power spectrum we saw, for a first estimate
     * of the new delta_tot */
     double *delta_nu_last;
+    /*Pointer to a structure for computing omega_nu*/
+    _omega_nu * omnu;
     /*Light speed in internal units. C is defined in allvars.h to be lightspeed in cm/s*/
     double light;
     /*The time at which we first start our integrator:
@@ -59,17 +61,17 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 /*Update the last value of delta_tot in the table with a new value computed
  from the given delta_cdm_curr and delta_nu_curr.
  If overwrite is true, overwrite the existing final entry.*/
-void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite);
+void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite);
 
 /*Function called by add_nu_power_to_rhogrid*/
-void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
+void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
 
 /*This function does the work and updates delta_nu_curr*/
 void get_delta_nu(_delta_tot_table *d_tot, double a, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[]);
 
 /*Save a single line in the delta_tot table to a file*/
 void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savedir);
@@ -80,6 +82,13 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir);
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
 void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time);
+
+/*Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
+double specialJ(double x, double vcmnubylight);
+
+/* Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
+ * Result is in Unit_Length.*/
+double fslength(double ai, double af,double mnu, const double light);
 
 #ifdef HYBRID_NEUTRINOS
 int set_slow_neutrinos_analytic(_delta_tot_table * d_tot, const double Time);

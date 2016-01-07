@@ -79,6 +79,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Set the prefactor for delta_nu*/
     d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
     d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
+    d_tot->omnu = omnu;
     /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
@@ -120,31 +121,31 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         save_all_nu_state(d_tot, NULL);
     }
     /*Initialise delta_nu_last*/
-    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1]), wavenum, d_tot->delta_nu_last, omnu);
+    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1]), wavenum, d_tot->delta_nu_last);
     d_tot->delta_tot_init_done=1;
     return;
 }
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu)
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[])
 {
-    double Omega_nu_tot=get_omega_nu(omnu, a);
+    double Omega_nu_tot=get_omega_nu(d_tot->omnu, a);
     /*Initialise delta_nu_curr*/
     memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
     /*Get each neutrinos species and density separately and add them to the total.
      * Neglect perturbations in massless neutrinos.*/
     for(int mi=0; mi<NUSPECIES; mi++) {
-            if(omnu->nu_degeneracies[mi] > 0) {
+            if(d_tot->omnu->nu_degeneracies[mi] > 0) {
                  double delta_nu_single[d_tot->nk];
-                 double omeganu = omnu->nu_degeneracies[mi] * omega_nu_single(omnu->RhoNuTab[mi], a);
+                 double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu->RhoNuTab[mi], a);
 #ifdef HYBRID_NEUTRINOS
                  /*Pass a positive value to get_delta_nu if we are making some neutrinos particles.*/
-                 double vcrit = omnu->neutrinos_not_analytic ? omnu->vcrit : -1;
+                 double vcrit = d_tot->omnu->neutrinos_not_analytic ? d_tot->omnu->vcrit : -1;
 #else
                  double vcrit = 0;
 #endif
-                 get_delta_nu(d_tot, a, wavenum, delta_nu_single,omnu->RhoNuTab[mi]->mnu, vcrit);
+                 get_delta_nu(d_tot, a, wavenum, delta_nu_single,d_tot->omnu->RhoNuTab[mi]->mnu, vcrit);
                  for(int ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
@@ -155,10 +156,10 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
 /*Update the last value of delta_tot in the table with a new value computed
  from the given delta_cdm_curr and delta_nu_curr.
  If overwrite is true, overwrite the existing final entry.*/
-void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
+void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
 {
-  const double OmegaNua3=get_omega_nu(omnu, a)*pow(a,3);
-  const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
+  const double OmegaNua3=get_omega_nu(d_tot->omnu, a)*pow(a,3);
+  const double OmegaMa = d_tot->omnu->Omega0 - get_omega_nu(d_tot->omnu, 1) + OmegaNua3;
   const double fnu = OmegaNua3/OmegaMa;
   if(!overwrite)
     d_tot->ia++;
@@ -182,24 +183,20 @@ void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, doubl
  * Current time corresponds to index ia (but is only recorded if sufficiently far from previous time).
  * Caution: ia here is different from Na in get_delta_nu (Na = ia+1).
  * @param d_tot contains the state of the integrator; samples of the total power spectrum at earlier times.
- * @param omnu contains an object for computing OmegaNu, the matter density in neutrinos.
  * @param a is the current scale factor
  * @param nk_in is the number of k bins in delta_cdm_curr and keff.
  * @param keff is an array of length nk containing (natural) log k
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
 ******************************************************************************************************/
-void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double delta_cdm_curr[], double delta_nu_curr[])
+void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double keff[], double delta_cdm_curr[], double delta_nu_curr[])
 {
   int ik;
   /* Get a delta_nu_curr from CAMB.*/
-  if(!d_tot->delta_tot_init_done){
+  if(!d_tot->delta_tot_init_done)
       terminate("Should have called delta_tot_init first\n");
-       /*Initialise delta_tot, setting ia = 1
-        * and signifying that we are ready to leave the relativistic regime*/
-//        delta_tot_init(d_tot, nk_in, wavenum,delta_cdm_curr, ThisTask, &transfer_init);
-  }
-
+  if(nk_in != d_tot->nk)
+      terminate("Number of kbins differs from stored delta_tot\n");
   /*If we get called twice with the same scale factor, do nothing*/
   if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT){
        for (ik = 0; ik < d_tot->nk; ik++)
@@ -214,19 +211,19 @@ void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, in
      error on delta_nu (and moreover for large k). A simple estimate for delta_nu decreases the maximum
      relative error on delta_nu to ~1E-4. So we only need one step. */
    /*This increments the number of stored spectra, although the last one is not yet final.*/
-   update_delta_tot(d_tot, omnu, a, delta_cdm_curr, d_tot->delta_nu_last, 0);
+   update_delta_tot(d_tot, a, delta_cdm_curr, d_tot->delta_nu_last, 0);
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(d_tot, a, keff, delta_nu_curr, omnu);
+   get_delta_nu_combined(d_tot, a, keff, delta_nu_curr);
    /*Update delta_nu_last*/
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
    /* Decide whether we save the current time or not */
    if (a > exp(d_tot->scalefact[d_tot->ia-2]) + 0.01) {
        /* If so update delta_tot(a) correctly, overwriting current power spectrum */
-       update_delta_tot(d_tot, omnu, a, delta_cdm_curr, delta_nu_curr, 1);
+       update_delta_tot(d_tot, a, delta_cdm_curr, delta_nu_curr, 1);
 #ifdef HYBRID_NEUTRINOS
     //Check whether we want to stop the particle neutrinos from being tracers.
-    slow_neutrinos_analytic(omnu, a, d_tot->light);
+    slow_neutrinos_analytic(d_tot->omnu, a, d_tot->light);
 #endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
        if(d_tot->ThisTask==0)
@@ -464,7 +461,7 @@ double specialJ(double x, double vcmnubylight)
 
 #else //Now for single-component neutrinos
 
-double specialJ(double x, double vcmnu)
+double specialJ(double x, double vcmnubylight)
 {
     return specialJ_fit(x);
 }
