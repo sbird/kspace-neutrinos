@@ -30,7 +30,22 @@ void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], d
  * so that the final value is for all neutrino species*/
 void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
 
+/*Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
+double specialJ(double x, double vcmnubylight);
+
+/* Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
+ * Result is in Unit_Length.*/
+double fslength(double ai, double af,double mnu, const double light);
+
 #endif
+
+/*A struct to hold some useful pointers*/
+struct _test_state {
+    _delta_pow * d_pow;
+    _transfer_init_table * transfer;
+    _omega_nu * omnu;
+};
+typedef struct _test_state test_state;
 
 /* Test that the allocations are done correctly.
  * delta_tot is still empty (but allocated) after this.*/
@@ -52,7 +67,10 @@ static void test_allocate_delta_tot_table(void **state)
 
 static void test_save_resume(void **state)
 {
-    _delta_pow * d_pow = (_delta_pow *) *state;
+    test_state * ts = (test_state *) *state;
+    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
+    _omega_nu * omnu = (_omega_nu *) ts->omnu;
+    _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
@@ -66,17 +84,10 @@ static void test_save_resume(void **state)
             assert_true(d_tot.delta_tot[kk][i] > 0);
     }
     /*Now check that calling delta_tot_init after this works.*/
-    /*Set up the background*/
-    _omega_nu omnu;
-    const double MNu[3] = {0.15, 0.15, 0.15};
-    init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
-    /*Set up the transfer table*/
-    _transfer_init_table transfer;
     const double UnitLength_in_cm = 3.085678e21;
-    allocate_transfer_init_table(&transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", &omnu);
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, &transfer, &omnu, UnitTime_in_s, UnitLength_in_cm);
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer, omnu, UnitTime_in_s, UnitLength_in_cm);
     assert_true(d_tot.ia == 25);
     /*Check we initialised delta_nu_init and delta_nu_last*/
     for(int ik=0; ik < d_tot.nk; ik++) {
@@ -99,25 +110,21 @@ static void test_save_resume(void **state)
 /* Test that we can initialise delta_tot without resuming.*/
 static void test_delta_tot_init(void **state)
 {
-    _delta_pow * d_pow = (_delta_pow *) *state;
+    test_state * ts = (test_state *) *state;
+    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
+    _omega_nu * omnu = (_omega_nu *) ts->omnu;
+    _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
-    /*Set up the background*/
-    _omega_nu omnu;
-    const double MNu[3] = {0.15, 0.15, 0.15};
-    init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
-    /*Set up the transfer table*/
-    _transfer_init_table transfer;
     allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1);
     const double UnitLength_in_cm = 3.085678e21;
-    allocate_transfer_init_table(&transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", &omnu);
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, &transfer, &omnu, UnitTime_in_s, UnitLength_in_cm);
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer, omnu, UnitTime_in_s, UnitLength_in_cm);
     assert_true(d_tot.ia == 1);
     assert_true(d_tot.scalefact[0] == log(0.01));
     /*Check the initial power spectra were created properly*/
-    const double OmegaNua3=get_omega_nu(&omnu, 0.01)*pow(0.01,3);
-    const double OmegaMa = omnu.Omega0 - get_omega_nu(&omnu, 1) + OmegaNua3;
+    const double OmegaNua3=get_omega_nu(omnu, 0.01)*pow(0.01,3);
+    const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
     const double fnu = OmegaNua3/OmegaMa;
     for(int ik=0; ik < d_tot.nk; ik++) {
         assert_true(d_tot.delta_nu_init[ik] > 0);
@@ -193,33 +200,36 @@ static int setup_delta_pow(void **state) {
         return 1;
     }
     /*We have actually read the total matter power; so for the CDM power we should subtract off the neutrino power*/
-    _omega_nu omnu;
+    test_state * ts = (test_state *) malloc(sizeof(test_state));
+    ts->omnu = malloc(sizeof(_omega_nu));
+    ts->transfer = malloc(sizeof(_transfer_init_table));
+    ts->d_pow = d_pow;
     const double MNu[3] = {0.15, 0.15, 0.15};
-    init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
-    const double OmegaNua3=get_omega_nu(&omnu, 0.01)*pow(0.01,3);
-    const double OmegaMa = omnu.Omega0 - get_omega_nu(&omnu, 1) + OmegaNua3;
+    init_omega_nu(ts->omnu, MNu, 0.2793, 0.01, 0.7);
+    const double OmegaNua3=get_omega_nu(ts->omnu, 0.01)*pow(0.01,3);
+    const double OmegaMa = ts->omnu->Omega0 - get_omega_nu(ts->omnu, 1) + OmegaNua3;
     const double fnu = OmegaNua3/OmegaMa;
     for (int ik = 0; ik < nbins; ik++){
          delta_cdm_curr[ik] = (delta_cdm_curr[ik] - fnu*delta_nu_curr[ik])/(1.-fnu);
     }
     /*Now initialise data structure*/
     init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins);
-    *state = (void *) d_pow;
     const double UnitLength_in_cm = 3.085678e21;
-//     _transfer_init_table transfer;
-//     allocate_transfer_init_table(&transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", &omnu);
+    allocate_transfer_init_table(ts->transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", ts->omnu);
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Set up the global variables for the hubble function before we do anything else!*/
     init_hubble_function(MNu, 0.2793, 0.01, 0.7, UnitTime_in_s);
-
+    *state = (void *) ts;
     return 0;
 }
 
-
 static int teardown_delta_pow(void **state) {
-    _delta_pow * d_pow = (_delta_pow *) *state;
-    if(!d_pow)
+    test_state * ts = (test_state *) *state;
+    if(!ts)
         return 0;
+    free(ts->omnu);
+    free(ts->transfer);
+    _delta_pow * d_pow = ts->d_pow;
     free_d_pow(d_pow);
     free(d_pow->delta_nu_curr);
     free(d_pow->delta_cdm_curr);
