@@ -92,12 +92,12 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
             *          = P_cdm (Omega_cdm+ Omega_nu (P_nu/P_cdm)) / (Omega_cdm +Omega_nu)
             *          = P_cdm (Omega_cdm+ Omega_nu (T_nu/T_cdm)^2) / (Omega_cdm+Omega_nu) */
             double CDMtoTot=((omnu->Omega0-OmegaNu_today)+pow(T_nubyT_0,2)*OmegaNua3)/(omnu->Omega0-OmegaNu_today+OmegaNua3);
-            /* Also initialise delta_nu_init here to save time later.
-            * Use the first delta_tot, in case we are resuming.*/
-            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
-            /*If we are not restarting, also initialise the first delta_tot*/
+            /*If we are not restarting, initialise the first delta_tot*/
             if(d_tot->ia == 0)
                 d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*sqrt(CDMtoTot);
+            /* Also initialise delta_nu_init here to save time later.
+             * Use the first delta_tot, in case we are resuming.*/
+            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/sqrt(CDMtoTot)*fabs(T_nubyT_0);
     }
     gsl_interp_accel_free(acc);
     gsl_interp_free(spline);
