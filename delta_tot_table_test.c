@@ -15,6 +15,10 @@
 void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam, const double UnitTime_in_s);
 
 #if 0
+/*Update the last value of delta_tot in the table with a new value computed
+ from the given delta_cdm_curr and delta_nu_curr.
+ If overwrite is true, overwrite the existing final entry.*/
+void update_delta_tot(_delta_tot_table *d_tot, _omega_nu * omnu, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite);
 
 /*Function called by add_nu_power_to_rhogrid*/
 void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
@@ -25,12 +29,6 @@ void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], d
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
 void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
-
-/*Save a single line in the delta_tot table to a file*/
-void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savedir);
-
-/*Save a complete delta_tot table to disc*/
-void save_all_nu_state(_delta_tot_table *d_tot, char * savedir);
 
 #endif
 
@@ -52,10 +50,11 @@ static void test_allocate_delta_tot_table(void **state)
     free_delta_tot_table(&d_tot);
 }
 
-static void test_read_all_nu_state(void **state)
+static void test_save_resume(void **state)
 {
+    _delta_pow * d_pow = (_delta_pow *) *state;
     _delta_tot_table d_tot;
-    allocate_delta_tot_table(&d_tot, 300, 0.01, 1);
+    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/", 0.33333333);
@@ -65,6 +64,35 @@ static void test_read_all_nu_state(void **state)
         assert_true(d_tot.scalefact[i] > d_tot.scalefact[i-1]);
         for(int kk=0; kk < d_tot.nk; kk++)
             assert_true(d_tot.delta_tot[kk][i] > 0);
+    }
+    /*Now check that calling delta_tot_init after this works.*/
+    /*Set up the background*/
+    _omega_nu omnu;
+    const double MNu[3] = {0.15, 0.15, 0.15};
+    init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
+    /*Set up the transfer table*/
+    _transfer_init_table transfer;
+    const double UnitLength_in_cm = 3.085678e21;
+    allocate_transfer_init_table(&transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", &omnu);
+    const double UnitTime_in_s = UnitLength_in_cm / 1e5;
+    /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, &transfer, &omnu, UnitTime_in_s, UnitLength_in_cm);
+    assert_true(d_tot.ia == 25);
+    /*Check we initialised delta_nu_init and delta_nu_last*/
+    for(int ik=0; ik < d_tot.nk; ik++) {
+        assert_true(d_tot.delta_nu_init[ik] > 0);
+        assert_true(d_tot.delta_nu_last[ik] > 0);
+    }
+    /*Check saving works: we should have saved a table in delta_tot_init, so try to load it again.*/
+    _delta_tot_table d_tot2;
+    allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1);
+    read_all_nu_state(&d_tot2, NULL, 0.33333333);
+    assert_true(d_tot.ia == d_tot2.ia);
+    assert_true(d_tot.nk == d_tot2.nk);
+    for(int i=1; i < d_tot.ia; i++) {
+        assert_true(d_tot.scalefact[i] == d_tot2.scalefact[i]);
+        for(int kk=0; kk < d_tot.nk; kk++)
+            assert_true(d_tot.delta_tot[kk][i] == d_tot2.delta_tot[kk][i]);
     }
 }
 
@@ -203,7 +231,7 @@ static int teardown_delta_pow(void **state) {
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_allocate_delta_tot_table),
-        cmocka_unit_test(test_read_all_nu_state),
+        cmocka_unit_test(test_save_resume),
         cmocka_unit_test(test_delta_tot_init),
     };
     return cmocka_run_group_tests(tests, setup_delta_pow, teardown_delta_pow);
