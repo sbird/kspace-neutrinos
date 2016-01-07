@@ -292,47 +292,55 @@ void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
         dfile = strncat(dfile, "delta_tot_nu.txt",25);
     }
     /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
-    if((fd = fopen(dfile, "r"))){
-            /*Read redshifts; Initial one is known already*/
-            int iia;
-            for(iia=0; iia< d_tot->namax;iia++){
-                    double scale;
-                    int ik;
-                    if(fscanf(fd, "# %lg ", &scale) != 1)
+    fd = fopen(dfile, "r");
+    if(fd <= 0) {
+        /*If we are later than the transfer function time, and we can't resume, we likely have a problem*/
+        if(Time > d_tot->TimeTransfer+0.01) {
+            char err[500];
+            snprintf(err,500,"Unable to open resume file: %s \n",dfile);
+            terminate(err);
+        }
+        return;
+    }
+    /*Read redshifts; Initial one is known already*/
+    int iia;
+    for(iia=0; iia< d_tot->namax;iia++){
+            double scale;
+            int ik;
+            if(fscanf(fd, "# %lg ", &scale) != 1)
+                    break;
+            d_tot->scalefact[iia]=scale;
+            /*Only read until we reach the present day*/
+            if(log(Time) <= scale)
+                    break;
+            /*Read kvalues*/
+            /*If we do not have a complete delta_tot for one redshift, we stop
+            * unless this is the first line, in which case we use it to set nk */
+            for(ik=0;ik<d_tot->nk; ik++){
+                    if(fscanf(fd, "%lg ", &(d_tot->delta_tot[ik][iia])) != 1){
+                        if(iia != 0){
+                            char err[150];
+                            snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(d_tot->scalefact[iia]));
+                            terminate(err);
+                        }
+                        else{
+                            d_tot->nk = ik+1;
                             break;
-                    d_tot->scalefact[iia]=scale;
-                    /*Only read until we reach the present day*/
-                    if(log(Time) <= scale)
-                            break;
-                    /*Read kvalues*/
-                    /*If we do not have a complete delta_tot for one redshift, we stop
-                    * unless this is the first line, in which case we use it to set nk */
-                    for(ik=0;ik<d_tot->nk; ik++){
-                            if(fscanf(fd, "%lg ", &(d_tot->delta_tot[ik][iia])) != 1){
-                                if(iia != 0){
-                                    char err[150];
-                                    snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(d_tot->scalefact[iia]));
-                                    terminate(err);
-                                }
-                                else{
-                                    d_tot->nk = ik+1;
-                                    break;
-                                }
-                            }
+                        }
                     }
             }
-            /*If our table starts at a different time from the simulation, stop.*/
-            if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
-                    char err[250];
-                    snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
-                    terminate(err);
-            }
-
-            if(iia > 0)
-                    d_tot->ia=iia;
-            printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
-            fclose(fd);
     }
+    /*If our table starts at a different time from the simulation, stop.*/
+    if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
+            char err[250];
+            snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
+            terminate(err);
+    }
+
+    if(iia > 0)
+            d_tot->ia=iia;
+    printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
+    fclose(fd);
     if (savedir != NULL)
         myfree(dfile);
 }
