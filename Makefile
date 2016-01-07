@@ -12,13 +12,16 @@ INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h 
 
 all: ${OBJS}
 
-test: omega_nu_single_test transfer_init_test powerspectrum_test delta_pow_test
+test: omega_nu_single_test transfer_init_test powerspectrum_test delta_pow_test delta_tot_table_test
 	for test in $^ ; do ./$$test ; done
 
 %.o: %.c ${INCL}
 	$(CC) -c $(CFLAGS) $< -o $@
 
 %_test: %_test.c %.o omega_nu_single.o gadget_defines.o
+	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS)
+
+delta_tot_table_test: delta_tot_table_test.c delta_tot_table.o delta_pow.o transfer_init.o omega_nu_single.o gadget_defines.o
 	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS)
 
 #This needs MPI
