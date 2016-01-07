@@ -12,7 +12,7 @@
 
 /*Initialise the hubble function: this is defined in gadget_defines.c and forward declared here,
  *to avoid accidentally using it anywhere except in tests.*/
-void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam, const double UnitTime_in_s);
+void init_hubble_function(_omega_nu * omnu, const double UnitTime_in_s);
 
 #if 0
 /*Update the last value of delta_tot in the table with a new value computed
@@ -218,7 +218,7 @@ static int setup_delta_pow(void **state) {
     allocate_transfer_init_table(ts->transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", ts->omnu);
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Set up the global variables for the hubble function before we do anything else!*/
-    init_hubble_function(MNu, 0.2793, 0.01, 0.7, UnitTime_in_s);
+    init_hubble_function(ts->omnu, UnitTime_in_s);
     *state = (void *) ts;
     return 0;
 }

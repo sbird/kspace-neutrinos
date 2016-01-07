@@ -28,25 +28,25 @@ void myfree(void * ptr)
  * to keep the function definition the same.
  * We COULD just use an internal version, but then we would break compatibility if anyone has
  * used an odd hubble history for eg, some dark energy model. */
-static _omega_nu omnu;
+static _omega_nu * m_omnu;
 static double m_Hubble;
 
-void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam, const double UnitTime_in_s)
+void init_hubble_function(_omega_nu * omnu, const double UnitTime_in_s)
 {
-    init_omega_nu(&omnu, MNu, Omega0, a0, HubbleParam);
+    m_omnu = omnu;
     m_Hubble = HUBBLE * UnitTime_in_s;
 }
 
 double hubble_function(double a)
 {
-    if(!omnu.RhoNuTab[0]) {
+    if(!m_omnu) {
         terminate("init_hubble_function was not called in test suite before this!\n");
     }
     /* Matter + Lambda: neglect curvature*/
-    double omega_tot = omnu.Omega0/pow(a,3) + (1-omnu.Omega0);
+    double omega_tot = m_omnu->Omega0/pow(a,3) + (1-m_omnu->Omega0);
     /*Neutrinos*/
-    omega_tot += get_omega_nu(&omnu, a) - get_omega_nu(&omnu, 1)/pow(a,3);
+    omega_tot += get_omega_nu(m_omnu, a) - get_omega_nu(m_omnu, 1)/pow(a,3);
     /*Radiation*/
-    omega_tot += get_omegag(&omnu, a);
+    omega_tot += get_omegag(m_omnu, a);
     return m_Hubble * sqrt(omega_tot);
 }
