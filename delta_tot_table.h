@@ -60,11 +60,11 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
 
 /*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, int Na, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
+void get_delta_nu(_delta_tot_table *d_tot, double a, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu);
 
 /*Save a single line in the delta_tot table to a file*/
 void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savedir);

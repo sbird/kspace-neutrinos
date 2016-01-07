@@ -80,7 +80,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
     d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
     /*Initialise the first delta_tot to use the first timestep's delta_cdm_curr
-        * so that it includes potential Rayleigh scattering. */
+     * so that it includes potential Rayleigh scattering. */
     if(d_tot->ia == 0) {
         d_tot->scalefact[0]=log(d_tot->TimeTransfer);
         spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
@@ -116,14 +116,14 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         save_all_nu_state(d_tot, NULL);
     }
     /*Initialise delta_nu_last*/
-    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1])-2*FLOAT, d_tot->ia, wavenum, d_tot->delta_nu_last, omnu);
+    get_delta_nu_combined(d_tot, exp(d_tot->scalefact[d_tot->ia-1]), wavenum, d_tot->delta_nu_last, omnu);
     d_tot->delta_tot_init_done=1;
     return;
 }
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu)
+void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[], _omega_nu * omnu)
 {
     double Omega_nu_tot=get_omega_nu(omnu, a);
     /*Initialise delta_nu_curr*/
@@ -140,7 +140,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, int Na, double wav
 #else
                  double vcrit = 0;
 #endif
-                 get_delta_nu(d_tot, a, Na, wavenum, delta_nu_single,omnu->RhoNuTab[mi]->mnu, vcrit);
+                 get_delta_nu(d_tot, a, wavenum, delta_nu_single,omnu->RhoNuTab[mi]->mnu, vcrit);
                  for(int ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
@@ -200,18 +200,19 @@ void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, in
       /*Guard against floating point zeros*/
       d_tot->delta_tot[ik][d_tot->ia] = (1.-fnu)*delta_cdm_curr[ik]+fnu*d_tot->delta_nu_last[ik];
    }
+   /*Increment number of stored spectra, although the last one is not yet final.*/
+   d_tot->ia++;
    /*Get the new delta_nu_curr*/
-   get_delta_nu_combined(d_tot, a, d_tot->ia+1, keff, delta_nu_curr, omnu);
+   get_delta_nu_combined(d_tot, a, keff, delta_nu_curr, omnu);
    /*Update delta_nu_last*/
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
    /* Decide whether we save the current time or not */
-   if (a > exp(d_tot->scalefact[d_tot->ia-1]) + 0.01) {
+   if (a > exp(d_tot->scalefact[d_tot->ia-2]) + 0.01) {
        /* If so update delta_tot(a) correctly */
        for (ik = 0; ik < d_tot->nk; ik++){
-               d_tot->delta_tot[ik][d_tot->ia] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
+               d_tot->delta_tot[ik][d_tot->ia-1] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
        }
-       d_tot->ia++;
 #ifdef HYBRID_NEUTRINOS
     //Check whether we want to stop the particle neutrinos from being tracers.
     slow_neutrinos_analytic(omnu, a, d_tot->light);
@@ -220,6 +221,9 @@ void get_delta_nu_update(_delta_tot_table *d_tot, _omega_nu * omnu, double a, in
        if(d_tot->ThisTask==0)
         save_delta_tot(d_tot, d_tot->ia-1, NULL);
    }
+   /*Otherwise discard the last powerspectrum*/
+   else
+       d_tot->ia--;
    return;
 }
 
@@ -490,10 +494,12 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(_delta_tot_table * d_tot, double a, int Na, double wavenum[],  double delta_nu_curr[],double mnu, double vcrit)
+void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double delta_nu_curr[],double mnu, double vcrit)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
+  /*Number of stored power spectra. This includes the initial guess for the next step*/
+  const int Na = d_tot->ia;
   if(d_tot->ThisTask == 0)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
