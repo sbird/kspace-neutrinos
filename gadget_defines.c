@@ -31,7 +31,7 @@ void myfree(void * ptr)
 static _omega_nu omnu;
 static double m_HubbleParam;
 
-void init_hubble_function(double MNu[], double Omega0, double a0, double HubbleParam)
+void init_hubble_function(const double MNu[], const double Omega0, const double a0, const double HubbleParam)
 {
     init_omega_nu(&omnu, MNu, Omega0, a0, HubbleParam);
     m_HubbleParam = HubbleParam;
