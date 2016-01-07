@@ -260,7 +260,7 @@ static int setup_delta_pow(void **state) {
     /*Now initialise data structure*/
     init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins);
     const double UnitLength_in_cm = 3.085678e21;
-    allocate_transfer_init_table(ts->transfer, 500, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", ts->omnu);
+    allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "testdata/ics_transfer_99.dat", ts->omnu);
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Set up the global variables for the hubble function before we do anything else!*/
     init_hubble_function(ts->omnu, UnitTime_in_s);
