@@ -12,8 +12,10 @@ INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h 
 
 all: ${OBJS}
 
-test: omega_nu_single_test transfer_init_test powerspectrum_test delta_pow_test delta_tot_table_test
-	for test in $^ ; do ./$$test ; done
+test: run_omega_nu_single_test run_transfer_init_test run_powerspectrum_test run_delta_pow_test run_delta_tot_table_test
+
+run_%_test: %_test
+	./$^
 
 %.o: %.c ${INCL}
 	$(CC) -c $(CFLAGS) $< -o $@
