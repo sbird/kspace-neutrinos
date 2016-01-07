@@ -43,6 +43,9 @@ void init_hubble_function(const double MNu[], const double Omega0, const double 
 
 double hubble_function(double a)
 {
+    if(!omnu.RhoNuTab[0]) {
+        terminate("init_hubble_function was not called in test suite before this!\n");
+    }
     /* Matter + Lambda: neglect curvature*/
     double omega_tot = omnu.Omega0/pow(a,3) + (1-omnu.Omega0);
     /*Neutrinos*/
