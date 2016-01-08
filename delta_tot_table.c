@@ -564,6 +564,11 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
         else {
                 params.spline=gsl_interp_alloc(gsl_interp_linear,Na);
         }
+        params.scale=d_tot->scalefact;
+        params.mnu=mnu;
+#ifdef HYBRID_NEUTRINOS
+        params.vcrit = vcrit/d_tot->light;
+#endif
         /* Massively over-sample the free-streaming lengths.
          * Interpolation is least accurate where the free-streaming length -> 0,
          * which is exactly where it doesn't matter, but
@@ -571,22 +576,19 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
         int Nfs = Na*16;
         params.fs_acc = gsl_interp_accel_alloc();
         params.fs_spline=gsl_interp_alloc(gsl_interp_cspline,Nfs);
-        if(!params.spline || !params.acc || !w || !params.fs_spline || !params.fs_acc)
-              terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
-        params.scale=d_tot->scalefact;
-        params.mnu=mnu;
-#ifdef HYBRID_NEUTRINOS
-        params.vcrit = vcrit/d_tot->light;
-#endif
+
         /*Pre-compute the free-streaming lengths, which are scale-independent*/
-        double fslengths[Nfs];
-        double fsscales[Nfs];
+        double * fslengths = mymalloc("fslengths", Nfs* sizeof(double));
+        double * fsscales = mymalloc("fsscales", Nfs* sizeof(double));
         for(ik=0; ik < Nfs; ik++) {
             fsscales[ik] = log(d_tot->TimeTransfer) + ik*(log(a) - log(d_tot->TimeTransfer))/(Nfs-1.);
             fslengths[ik] = fslength(fsscales[ik], log(a),mnu, d_tot->light);
         }
         params.fslengths = fslengths;
         params.fsscales = fsscales;
+
+        if(!params.spline || !params.acc || !w || !params.fs_spline || !params.fs_acc || !fslengths || !fsscales)
+              terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
 
         gsl_interp_init(params.fs_spline,params.fsscales,params.fslengths,Nfs);
         for (ik = 0; ik < d_tot->nk; ik++) {
@@ -600,6 +602,8 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
          gsl_integration_workspace_free (w);
          gsl_interp_free(params.spline);
          gsl_interp_accel_free(params.acc);
+         myfree(fslengths);
+         myfree(fsscales);
    }
    if(d_tot->ThisTask == 0 && d_tot->debug){
           printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
