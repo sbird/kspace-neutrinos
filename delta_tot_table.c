@@ -484,15 +484,16 @@ double specialJ(double x, double vcmnubylight)
 /*A structure for the parameters for the below integration kernel*/
 struct _delta_nu_int_params
 {
-    /*This is the current time, not the time at which
-     * this contribution was seen by the neutrinos*/
-    double loga;
     /*Current wavenumber*/
     double k;
     double mnu;
-    double light;
     gsl_interp_accel *acc;
     gsl_interp *spline;
+    /*Precomputed free-streaming lengths*/
+    gsl_interp_accel *fs_acc;
+    gsl_interp *fs_spline;
+    double * fslengths;
+    double * fsscales;
     /*Make sure this is at the same k as above*/
     double * delta_tot;
     double * scale;
@@ -506,7 +507,7 @@ typedef struct _delta_nu_int_params delta_nu_int_params;
 double get_delta_nu_int(double logai, void * params)
 {
     delta_nu_int_params * p = (delta_nu_int_params *) params;
-    double fsl_aia = fslength(logai, p->loga,p->mnu, p->light);
+    double fsl_aia = gsl_interp_eval(p->fs_spline,p->fsscales,p->fslengths,logai,p->fs_acc);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
 #ifdef HYBRID_NEUTRINOS
     double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu/p->light);
@@ -556,20 +557,38 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
         F.function = &get_delta_nu_int;
         F.params=&params;
         /*Use cubic interpolation*/
-        if(Na > 2)
+        if(Na > 2) {
                 params.spline=gsl_interp_alloc(gsl_interp_cspline,Na);
+        }
         /*Unless we have only two points*/
-        else
+        else {
                 params.spline=gsl_interp_alloc(gsl_interp_linear,Na);
-        if(!params.spline || !params.acc || !w )
+        }
+        /* Massively over-sample the free-streaming lengths.
+         * Interpolation is least accurate where the free-streaming length -> 0,
+         * which is exactly where it doesn't matter, but
+         * we still want to be safe. */
+        int Nfs = Na*16;
+        params.fs_acc = gsl_interp_accel_alloc();
+        params.fs_spline=gsl_interp_alloc(gsl_interp_cspline,Nfs);
+        if(!params.spline || !params.acc || !w || !params.fs_spline || !params.fs_acc)
               terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
-        params.loga=log(a);
         params.scale=d_tot->scalefact;
-        params.light = d_tot->light;
         params.mnu=mnu;
 #ifdef HYBRID_NEUTRINOS
         params.vcrit = vcrit;
 #endif
+        /*Pre-compute the free-streaming lengths, which are scale-independent*/
+        double fslengths[Nfs];
+        double fsscales[Nfs];
+        for(ik=0; ik < Nfs; ik++) {
+            fsscales[ik] = log(d_tot->TimeTransfer) + ik*(log(a) - log(d_tot->TimeTransfer))/(Nfs-1.);
+            fslengths[ik] = fslength(fsscales[ik], log(a),mnu, d_tot->light);
+        }
+        params.fslengths = fslengths;
+        params.fsscales = fsscales;
+
+        gsl_interp_init(params.fs_spline,params.fsscales,params.fslengths,Nfs);
         for (ik = 0; ik < d_tot->nk; ik++) {
             double abserr,d_nu_tmp;
             params.k=wavenum[ik];

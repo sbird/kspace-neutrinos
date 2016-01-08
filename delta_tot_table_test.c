@@ -280,8 +280,9 @@ static void test_reproduce_linear(void **state)
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Initialise*/
     delta_tot_init(&d_tot, NREAD, keffs, delta_cdm, &transfer, omnu, UnitTime_in_s, UnitLength_in_cm);
-    /* Desired accuracy. The first few integrations are less accurate both because of we have fewer integration points,
-     * and because we assume non-relativistic neutrinos.
+    /* Desired accuracy. The first few integrations are less accurate.
+     * For the first values we have fewer integration points,
+     * and later we assume non-relativistic neutrinos.
      * This is not very important. */
     /* There is also a specific range around k=0.64 where it is slightly less accurate than 1%.
      * This is probably CAMB's fault; presumably it is switching integration method there.*/
@@ -301,8 +302,8 @@ static void test_reproduce_linear(void **state)
             printf("%d %d \n", d_tot.ia, i+1);
         assert_true(d_tot.ia == i+1);
         for(int k = 0; k < NREAD; k++) {
-/*             if(fabs(delta_nu_camb[k] - delta_nu[k]) > 1.2e-2*delta_nu[k])
-                 printf("i = %d k=%g : dnu = %g %g diff %g\n", i, 1000*keffs[k], delta_nu[k], delta_nu_camb[k], fabs(delta_nu_camb[k]/ delta_nu[k]-1));*/
+//             if(fabs(delta_nu_camb[k] - delta_nu[k]) > 1.2e-2*delta_nu[k])
+//                  printf("i = %d k=%g : dnu = %g %g diff %g\n", i, 1000*keffs[k], delta_nu[k], delta_nu_camb[k], fabs(delta_nu_camb[k]/ delta_nu[k]-1));
             assert_true(fabs(delta_nu_camb[k] - delta_nu[k]) < acc*delta_nu[k]);
         }
     }
