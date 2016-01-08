@@ -52,9 +52,9 @@ double get_omega_nu(_omega_nu *omnu, double a)
         double rhonu=0;
         for(int mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0)
-                 rhonu += omnu->nu_degeneracies[mi] * omega_nu_single(omnu->RhoNuTab[mi], a);
+                 rhonu += omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
         }
-        return rhonu;
+        return rhonu/omnu->rhocrit;
 }
 
 /*Return the photon density*/
@@ -158,6 +158,11 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
         else{
             rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,log(a),rho_nu_tab->acc);
         }
+#ifdef HYBRID_NEUTRINOS
+        /* Remove neutrino density which is particle based, if necessary.
+         * nufrac_low will be zero until */
+        rho_nu_val*=(1-rho_nu_tab->nufrac_low);
+#endif
         return rho_nu_val;
 }
 
@@ -218,10 +223,5 @@ double omega_nu_single(_rho_nu_single * rho_nu_tab, double a)
 {
         double rhonu=rho_nu(rho_nu_tab, a);
         rhonu /= rho_nu_tab->rhocrit;
-#ifdef HYBRID_NEUTRINOS
-        /* Remove neutrino density which is particle based, if necessary.
-         * nufrac_low will be zero until */
-        rhonu*=(1-rho_nu_tab->nufrac_low);
-#endif
         return rhonu;
 }
