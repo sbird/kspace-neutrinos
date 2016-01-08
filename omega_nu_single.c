@@ -145,15 +145,16 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
          * The next term is 141682 (kT/amnu)^8.
          * At kT/amnu = 8, higher terms are larger and the series stops converging.
          * Don't go lower than 50 here. */
-        if(amnu < 1e-6*kT){
+        if(NU_SW*NU_SW*kTamnu2 < 1){
+            /*Heavily non-relativistic*/
+            /*The constants are Riemann zetas: 3,5,7 respectively*/
+            rho_nu_val=amnu*(kT*kT*kT)/(a*a*a*a)*
+            (1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
+        }
+        else if(amnu < 1e-6*kT){
             /*Heavily relativistic: we could be more accurate here,
              * but in practice this will only be called for massless neutrinos, so don't bother.*/
             rho_nu_val=7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
-        }
-        else if(NU_SW*NU_SW*kTamnu2 < 1){
-            /*Heavily non-relativistic*/
-            /*The constants are Riemann zetas: 3,5,7 respectively*/
-            rho_nu_val=rho_nu_tab->mnu*pow(kT/a,3)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
         }
         else{
             rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,log(a),rho_nu_tab->acc);
