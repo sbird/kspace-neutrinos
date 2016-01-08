@@ -212,7 +212,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
    for (ik = 0; ik < d_tot->nk; ik++)
        d_tot->delta_nu_last[ik]=delta_nu_curr[ik];
    /* Decide whether we save the current time or not */
-   if (a > exp(d_tot->scalefact[d_tot->ia-2]) + 0.01) {
+   if (a >= exp(d_tot->scalefact[d_tot->ia-2]) + 0.01) {
        /* If so update delta_tot(a) correctly, overwriting current power spectrum */
        update_delta_tot(d_tot, a, delta_cdm_curr, delta_nu_curr, 1);
 #ifdef HYBRID_NEUTRINOS
