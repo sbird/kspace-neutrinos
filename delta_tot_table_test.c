@@ -182,6 +182,132 @@ static void test_get_delta_nu_update(void **state)
     }
 }
 
+/*Load transfer functions from CAMB files.*/
+void load_camb_transfer(char * transfer_file, char * matterpow_file, int nk_read, double *delta_cdm, double * delta_nu, double * keffs, double kmin)
+{
+    int count=0;
+    char string[1000];
+    /* We aren't interested in modes on scales larger than twice the boxsize*/
+    const double scale=1000;
+    FILE * fd = fopen(transfer_file, "r");
+    assert_true(fd > 0);
+    while(count < nk_read) {
+        /*Note for T_cdm we actually use the CDM+baryons function.*/
+        double k, T_cdm,T_nu, dummy, T_tot;
+        /* read line from transfer function file */
+        char * ret=fgets(string,1000,fd);
+        /*End of file*/
+        if(!ret)
+            break;
+        /* Skip comments*/
+        if(string[0] == '#')
+            continue;
+        /* read transfer function file from CAMB */
+        if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg %lg", &k, &dummy, &dummy, &dummy, &dummy, &T_nu, &T_tot, &T_cdm) == 8){
+            if(k > kmin){
+                /*Combine the massive and massless neutrinos.*/
+                /*Set up the total transfer for all the species with particles*/
+                delta_cdm[count] = pow(T_cdm/T_tot,2);
+                delta_nu[count] = pow(T_nu/T_tot,2);
+                count++;
+            }
+        }
+        else
+            break;
+    }
+    fclose(fd);
+    assert_true(count == nk_read);
+
+    /*Now read the matter power spectrum*/
+    fd = fopen(matterpow_file, "r");
+    assert_true(fd > 0);
+
+    count=0;
+    while(count < nk_read) {
+        /*Note for T_cdm we actually use the CDM+baryons function.*/
+        double k, Pk;
+        /* read line from transfer function file */
+        char * ret=fgets(string,1000,fd);
+        /*End of file*/
+        if(!ret)
+            break;
+        /* Skip comments*/
+        if(string[0] == '#')
+            continue;
+        /* read transfer function file from CAMB */
+        if(sscanf(string, "%lg %lg", &k, &Pk) == 2){
+            if(k > kmin){
+                /*Combine the massive and massless neutrinos.*/
+                /*Set up the total transfer for all the species with particles*/
+                delta_cdm[count] *= Pk * pow(scale, 3);
+                delta_nu[count] *= Pk * pow(scale, 3);
+                delta_cdm[count] = sqrt(delta_cdm[count]);
+                delta_nu[count] = sqrt(delta_nu[count]);
+                keffs[count] = k/scale;
+                count++;
+            }
+        }
+        else
+            break;
+    }
+    fclose(fd);
+    assert_true(count == nk_read);
+
+    return;
+}
+
+#define NREAD 200
+
+/*Check that we reproduce the results of linear theory, as given by CAMB, for neutrinos.*/
+static void test_reproduce_linear(void **state)
+{
+    test_state * ts = (test_state *) *state;
+    _omega_nu * omnu = (_omega_nu *) ts->omnu;
+    _transfer_init_table transfer;
+    const double UnitLength_in_cm = 3.085678e21;
+    allocate_transfer_init_table(&transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, "camb_linear/ics_transfer_0.01.dat", omnu);
+    /* We will build state by loading the CAMB CDM transfer function at different redshifts,
+     * and repeatedly using get_delta_nu_update to advance the internal state of the neutrino code.
+     * Then we will compare the CAMB neutrino transfer function to the delta_nu from the neutrino code.*/
+    double keffs[NREAD];
+    double delta_nu_camb[NREAD];
+    double delta_nu[NREAD];
+    double delta_cdm[NREAD];
+    /*Get the first transfer file*/
+    load_camb_transfer("camb_linear/ics_transfer_0.01.dat", "camb_linear/ics_matterpow_0.01.dat", NREAD, delta_cdm, delta_nu, keffs, 2*M_PI/512.);
+    _delta_tot_table d_tot;
+    allocate_delta_tot_table(&d_tot, NREAD, 0.01, 1, 0);
+    const double UnitTime_in_s = UnitLength_in_cm / 1e5;
+    /*Initialise*/
+    delta_tot_init(&d_tot, NREAD, keffs, delta_cdm, &transfer, omnu, UnitTime_in_s, UnitLength_in_cm);
+    /* Desired accuracy. The first few integrations are less accurate both because of we have fewer integration points,
+     * and because we assume non-relativistic neutrinos.
+     * This is not very important. */
+    /* There is also a specific range around k=0.64 where it is slightly less accurate than 1%.
+     * This is probably CAMB's fault; presumably it is switching integration method there.*/
+    double acc = 0.05;
+    for(int i=0; i< 99; i++) {
+        double scalefact = 0.01 + i*0.01;
+        char tfile[150], mfile[150];
+        if(i == 8)
+            acc = 2e-2;
+        if(i == 22)
+            acc = 1.2e-2;
+        snprintf(tfile, 150, "camb_linear/ics_transfer_%2g.dat",scalefact);
+        snprintf(mfile, 150, "camb_linear/ics_matterpow_%2g.dat",scalefact);
+        load_camb_transfer(tfile, mfile, NREAD, delta_cdm, delta_nu_camb, keffs, 2*M_PI/512.);
+        get_delta_nu_update(&d_tot, scalefact, NREAD, keffs, delta_cdm, delta_nu);
+        if(d_tot.ia != i+1)
+            printf("%d %d \n", d_tot.ia, i+1);
+        assert_true(d_tot.ia == i+1);
+        for(int k = 0; k < NREAD; k++) {
+/*             if(fabs(delta_nu_camb[k] - delta_nu[k]) > 1.2e-2*delta_nu[k])
+                 printf("i = %d k=%g : dnu = %g %g diff %g\n", i, 1000*keffs[k], delta_nu[k], delta_nu_camb[k], fabs(delta_nu_camb[k]/ delta_nu[k]-1));*/
+            assert_true(fabs(delta_nu_camb[k] - delta_nu[k]) < acc*delta_nu[k]);
+        }
+    }
+}
+
 /*We are using delta_pow as a source for the current state of the integrator*/
 /*Test we can initialise a delta_pow structure from disc correctly.
  *Note if one of these assertions is false we won't actually get an error; just a message saying group setup failed.*/
@@ -291,6 +417,7 @@ int main(void) {
         cmocka_unit_test(test_specialJ),
         cmocka_unit_test(test_fslength),
         cmocka_unit_test(test_get_delta_nu_update),
+        cmocka_unit_test(test_reproduce_linear),
     };
     return cmocka_run_group_tests(tests, setup_delta_pow, teardown_delta_pow);
 }
