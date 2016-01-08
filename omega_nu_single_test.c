@@ -23,7 +23,7 @@ static void test_rho_nu_init(void **state) {
     assert_true(rho_nu_tab.loga);
     assert_true(rho_nu_tab.rhonu);
     /*Check that loga is correctly ordered (or interpolation won't work)*/
-    for(int i=1; i<NRHOTAB; i++){
+    for(int i=1; i<200; i++){
         assert_true(rho_nu_tab.loga[i] > rho_nu_tab.loga[i-1]);
     }
 }

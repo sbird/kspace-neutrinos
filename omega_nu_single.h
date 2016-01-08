@@ -7,12 +7,11 @@
 * Could be made configurable at some point
 * Neutrino masses are in eV*/
 #define NUSPECIES 3
-#define NRHOTAB 200
 /* Tables for rho_nu: stores precomputed values between
  * simulation start and a M_nu = 20 kT_nu for a single neutrino species.*/
 struct _rho_nu_single {
-    double loga[NRHOTAB];
-    double rhonu[NRHOTAB];
+    double * loga;
+    double * rhonu;
     gsl_interp * interp;
     gsl_interp_accel * acc;
     /*Neutrino mass for this structure*/

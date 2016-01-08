@@ -9,6 +9,8 @@
 
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
 #define STEFAN_BOLTZMANN 5.670373e-5
+/*Size of matter density tables*/
+#define NRHOTAB 200
 
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, const double a0, const double HubbleParam)
 {
@@ -116,6 +118,15 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      /*Shortcircuit if we don't need to do the integration*/
      if(mnu < 1e-6*BOLEVK*TNU || logaf < logA0)
          return;
+
+     /*Allocate memory for arrays*/
+     rho_nu_tab->loga = mymalloc("rho_nu_table",2*NRHOTAB*sizeof(double));
+     rho_nu_tab->rhonu = rho_nu_tab->loga+NRHOTAB;
+     rho_nu_tab->acc = gsl_interp_accel_alloc();
+     rho_nu_tab->interp=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
+     if(!rho_nu_tab->interp || !rho_nu_tab->acc || !rho_nu_tab->loga)
+         terminate("Could not initialise tables for neutrino matter density\n");
+
      for(i=0; i< NRHOTAB; i++){
         double param;
         rho_nu_tab->loga[i]=logA0+i*(logaf-logA0)/(NRHOTAB-1);
@@ -125,10 +136,7 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
         rho_nu_tab->rhonu[i]=rho_nu_tab->rhonu[i]/pow(exp(rho_nu_tab->loga[i]),4)*get_rho_nu_conversion();
      }
      gsl_integration_workspace_free (w);
-     rho_nu_tab->acc = gsl_interp_accel_alloc();
-     rho_nu_tab->interp=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
-     if(!rho_nu_tab->interp || !rho_nu_tab->acc || gsl_interp_init(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,NRHOTAB))
-         terminate("Could not initialise tables for RhoNu\n");
+     gsl_interp_init(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,NRHOTAB);
      return;
 }
 
