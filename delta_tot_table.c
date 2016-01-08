@@ -20,7 +20,7 @@
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory
  * before we have the information needed to initialise it*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, int debug)
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
 {
    /*Memory allocations need to be done on all processors*/
    d_tot->nk=nk_in;
@@ -43,6 +43,11 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
    /*Allocate space for the initial neutrino power spectrum*/
    d_tot->delta_nu_init =(double *) mymalloc("kspace_delta_nu_init",2*nk_in*sizeof(double));
    d_tot->delta_nu_last=d_tot->delta_nu_init+nk_in;
+   /*Setup pointer to the matter density*/
+   d_tot->omnu = omnu;
+   /*Set the prefactor for delta_nu, and the units system*/
+   d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
+   d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
    /*Whether we save intermediate files and output diagnostics*/
    d_tot->debug = debug;
 }
@@ -65,7 +70,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons, and is only used if not resuming.*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm)
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
 {
     if(nk_in > d_tot->nk){
            char err[500];
@@ -77,12 +82,8 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    const double OmegaNua3=get_omega_nu(omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
-    const double OmegaNu_today = get_omega_nu(omnu, 1);
-    /*Set the prefactor for delta_nu*/
-    d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
-    d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
-    d_tot->omnu = omnu;
+    const double OmegaNua3=get_omega_nu(d_tot->omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
+    const double OmegaNu_today = get_omega_nu(d_tot->omnu, 1);
     /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
@@ -95,7 +96,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
              * then delta_t = (Omega_cdm delta_cdm + Omega_nu delta_nu)/(Omega_cdm + Omega_nu)
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm +Omega_nu)
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm+Omega_nu) */
-            const double OmegaMa = (omnu->Omega0-OmegaNu_today+OmegaNua3);
+            const double OmegaMa = (d_tot->omnu->Omega0-OmegaNu_today+OmegaNua3);
             const double fnu = OmegaNua3/OmegaMa;
             const double CDMtoTot=1-fnu+T_nubyT_notnu*fnu;
             /*If we are not restarting, initialise the first delta_tot and delta_nu_init*/

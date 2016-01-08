@@ -51,14 +51,14 @@ struct _delta_tot_table {
 typedef struct _delta_tot_table _delta_tot_table;
 
 /*This function allocates memory for delta_tot_table*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, int debug);
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug);
 
 /*Frees the memory allocated above*/
 void free_delta_tot_table(_delta_tot_table *d_tot);
 
 /*Initialise the data in delta_tot_init from the transfer table data in transfer_init.
  This is separate from allocate_delta_tot_table because we need some information not available when the memory needs to be allocated*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm);
+void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init);
 
 /*Update the last value of delta_tot in the table with a new value computed
  from the given delta_cdm_curr and delta_nu_curr.

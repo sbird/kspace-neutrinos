@@ -100,7 +100,7 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time)
 {
   init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
@@ -112,7 +112,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, 1);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
   read_all_nu_state(&delta_tot_table, snapdir, Time);
 }
@@ -126,7 +126,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double UnitTime_in_s, const double UnitLength_in_cm)
+void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -156,7 +156,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
   }
   /*Initialise delta_tot if we didn't already*/
   if(!delta_tot_table.delta_tot_init_done) {
-    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init, &omeganu_table, UnitTime_in_s, UnitLength_in_cm);
+    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init);
   }
   /*This sets up P_nu_curr.*/
   get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr);
