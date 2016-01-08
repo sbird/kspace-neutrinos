@@ -20,8 +20,10 @@ struct _delta_tot_table {
     int ThisTask;
     /*Prefactor for use in get_delta_nu. Should be 3/2 Omega_m H^2 /c */
     double delta_nu_prefac;
-    /*Set to unity once the init routine has run*/
+    /*Set to unity once the init routine has run.*/
     int delta_tot_init_done;
+    /*If greater than 0, intermediate files will be saved and status output will be displayed*/
+    int debug;
     /* Pointer to nk arrays of length namax containing the total power spectrum.*/
     double **delta_tot;
     /* Array of length namax containing scale factors at which the power spectrum is stored*/
@@ -49,7 +51,7 @@ struct _delta_tot_table {
 typedef struct _delta_tot_table _delta_tot_table;
 
 /*This function allocates memory for delta_tot_table*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax);
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, int debug);
 
 /*Frees the memory allocated above*/
 void free_delta_tot_table(_delta_tot_table *d_tot);

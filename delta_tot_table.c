@@ -20,7 +20,7 @@
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory
  * before we have the information needed to initialise it*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax)
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, int debug)
 {
    /*Memory allocations need to be done on all processors*/
    d_tot->nk=nk_in;
@@ -43,6 +43,8 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
    /*Allocate space for the initial neutrino power spectrum*/
    d_tot->delta_nu_init =(double *) mymalloc("kspace_delta_nu_init",2*nk_in*sizeof(double));
    d_tot->delta_nu_last=d_tot->delta_nu_init+nk_in;
+   /*Whether we save intermediate files and output diagnostics*/
+   d_tot->debug = debug;
 }
 
 /*Free memory for delta_tot_table.*/
@@ -111,7 +113,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
         d_tot->scalefact[0]=log(d_tot->TimeTransfer);
         d_tot->ia=1;
     }
-    if(d_tot->ThisTask==0){
+    if(d_tot->ThisTask==0 && d_tot->debug){
         save_all_nu_state(d_tot, NULL);
     }
     /*Initialise delta_nu_last*/
@@ -220,8 +222,8 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
     slow_neutrinos_analytic(d_tot->omnu, a, d_tot->light);
 #endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
-       if(d_tot->ThisTask==0)
-        save_delta_tot(d_tot, d_tot->ia-1, NULL);
+       if(d_tot->ThisTask==0 && d_tot->debug)
+          save_delta_tot(d_tot, d_tot->ia-1, NULL);
    }
    /*Otherwise discard the last powerspectrum*/
    else
@@ -297,7 +299,8 @@ void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
 
     if(iia > 0)
             d_tot->ia=iia;
-    printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
+    if(d_tot->debug)
+        printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
     fclose(fd);
     if (savedir != NULL)
         myfree(dfile);
@@ -534,7 +537,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
   int ik;
   /*Number of stored power spectra. This includes the initial guess for the next step*/
   const int Na = d_tot->ia;
-  if(d_tot->ThisTask == 0)
+  if(d_tot->ThisTask == 0 && d_tot->debug)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
   fsl_A0a = fslength(d_tot->TimeTransfer, a,mnu, d_tot->light);
@@ -585,7 +588,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
          gsl_interp_free(params.spline);
          gsl_interp_accel_free(params.acc);
    }
-   if(d_tot->ThisTask == 0){
+   if(d_tot->ThisTask == 0 && d_tot->debug){
           printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
           for(ik=0; ik< 5; ik++)
           printf("k %g d_nu %g\n",wavenum[40*ik], delta_nu_curr[40*ik]);

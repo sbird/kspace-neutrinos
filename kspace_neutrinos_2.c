@@ -103,7 +103,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask,const double Box
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, 1);
   /*Check that if we are restarting from a snapshot, we successfully read a table*/
 /*   if(fabs(kspace_vars.TimeBegin - d_tot->TimeTransfer) >1e-4 && (!d_tot->ia)) */
 /*      terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n"); */
