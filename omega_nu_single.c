@@ -66,7 +66,7 @@ double get_omegag(_omega_nu * omnu, double a)
 
 /* Value of kT/aM_nu on which to switch from the
  * analytic expansion to the numerical integration*/
-#define NU_SW 50
+#define NU_SW 100
 
 /*Note q carries units of eV/c. kT/c has units of eV/c.
  * M_nu has units of eV  Here c=1. */

@@ -7,7 +7,7 @@
 * Could be made configurable at some point
 * Neutrino masses are in eV*/
 #define NUSPECIES 3
-#define NRHOTAB 500
+#define NRHOTAB 200
 /* Tables for rho_nu: stores precomputed values between
  * simulation start and a M_nu = 20 kT_nu for a single neutrino species.*/
 struct _rho_nu_single {
