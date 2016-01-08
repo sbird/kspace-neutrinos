@@ -109,7 +109,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask,const double Box
 /*      terminate("Transfer function not at the same time as simulation start (are you restarting from a snapshot?) and could not read delta_tot table\n"); */
 }
 
-#define TARGETBINS 300              /* Number of bins in the smoothed power spectrum*/
+#define TARGETBINS 200              /* Number of bins in the smoothed power spectrum*/
 
 /* This function adds the neutrino power spectrum to the
  * density grid. It calls the gadget power spectrum routines, which output their
