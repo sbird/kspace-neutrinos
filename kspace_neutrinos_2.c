@@ -8,6 +8,7 @@
 #include "kspace_neutrinos_2.h"
 #include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
+#include "omega_nu_single.h"
 #include "transfer_init.h"
 #include "delta_tot_table.h"
 #include "delta_pow.h"
@@ -76,11 +77,18 @@ static _delta_tot_table delta_tot_table;
 
 static _omega_nu omeganu_table;
 
+/*Compute the matter density in neutrinos*/
+double OmegaNu(double a)
+{
+    return get_omega_nu(&omeganu_table, a);
+}
+
+
 void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
 {
   MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);
   /*Allocate the memory unless we are on task 0, in which case it is already allocated*/
-  if(ThisTask!=0)
+  if(ThisTask != 0)
     t_init->logk = (double *) mymalloc("Transfer_functions", 2*t_init->NPowerTable* sizeof(double));
   t_init->T_nu=t_init->logk+t_init->NPowerTable;
   /*Broadcast the arrays*/
@@ -93,12 +101,12 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * Then, on all processors, it allocates memory for delta_tot_table.*/
 void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0, const double HubbleParam)
 {
-  if(omeganu_table.RhoNuTab[0] == 0)
-      init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0, kspace_params.TimeTransfer, HubbleParam);
+  init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
-  if(ThisTask==0)
+  if(ThisTask==0) {
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, kspace_params.KspaceTransferFunction, &omeganu_table);
+  }
   /*Broadcast data to other processors*/
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/

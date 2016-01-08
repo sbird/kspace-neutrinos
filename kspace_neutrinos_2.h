@@ -2,9 +2,6 @@
 #ifndef KSPACE_NEUTRINOS_GLOBAL
 #define KSPACE_NEUTRINOS_GLOBAL
 
-/* Return the total matter density in all neutrino species.*/
-double OmegaNu(double a);
-
 #ifdef KSPACE_NEUTRINOS_2
 
 #ifdef NEUTRINOS
@@ -30,6 +27,9 @@ double OmegaNu(double a);
 
 /*This needs to change to match gadget.*/
 #define MYMPI_COMM_WORLD MPI_COMM_WORLD
+
+/* Return the total matter density in all neutrino species.*/
+double OmegaNu(double a);
 
 /* This sets up various structures for the kspace neutrinos, and allocates memory. */
 void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitLength_in_cm, const double Omega0, const double HubbleParam);
