@@ -4,8 +4,10 @@
 #include <cmocka.h>
 #include <stdio.h>
 #include <math.h>
+#include <gsl/gsl_integration.h>
 #include "omega_nu_single.h"
 #include "gadget_defines.h"
+#include "kspace_neutrino_const.h"
 
 /* A test case that checks initialisation. */
 static void test_rho_nu_init(void **state) {
@@ -46,6 +48,49 @@ static void test_omega_nu_single(void **state) {
     assert_true(omnuz0/pow(0.01,3) <  omega_nu_single(&rho_nu_tab, 0.01));
     /*Check that we have correctly accounted for neutrino decoupling*/
     assert_true(fabs(omnuz0 - mnu/93.14/hubble/hubble) < 1e-4*omnuz0);
+}
+
+
+double get_rho_nu_conversion();
+
+/*Note q carries units of eV/c. kT/c has units of eV/c.
+ * M_nu has units of eV  Here c=1. */
+double rho_nu_int(double q, void * params);
+
+double do_exact_rho_nu_integration(double a, double mnu, double rhocrit)
+{
+    gsl_function F;
+    gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
+    double abserr;
+    F.function = &rho_nu_int;
+    double param = mnu * a;
+    F.params = &param;
+    double result;
+    gsl_integration_qag (&F, 0, 500*BOLEVK*TNU,0 , 1e-9,GSL_VAL,6,w,&result, &abserr);
+    result*=get_rho_nu_conversion()/pow(a,4)/rhocrit;
+    gsl_integration_workspace_free (w);
+    return result;
+}
+
+/*Check exact integration against the interpolation table*/
+static void test_omega_nu_single_exact(void **state)
+{
+    double mnu = 0.05;
+    double hubble = 0.7;
+    _rho_nu_single rho_nu_tab;
+    /*Initialise*/
+    rho_nu_init(&rho_nu_tab, 0.01, mnu, hubble);
+    double omnuz0 = omega_nu_single(&rho_nu_tab, 1);
+    double rhocrit = rho_nu_tab.rhocrit;
+    assert_true(fabs(1 - do_exact_rho_nu_integration(1, mnu, rhocrit)/omnuz0) < 1e-6);
+    for(int i=1; i< 123; i++) {
+        double a = 0.01 + i/123.;
+        omnuz0 = omega_nu_single(&rho_nu_tab, a);
+        double omexact = do_exact_rho_nu_integration(a, mnu, rhocrit);
+        if(fabs(omnuz0 - omexact) > 1e-6 * omnuz0)
+            printf("a=%g %g %g %g\n",a, omnuz0, omexact, omnuz0/omexact-1);
+        assert_true(fabs(1 - omexact/omnuz0) < 1e-6);
+    }
 }
 
 /*Check massless neutrinos work*/
@@ -123,6 +168,7 @@ int main(void) {
         cmocka_unit_test(test_omega_nu_init_nondeg),
         cmocka_unit_test(test_get_omega_nu),
         cmocka_unit_test(test_get_omegag),
+        cmocka_unit_test(test_omega_nu_single_exact),
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
