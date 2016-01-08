@@ -90,7 +90,7 @@ double specialJ(double x, double vcmnubylight);
 
 /* Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
  * Result is in Unit_Length.*/
-double fslength(double ai, double af,double mnu, const double light);
+double fslength(double logai, double logaf,double mnu, const double light);
 
 #ifdef HYBRID_NEUTRINOS
 int set_slow_neutrinos_analytic(_delta_tot_table * d_tot, const double Time);

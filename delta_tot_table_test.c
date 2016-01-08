@@ -140,8 +140,8 @@ static void test_fslength(void **state)
 {
     /*Note that MNu is the mass of a single neutrino species:
      *we use large masses so that we don't have to compute omega_nu in mathematica.*/
-    assert_true(fabs(fslength(0.5, 1,0.45, 299792.)/ 1272.92 -1 ) < 1e-5);
-    assert_true(fabs(fslength(0.1, 0.5,0.6, 299792.)/ 5427.8 -1 ) < 1e-5);
+    assert_true(fabs(fslength(log(0.5), log(1),0.45, 299792.)/ 1272.92 -1 ) < 1e-5);
+    assert_true(fabs(fslength(log(0.1), log(0.5),0.6, 299792.)/ 5427.8 -1 ) < 1e-5);
 }
 
 static void test_get_delta_nu_update(void **state)

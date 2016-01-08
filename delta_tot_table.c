@@ -398,7 +398,7 @@ Free-streaming length for a non-relativistic particle of momentum q = T0, from s
 Result is in Unit_Length.
 ******************************************************************************************************/
 
-double fslength(double ai, double af,double mnu, const double light)
+double fslength(double logai, double logaf,double mnu, const double light)
 {
   double abserr;
   double fslength_val;
@@ -406,9 +406,9 @@ double fslength(double ai, double af,double mnu, const double light)
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
   F.function = &fslength_int;
   F.params = &mnu;
-  if(ai >= af)
+  if(logai >= logaf)
       return 0;
-  gsl_integration_qag (&F, log(ai), log(af), 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
+  gsl_integration_qag (&F, logai, logaf, 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
   gsl_integration_workspace_free (w);
   return light*fslength_val;
 }
@@ -486,7 +486,7 @@ struct _delta_nu_int_params
 {
     /*This is the current time, not the time at which
      * this contribution was seen by the neutrinos*/
-    double a;
+    double loga;
     /*Current wavenumber*/
     double k;
     double mnu;
@@ -506,14 +506,14 @@ typedef struct _delta_nu_int_params delta_nu_int_params;
 double get_delta_nu_int(double logai, void * params)
 {
     delta_nu_int_params * p = (delta_nu_int_params *) params;
-    double ai = exp(logai);
-    double fsl_aia = fslength(ai, p->a,p->mnu, p->light);
+    double fsl_aia = fslength(logai, p->loga,p->mnu, p->light);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
 #ifdef HYBRID_NEUTRINOS
     double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu/p->light);
 #else
     double specJ = specialJ_fit(p->k*fsl_aia);
 #endif
+    double ai = exp(logai);
     return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
 }
 
@@ -534,7 +534,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
   if(d_tot->ThisTask == 0 && d_tot->debug)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
-  fsl_A0a = fslength(d_tot->TimeTransfer, a,mnu, d_tot->light);
+  fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnu, d_tot->light);
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
   deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)/kTbyaM(d_tot->TimeTransfer*mnu);
 
@@ -563,7 +563,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
                 params.spline=gsl_interp_alloc(gsl_interp_linear,Na);
         if(!params.spline || !params.acc || !w )
               terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
-        params.a=a;
+        params.loga=log(a);
         params.scale=d_tot->scalefact;
         params.light = d_tot->light;
         params.mnu=mnu;
