@@ -233,7 +233,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
 
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(_delta_tot_table *d_tot, char * savedir, double Time)
+void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir, double Time)
 {
     FILE* fd;
     char * dfile;
