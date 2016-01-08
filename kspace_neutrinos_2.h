@@ -37,7 +37,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask,const double Box
 /* These functions only need to be around if we actually have kspace neutrinos. They are not needed for particle neutrinos. */
 /* Main function, called from pm_periodic.c. 
    Computes the neutrino power, then adds it to the Fourier grid.*/
-void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass);
+void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double UnitTime_in_s, const double UnitLength_in_cm);
 
 /* Function which sets up the parameter reader to read kspace neutrino parameters from the parameter file. 
  * It will store them in a static variable, kspace_params, in the translation unit where the function is defined

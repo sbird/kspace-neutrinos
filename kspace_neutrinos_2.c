@@ -117,8 +117,6 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   read_all_nu_state(&delta_tot_table, snapdir, Time);
 }
 
-#define TARGETBINS 200              /* Number of bins in the smoothed power spectrum*/
-
 /* This function adds the neutrino power spectrum to the
  * density grid. It calls the gadget power spectrum routines, which output their
  * results in SumPower (the total power in all modes in a bin),
@@ -128,7 +126,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
+void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, const double UnitTime_in_s, const double UnitLength_in_cm)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -136,23 +134,28 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
   /*kspace_prefac = M_nu / M_cdm */
   const double kspace_prefac = OmegaNua3/(omeganu_table.Omega0-get_omega_nu(&omeganu_table, 1));
   int i,x,y,z;
+  const int nk_in = delta_tot_table.nk;
   /*Calculate the power for kspace neutrinos*/
-  double delta_cdm_curr[TARGETBINS];  /* (square root of) the power spectrum.*/
-  double keff[TARGETBINS];      /* (binned) k values for the power spectrum*/
-  double delta_nu_curr[TARGETBINS];  /*The square root of the neutrino power spectrum*/
-  long long int count[TARGETBINS];
+  double delta_cdm_curr[nk_in];  /* (square root of) the power spectrum.*/
+  double keff[nk_in];      /* (binned) k values for the power spectrum*/
+  double delta_nu_curr[nk_in];  /*The square root of the neutrino power spectrum*/
+  long long int count[nk_in];
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
-  total_powerspectrum(PMGRID, fft_of_rhogrid, TARGETBINS, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass);
+  total_powerspectrum(PMGRID, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   const double scale=pow(2*M_PI/BoxSize,3);
-  for(i=0;i<TARGETBINS;i++){
+  for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
   }
+  /*Initialise delta_tot if we didn't already*/
+  if(!delta_tot_table.delta_tot_init_done) {
+    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init, &omeganu_table, UnitTime_in_s, UnitLength_in_cm);
+  }
   /*This sets up P_nu_curr.*/
-  get_delta_nu_update(&delta_tot_table, Time, TARGETBINS, keff, delta_cdm_curr,  delta_nu_curr);
-  for(i=0;i<TARGETBINS;i++){
+  get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr);
+  for(i=0;i<nk_in;i++){
           if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
                   char err[300];
                   snprintf(err,300,"delta_nu_curr=%g z=%d SmoothPow=%g kk=%g\n",delta_nu_curr[i],i,delta_cdm_curr[i],keff[i]);
@@ -162,10 +165,10 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
-  for(i=0;i<TARGETBINS;i++){
+  for(i=0;i<nk_in;i++){
       keff[i] = log(keff[i]);
   }
-  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, TARGETBINS);
+  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in);
   /*Add P_nu to fft_of_rhgrid*/
   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
     for(x = 0; x < PMGRID; x++)
