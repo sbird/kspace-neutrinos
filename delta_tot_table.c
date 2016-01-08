@@ -510,7 +510,7 @@ double get_delta_nu_int(double logai, void * params)
     double fsl_aia = gsl_interp_eval(p->fs_spline,p->fsscales,p->fslengths,logai,p->fs_acc);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
 #ifdef HYBRID_NEUTRINOS
-    double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu/p->light);
+    double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu);
 #else
     double specJ = specialJ_fit(p->k*fsl_aia);
 #endif
@@ -576,7 +576,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
         params.scale=d_tot->scalefact;
         params.mnu=mnu;
 #ifdef HYBRID_NEUTRINOS
-        params.vcrit = vcrit;
+        params.vcrit = vcrit/d_tot->light;
 #endif
         /*Pre-compute the free-streaming lengths, which are scale-independent*/
         double fslengths[Nfs];
