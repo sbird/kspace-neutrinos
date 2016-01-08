@@ -376,12 +376,6 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
 
 /*What follows are private functions for the integration routine get_delta_nu*/
 
-#ifdef HYBRID_NEUTRINOS
-double Jfrac_high(double x, double vcmnu);
-#endif
-
-double specialJ_fit(double x);
-
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
  * where it is kT / (a^2 m_nu^2 + (kT)^2)^(1/2)
  * Takes a* M_nu as argument. */
@@ -427,7 +421,7 @@ Fit to the special function J(x) that is accurate to better than 3% relative and
    (PolyGamma[1, 1/2 - i x/2] - PolyGamma[1, 1 - i x/2] -    PolyGamma[1, 1/2 + i x/2] +
    PolyGamma[1, 1 + i x/2])/(12 x Zeta[3]), which we could evaluate exactly if we wanted to.
 ***************************************************************************************************/
-double specialJ_fit(double x)
+inline double specialJ_fit(double x)
 {
 
   double x2, x4, x8;
@@ -443,7 +437,7 @@ double specialJ_fit(double x)
 #ifdef HYBRID_NEUTRINOS
 
 /*Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.*/
-double II(double x, double qc, int n)
+inline double II(double x, double qc, int n)
 {
     return (n*n+n*n*n*qc+n*qc*x*x - x*x)* qc*gsl_sf_bessel_j0(qc*x) + (2*n+n*n*qc+qc*x*x)*cos(qc*x);
 }
@@ -454,7 +448,7 @@ double II(double x, double qc, int n)
  * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
  * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
  * Arguments: vcmnu is vcrit*mnu/LIGHT */
-double Jfrac_high(double x, double vcmnubylight)
+inline double Jfrac_high(double x, double vcmnubylight)
 {
     double qc = vcmnubylight/(BOLEVK*TNU);
     double integ=0;
