@@ -134,7 +134,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
     for(int mi=0; mi<NUSPECIES; mi++) {
             if(d_tot->omnu->nu_degeneracies[mi] > 0) {
                  double delta_nu_single[d_tot->nk];
-                 double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu->RhoNuTab[mi], a);
+                 double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu, a, mi);
 #ifdef HYBRID_NEUTRINOS
                  /*Pass a positive value to get_delta_nu if we are making some neutrinos particles.*/
                  double vcrit = d_tot->omnu->neutrinos_not_analytic ? d_tot->omnu->vcrit : -1;

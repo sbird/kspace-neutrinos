@@ -111,7 +111,6 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      F.function = &rho_nu_int;
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
-     rho_nu_tab->rhocrit = (3* HUBBLE* HUBBLE / (8 * M_PI * GRAVITY))*HubbleParam*HubbleParam;
 #ifdef HYBRID_NEUTRINOS
      rho_nu_tab->nufrac_low=0;
 #endif
@@ -226,11 +225,16 @@ int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light
 
 #endif
 
-/* Return the matter density in a single neutrino species.
- * Not externally callable*/
-double omega_nu_single(_rho_nu_single * rho_nu_tab, double a)
+/* Return the matter density in neutrino species i.*/
+double omega_nu_single(_omega_nu * omnu, double a, int i)
 {
-        double rhonu=rho_nu(rho_nu_tab, a);
-        rhonu /= rho_nu_tab->rhocrit;
-        return rhonu;
+    /*Deal with case where we want a species degenerate with another one*/
+    if(omnu->nu_degeneracies[i] == 0) {
+        for(int j=i; j >=0; j--)
+            if(omnu->nu_degeneracies[j]){
+                i = j;
+                break;
+            }
+    }
+    return rho_nu(omnu->RhoNuTab[i], a)/omnu->rhocrit;
 }

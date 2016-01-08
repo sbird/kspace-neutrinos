@@ -16,8 +16,6 @@ struct _rho_nu_single {
     gsl_interp_accel * acc;
     /*Neutrino mass for this structure*/
     double mnu;
-    /*Prefactor to turn density into matter density omega*/
-    double rhocrit;
 #ifdef HYBRID_NEUTRINOS
     /* If this is zero, then we proceed using the analytic method for all neutrinos.
     If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.
@@ -33,8 +31,6 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
 
 /* Compute the density, either by doing the */
 double rho_nu(_rho_nu_single * rho_nu_tab, double a);
-
-double omega_nu_single(_rho_nu_single * rho_nu_tab, double a);
 
 /*These are the structures you should call externally*/
 struct _omega_nu {
@@ -68,6 +64,10 @@ double get_omega_nu(_omega_nu *omnu, double a);
 
 /*Return the photon matter density*/
 double get_omegag(_omega_nu * omnu, double a);
+
+/*Get the matter density in a single neutrino species*/
+double omega_nu_single(_omega_nu * rho_nu_tab, double a, int i);
+
 
 #ifdef HYBRID_NEUTRINOS
 /*Check whether the neutrinos are analytic or not*/
