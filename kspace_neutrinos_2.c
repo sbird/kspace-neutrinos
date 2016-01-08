@@ -136,10 +136,15 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
   int i,x,y,z;
   const int nk_in = delta_tot_table.nk;
   /*Calculate the power for kspace neutrinos*/
-  double delta_cdm_curr[nk_in];  /* (square root of) the power spectrum.*/
-  double keff[nk_in];      /* (binned) k values for the power spectrum*/
-  double delta_nu_curr[nk_in];  /*The square root of the neutrino power spectrum*/
-  long long int count[nk_in];
+  /* (square root of) the power spectrum.*/
+  double * delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
+  /*The square root of the neutrino power spectrum*/
+  double * delta_nu_curr = delta_cdm_curr+nk_in;
+  /* (binned) k values for the power spectrum*/
+  double * keff = delta_cdm_curr+2*nk_in;
+  long long int * count = mymalloc("temp_modecount", nk_in*sizeof(long long int));
+  if(!delta_cdm_curr || !delta_nu_curr || !keff || !count)
+      terminate("Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
