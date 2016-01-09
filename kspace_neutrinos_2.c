@@ -83,6 +83,11 @@ double OmegaNu(double a)
     return get_omega_nu(&omeganu_table, a);
 }
 
+void save_nu_state(char * savedir)
+{
+    if(delta_tot_table.ThisTask == 0)
+        save_all_nu_state(&delta_tot_table, savedir);
+}
 
 void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Comm MYMPI_COMM_WORLD)
 {

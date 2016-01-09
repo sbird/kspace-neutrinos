@@ -41,6 +41,9 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
  * (which is the same as the above functions). */
 int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
 
+/*Save the internal state of the integrator to disc.*/
+void save_nu_state(char * savedir);
+
 #endif //KSPACE_NEUTRINOS_2
 
 #endif //KSPACE_NEUTRINOS_GLOBAL
