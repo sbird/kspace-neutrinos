@@ -13,7 +13,7 @@ INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h 
 all: lib
 
 lib: ${OBJS}
-	ar rcs kspace_neutrinos_2.a $^
+	ar rcs libkspace_neutrinos_2.a $^
 
 test: run_omega_nu_single_test run_transfer_init_test run_powerspectrum_test run_delta_pow_test run_delta_tot_table_test
 
