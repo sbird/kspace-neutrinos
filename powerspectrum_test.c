@@ -35,7 +35,7 @@ static void test_total_powerspectrum(void **state) {
     rfftwnd_one_real_to_complex(pl, &field[0], outfield);
     /* Compute the total powerspectrum from a Fourier-transformed density field in outfield, and store it in power.
      * Before use you may wish to normalise by dividing by count*count*/
-    total_powerspectrum(4,&outfield[0],10,0, 4, pow,count,keffs, total_mass);
+    total_powerspectrum(4,&outfield[0],10,0, 4, pow,count,keffs, total_mass, MPI_COMM_WORLD);
     assert_true(fabs(keffs[2]-1.73205) < 1e-5);
     assert_true(count[1]==12);
     assert_true(count[0]==6);

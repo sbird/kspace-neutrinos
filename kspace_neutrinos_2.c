@@ -84,7 +84,7 @@ double OmegaNu(double a)
 }
 
 
-void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
+void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Comm MYMPI_COMM_WORLD)
 {
   MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);
   /*Allocate the memory unless we are on task 0, in which case it is already allocated*/
@@ -100,7 +100,7 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, MPI_Comm MYMPI_COMM_WORLD)
 {
   init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
@@ -109,7 +109,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
   /*Broadcast data to other processors*/
-  broadcast_transfer_table(&transfer_init, ThisTask);
+  broadcast_transfer_table(&transfer_init, ThisTask, MYMPI_COMM_WORLD);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
   allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
@@ -126,7 +126,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -148,7 +148,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
-  total_powerspectrum(pmgrid, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass);
+  total_powerspectrum(pmgrid, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass, MYMPI_COMM_WORLD);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   const double scale=pow(2*M_PI/BoxSize,3);
   for(i=0;i<nk_in;i++){
