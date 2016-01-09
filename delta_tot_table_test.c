@@ -12,7 +12,7 @@
 
 /*Initialise the hubble function: this is defined in gadget_defines.c and forward declared here,
  *to avoid accidentally using it anywhere except in tests.*/
-void init_hubble_function(_omega_nu * omnu, const double UnitTime_in_s);
+void init_hubble_function(_omega_nu * omnu, const double Omega0, const double UnitTime_in_s);
 
 /*A struct to hold some useful pointers*/
 struct _test_state {
@@ -29,7 +29,7 @@ static void test_allocate_delta_tot_table(void **state)
     _delta_tot_table d_tot;
     _omega_nu omnu;
     double MNu[3] = {0, 0, 0};
-    init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7);
     allocate_delta_tot_table(&d_tot, 300, 0.01, 1, 0.2793, &omnu, 1, 1, 0);
     assert_true(d_tot.ia == 0);
     assert_true(d_tot.namax > 10);
@@ -103,7 +103,7 @@ static void test_delta_tot_init(void **state)
     assert_true(d_tot.scalefact[0] == log(0.01));
     /*Check the initial power spectra were created properly*/
     const double OmegaNua3=get_omega_nu(omnu, 0.01)*pow(0.01,3);
-    const double OmegaMa = omnu->Omega0 - get_omega_nu(omnu, 1) + OmegaNua3;
+    const double OmegaMa = d_tot.Omeganonu + OmegaNua3;
     const double fnu = OmegaNua3/OmegaMa;
     for(int ik=0; ik < d_tot.nk; ik++) {
         assert_true(d_tot.delta_nu_init[ik] > 0);
@@ -380,9 +380,9 @@ static int setup_delta_pow(void **state) {
     ts->transfer = malloc(sizeof(_transfer_init_table));
     ts->d_pow = d_pow;
     const double MNu[3] = {0.15, 0.15, 0.15};
-    init_omega_nu(ts->omnu, MNu, 0.2793, 0.01, 0.7);
+    init_omega_nu(ts->omnu, MNu, 0.01, 0.7);
     const double OmegaNua3=get_omega_nu(ts->omnu, 0.01)*pow(0.01,3);
-    const double OmegaMa = ts->omnu->Omega0 - get_omega_nu(ts->omnu, 1) + OmegaNua3;
+    const double OmegaMa = 0.2793 - get_omega_nu(ts->omnu, 1) + OmegaNua3;
     const double fnu = OmegaNua3/OmegaMa;
     for (int ik = 0; ik < nbins; ik++){
          delta_cdm_curr[ik] = (delta_cdm_curr[ik] - fnu*delta_nu_curr[ik])/(1.-fnu);
@@ -393,7 +393,7 @@ static int setup_delta_pow(void **state) {
     allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, get_omega_nu(ts->omnu, 1), 0.2793, "testdata/ics_transfer_99.dat");
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Set up the global variables for the hubble function before we do anything else!*/
-    init_hubble_function(ts->omnu, UnitTime_in_s);
+    init_hubble_function(ts->omnu, 0.2793, UnitTime_in_s);
     *state = (void *) ts;
     return 0;
 }

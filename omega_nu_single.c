@@ -12,10 +12,8 @@
 /*Size of matter density tables*/
 #define NRHOTAB 200
 
-void init_omega_nu(_omega_nu * omnu, const double MNu[], const double Omega0, const double a0, const double HubbleParam)
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam)
 {
-    /*Store matter fraction*/
-    omnu->Omega0 = Omega0;
     /*Store conversion between rho and omega*/
     omnu->rhocrit = (3 * HUBBLE * HubbleParam * HUBBLE * HubbleParam)/ (8 * M_PI * GRAVITY);
     /*First compute which neutrinos are degenerate with each other*/

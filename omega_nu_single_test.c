@@ -39,7 +39,7 @@ static void test_omega_nu_single(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {mnu, mnu, 0};
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7);
     assert_true(omnu.RhoNuTab[0]->mnu == mnu);
     /*This is the critical density at z=0:
      * we allow it to change by what is (at the time of writing) the uncertainty on G.*/
@@ -90,7 +90,7 @@ static void test_omega_nu_single_exact(void **state)
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {mnu, mnu, mnu};
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, hubble);
+    init_omega_nu(&omnu, MNu, 0.01, hubble);
     double omnuz0 = omega_nu_single(&omnu, 1, 0);
     double rhocrit = omnu.rhocrit;
     assert_true(fabs(1 - do_exact_rho_nu_integration(1, mnu, rhocrit)/omnuz0) < 1e-6);
@@ -109,13 +109,12 @@ static void test_omega_nu_init_degenerate(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.2,0.2};
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7);
     /*Check that we initialised the right number of arrays*/
     assert_int_equal(omnu.nu_degeneracies[0], 3);
     assert_int_equal(omnu.nu_degeneracies[1], 0);
     assert_true(omnu.RhoNuTab[0]);
     assert_false(omnu.RhoNuTab[1]);
-    assert_true(omnu.Omega0 == 0.3);
 }
 
 static void test_omega_nu_init_nondeg(void **state) {
@@ -123,7 +122,7 @@ static void test_omega_nu_init_nondeg(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7);
     /*Check that we initialised the right number of arrays*/
     for(int i=0; i<3; i++) {
         assert_int_equal(omnu.nu_degeneracies[i], 1);
@@ -136,7 +135,7 @@ static void test_get_omega_nu(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7);
     double total =0;
     for(int i=0; i<3; i++) {
         total += omega_nu_single(&omnu, 0.5, i);
@@ -150,7 +149,7 @@ static void test_get_omegag(void **state) {
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
     const double HubbleParam = 0.7;
-    init_omega_nu(&omnu, MNu, 0.3, 0.01, HubbleParam);
+    init_omega_nu(&omnu, MNu, 0.01, HubbleParam);
     const double omegag = OMEGAR/pow(0.5,4);
     assert_true(fabs(get_omegag(&omnu, 0.5)/omegag -1)< 1e-6);
 }

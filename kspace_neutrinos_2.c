@@ -102,7 +102,7 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask)
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
 void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time)
 {
-  init_omega_nu(&omeganu_table, kspace_params.MNu, Omega0, kspace_params.TimeTransfer, HubbleParam);
+  init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
@@ -132,7 +132,7 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
   const double OmegaNua3 = get_omega_nu(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu / M_cdm */
-  const double kspace_prefac = OmegaNua3/(omeganu_table.Omega0-get_omega_nu(&omeganu_table, 1));
+  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu);
   int i,x,y,z;
   const int nk_in = delta_tot_table.nk;
   /*Calculate the power for kspace neutrinos*/
