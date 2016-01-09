@@ -3,8 +3,16 @@
 
 #include <mpi.h>
 
-/*So that fftw_complex is defined*/
-#include "kspace_neutrinos_2.h"
+/*We only need this for fftw_complex*/
+#ifdef NOTYPEPREFIX_FFTW
+#include        <fftw.h>
+#else
+#ifdef DOUBLEPRECISION_FFTW
+#include     <dfftw.h>	/* double precision FFTW */
+#else
+#include     <sfftw.h>
+#endif
+#endif
 
 /* Compute the total powerspectrum from a Fourier-transformed density field in outfield, and store it in power.
  * Before use you may wish to normalise by dividing by count*count*/
