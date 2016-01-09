@@ -35,6 +35,8 @@ struct _delta_tot_table {
     double *delta_nu_last;
     /*Pointer to a structure for computing omega_nu*/
     _omega_nu * omnu;
+    /*Matter density excluding neutrinos*/
+    double Omeganonu;
     /*Light speed in internal units. C is defined in allvars.h to be lightspeed in cm/s*/
     double light;
     /*The time at which we first start our integrator:
@@ -51,7 +53,7 @@ struct _delta_tot_table {
 typedef struct _delta_tot_table _delta_tot_table;
 
 /*This function allocates memory for delta_tot_table*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug);
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug);
 
 /*Frees the memory allocated above*/
 void free_delta_tot_table(_delta_tot_table *d_tot);

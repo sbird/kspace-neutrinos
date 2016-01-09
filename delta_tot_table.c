@@ -20,7 +20,7 @@
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory
  * before we have the information needed to initialise it*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
+void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
 {
    /*Memory allocations need to be done on all processors*/
    d_tot->nk=nk_in;
@@ -47,7 +47,9 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
    d_tot->omnu = omnu;
    /*Set the prefactor for delta_nu, and the units system*/
    d_tot->light = LIGHTCGS * UnitTime_in_s/UnitLength_in_cm;
-   d_tot->delta_nu_prefac = 1.5 *omnu->Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
+   d_tot->delta_nu_prefac = 1.5 *Omega0 * HUBBLE * HUBBLE * pow(UnitTime_in_s,2)/d_tot->light;
+   /*Matter fraction excluding neutrinos*/
+   d_tot->Omeganonu = Omega0 - get_omega_nu(omnu, 1);
    /*Whether we save intermediate files and output diagnostics*/
    d_tot->debug = debug;
 }
@@ -83,7 +85,6 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
     const double OmegaNua3=get_omega_nu(d_tot->omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
-    const double OmegaNu_today = get_omega_nu(d_tot->omnu, 1);
     /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
@@ -96,7 +97,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
              * then delta_t = (Omega_cdm delta_cdm + Omega_nu delta_nu)/(Omega_cdm + Omega_nu)
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm +Omega_nu)
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm+Omega_nu) */
-            const double OmegaMa = (d_tot->omnu->Omega0-OmegaNu_today+OmegaNua3);
+            const double OmegaMa = (d_tot->Omeganonu+OmegaNua3);
             const double fnu = OmegaNua3/OmegaMa;
             const double CDMtoTot=1-fnu+T_nubyT_notnu*fnu;
             /*If we are not restarting, initialise the first delta_tot and delta_nu_init*/
@@ -156,7 +157,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
 void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
 {
   const double OmegaNua3=get_omega_nu(d_tot->omnu, a)*pow(a,3);
-  const double OmegaMa = d_tot->omnu->Omega0 - get_omega_nu(d_tot->omnu, 1) + OmegaNua3;
+  const double OmegaMa = d_tot->Omeganonu + OmegaNua3;
   const double fnu = OmegaNua3/OmegaMa;
   if(!overwrite)
     d_tot->ia++;

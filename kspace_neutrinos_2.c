@@ -112,7 +112,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_transfer_table(&transfer_init, ThisTask);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
   read_all_nu_state(&delta_tot_table, snapdir, Time);
 }

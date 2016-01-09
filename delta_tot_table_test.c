@@ -30,7 +30,7 @@ static void test_allocate_delta_tot_table(void **state)
     _omega_nu omnu;
     double MNu[3] = {0, 0, 0};
     init_omega_nu(&omnu, MNu, 0.2793, 0.01, 0.7);
-    allocate_delta_tot_table(&d_tot, 300, 0.01, 1, &omnu, 1, 1, 0);
+    allocate_delta_tot_table(&d_tot, 300, 0.01, 1, 0.2793, &omnu, 1, 1, 0);
     assert_true(d_tot.ia == 0);
     assert_true(d_tot.namax > 10);
     assert_true(d_tot.scalefact);
@@ -52,7 +52,7 @@ static void test_save_resume(void **state)
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/", 0.33333333);
@@ -75,7 +75,7 @@ static void test_save_resume(void **state)
     /*Check saving works: we should also have saved a table in delta_tot_init, but save one in the test data directory and try to load it again.*/
     save_all_nu_state(&d_tot, "testdata/");
     _delta_tot_table d_tot2;
-    allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     read_all_nu_state(&d_tot2, "testdata/", 0.33333333);
     assert_true(d_tot.ia == d_tot2.ia);
     assert_true(d_tot.nk == d_tot2.nk);
@@ -96,7 +96,7 @@ static void test_delta_tot_init(void **state)
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
     delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer);
     assert_true(d_tot.ia == 1);
@@ -157,7 +157,7 @@ static void test_get_delta_nu_update(void **state)
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/", 0.33333333);
@@ -280,7 +280,7 @@ static void test_reproduce_linear(void **state)
     /*Get the first transfer file*/
     load_camb_transfer("camb_linear/ics_transfer_0.01.dat", "camb_linear/ics_matterpow_0.01.dat", NREAD, delta_cdm, delta_nu, keffs, 2*M_PI/512.);
     _delta_tot_table d_tot;
-    allocate_delta_tot_table(&d_tot, NREAD, 0.01, 1, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, NREAD, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /*Initialise*/
     delta_tot_init(&d_tot, NREAD, keffs, delta_cdm, &transfer);
     /* Desired accuracy. The first few integrations are less accurate.
