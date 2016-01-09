@@ -126,7 +126,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -148,7 +148,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
-  total_powerspectrum(PMGRID, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass);
+  total_powerspectrum(pmgrid, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   const double scale=pow(2*M_PI/BoxSize,3);
   for(i=0;i<nk_in;i++){
@@ -176,14 +176,14 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in);
   /*Add P_nu to fft_of_rhgrid*/
   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
-    for(x = 0; x < PMGRID; x++)
-      for(z = 0; z < PMGRID / 2 + 1; z++)
+    for(x = 0; x < pmgrid; x++)
+      for(z = 0; z < pmgrid / 2 + 1; z++)
         {
           double kx,ky,kz,k2,smth;
           int ip;
-          kx = x > PMGRID/2 ? x-PMGRID : x;
-          ky = y > PMGRID/2 ? y-PMGRID : y;
-          kz = z > PMGRID/2 ? z-PMGRID : z;
+          kx = x > pmgrid/2 ? x-pmgrid : x;
+          ky = y > pmgrid/2 ? y-pmgrid : y;
+          kz = z > pmgrid/2 ? z-pmgrid : z;
 
           k2 = kx*kx + ky*ky + kz*kz;
           if(k2 <= 0)
@@ -195,7 +195,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
            * which gives the right power spectrum, once we divide by
            * M_cdm +M_nu in powerspec*/
           smth=(1+kspace_prefac * get_dnudcdm_powerspec(&d_pow, k2));
-          ip = PMGRID * (PMGRID / 2 + 1) * (y - slabstart_y) + (PMGRID / 2 + 1) * x + z;
+          ip = pmgrid * (pmgrid / 2 + 1) * (y - slabstart_y) + (pmgrid / 2 + 1) * x + z;
           fft_of_rhogrid[ip].re *= smth;
           fft_of_rhogrid[ip].im *= smth;
         }
