@@ -7,7 +7,7 @@
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const char * KspaceTransferFunction, _omega_nu * omnu)
+void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction)
 {
     FILE *fd;
     int count;
@@ -74,7 +74,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
         if(k > kmin){
             /*Combine the massive and massless neutrinos.*/
             /*Set up the total transfer for all the species with particles*/
-            T_0tot=((omnu->Omega0-OmegaBaryonCAMB-get_omega_nu(omnu, 1))*T_cdm+OmegaBaryonCAMB*T_b)/(omnu->Omega0-get_omega_nu(omnu, 1));
+            T_0tot=((Omega0-OmegaBaryonCAMB-OmegaNu)*T_cdm+OmegaBaryonCAMB*T_b)/(Omega0-OmegaNu);
             t_init->T_nu[count]= T_nu/T_0tot;
             /*k has units of 1/Mpc, need 1/kpc */
             k /= scale; /* Convert to internal units*/
