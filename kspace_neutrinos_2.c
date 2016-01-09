@@ -126,7 +126,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * SumPower[0] is the folded power on smaller scales.
  * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
  */
-void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int PMGRID, int ThisTask, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, const double total_mass)
 {
   /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
@@ -200,10 +200,11 @@ void add_nu_power_to_rhogrid(int save, const double Time, const double BoxSize, 
           fft_of_rhogrid[ip].im *= smth;
         }
   /*If this is being called to save all particle types, save a file with the neutrino power spectrum as well.*/
-  if(save){
+  if(snapnum >= 0 && delta_tot_table.ThisTask == 0){
             save_nu_power(&d_pow, Time, snapnum, OutputDir);
   }
   free_d_pow(&d_pow);
+  myfree(delta_cdm_curr);
   return;
 }
 
