@@ -23,6 +23,12 @@ run_%_test: %_test
 %.o: %.c ${INCL}
 	$(CC) -c $(CFLAGS) $< -o $@
 
+kspace_neutrinos_2.o: kspace_neutrinos_2.c ${INCL}
+	mpicc -c $(CFLAGS) $< -o $@
+
+powerspectrum.o: powerspectrum.c ${INCL}
+	mpicc -c $(CFLAGS) $< -o $@
+
 %_test: %_test.c %.o omega_nu_single.o gadget_defines.o
 	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS)
 
