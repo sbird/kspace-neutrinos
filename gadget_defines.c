@@ -6,19 +6,13 @@
 #include "gadget_defines.h"
 #include "omega_nu_single.h"
 
-//Forward define terminate, because we'll need it.
-void terminate(const char * string)
-{
-    fprintf(stderr, "Error: %s\n",string);
-    exit(1);
-}
-
-void * mymalloc(const char * string, size_t size)
+/*These functions need bodies; normally this is provided by gadget*/
+void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line)
 {
     return malloc(size);
 }
 
-void myfree(void * ptr)
+void myfree_fullinfo(void * ptr, const char *func, const char *file, int line)
 {
     free(ptr);
 }
