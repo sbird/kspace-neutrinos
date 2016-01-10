@@ -107,6 +107,9 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Co
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
 void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, MPI_Comm MYMPI_COMM_WORLD)
 {
+  /*First make sure kspace_params is propagated to all processors*/
+  MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
+  /*Now initialise the background*/
   init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
