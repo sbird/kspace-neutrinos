@@ -39,7 +39,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 /* Function which sets up the parameter reader to read kspace neutrino parameters from the parameter file. 
  * It will store them in a static variable, kspace_params, in the translation unit where the function is defined
  * (which is the same as the above functions). */
-int set_kspace_vars(char * tag[], void *addr[], int id [], int nt);
+int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt);
 
 /*Save the internal state of the integrator to disc.*/
 void save_nu_state(char * savedir);

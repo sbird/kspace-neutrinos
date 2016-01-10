@@ -33,7 +33,7 @@ struct __kspace_params {
 } kspace_params;
 
 //Setup the config files to load the needed variables
-int set_kspace_vars(char * tag[], void *addr[], int id [], int nt)
+int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
 {
       strcpy(tag[nt], "KspaceTransferFunction");
       addr[nt] = kspace_params.KspaceTransferFunction;
