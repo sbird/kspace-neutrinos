@@ -35,7 +35,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
     double keffspriv[nrbins];
     long long int countpriv[nrbins];
     /*How many bins per unit (log) interval in k?*/
-    const int binsperunit=nrbins/ceil(log(sqrt(3)*dims/2.0));
+    const double binsperunit=(nrbins-1)/log(sqrt(3)*dims/2.0);
     /* Now we compute the powerspectrum in each direction.
      * FFTW is unnormalised, so we need to scale by the length of the array
      * (we do this later). */
