@@ -105,7 +105,7 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Co
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, MPI_Comm MYMPI_COMM_WORLD)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
@@ -120,7 +120,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_transfer_table(&transfer_init, ThisTask, MYMPI_COMM_WORLD);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, ThisTask, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
   read_all_nu_state(&delta_tot_table, snapdir, Time);
 }
@@ -172,7 +172,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   for(i=0;i<nk_in;i++){
           if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
                   char err[300];
-                  snprintf(err,300,"delta_nu_curr=%g z=%d SmoothPow=%g kk=%g\n",delta_nu_curr[i],i,delta_cdm_curr[i],keff[i]);
+                  snprintf(err,300,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[i],i,delta_cdm_curr[i],keff[i]);
                   terminate(err);
           }
   }
