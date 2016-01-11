@@ -610,7 +610,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
    if(d_tot->ThisTask == 0 && d_tot->debug){
           printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
           for(ik=0; ik< 5; ik++)
-          printf("k %g d_nu %g\n",wavenum[40*ik], delta_nu_curr[40*ik]);
+            printf("k %g d_nu %g\n",wavenum[d_tot->nk/6*ik], delta_nu_curr[d_tot->nk/6*ik]);
    }
    return;
 }
