@@ -161,6 +161,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   const double scale=pow(2*M_PI/BoxSize,3);
   for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
+      keff[i] *= (2*M_PI/BoxSize);
   }
   /*Initialise delta_tot if we didn't already*/
   if(!delta_tot_table.delta_tot_init_done) {
