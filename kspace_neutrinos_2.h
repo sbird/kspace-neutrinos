@@ -47,7 +47,7 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt);
 
 /*Save the internal state of the integrator to disc.*/
 void save_nu_state(char * savedir);
-
-#endif //KSPACE_NEUTRINOS_2
-
-#endif //KSPACE_NEUTRINOS_GLOBAL
+/*KSPACE_NEUTRINOS_2*/
+#endif
+/*KSPACE_NEUTRINOS_GLOBAL*/
+#endif

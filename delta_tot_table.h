@@ -96,6 +96,6 @@ double fslength(double logai, double logaf,double mnu, const double light);
 
 #ifdef HYBRID_NEUTRINOS
 int set_slow_neutrinos_analytic(_delta_tot_table * d_tot, const double Time);
-#endif //HYBRID_NEUTRINOS
+#endif
 
 #endif

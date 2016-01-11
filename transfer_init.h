@@ -18,4 +18,5 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
 
 void free_transfer_init_table(_transfer_init_table *t_init);
 
-#endif //TRANSFER_INIT_H
+/*TRANSFER_INIT_H*/
+#endif

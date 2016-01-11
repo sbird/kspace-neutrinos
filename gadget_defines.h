@@ -48,8 +48,9 @@ double hubble_function(double a);
     #define  myfree(x)                 free(x)
 #endif
 
-//These are defined in begrun.c
+/*These are defined in begrun.c*/
 #define STRING 2
 #define REAL 1
 
-#endif //KSPACE_NEUTRINOS_FUNC
+/*KSPACE_NEUTRINOS_PRIVATE*/
+#endif

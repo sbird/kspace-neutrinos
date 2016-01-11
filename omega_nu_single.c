@@ -140,8 +140,8 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
 }
 
 
-//1.878 82(24) x 10-29 h02 g/cm3 = 1.053 94(13) x 104 h02 eV/cm3
-/*Finds the physical density in neutrinos for a single neutrino species*/
+/*Finds the physical density in neutrinos for a single neutrino species
+  1.878 82(24) x 10-29 h02 g/cm3 = 1.053 94(13) x 104 h02 eV/cm3*/
 double rho_nu(_rho_nu_single * rho_nu_tab, double a)
 {
         double rho_nu_val;
@@ -176,7 +176,7 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
 
 #ifdef HYBRID_NEUTRINOS
 
-//Fermi-Dirac kernel for below
+/*Fermi-Dirac kernel for below*/
 double fermi_dirac_kernel(double x, void * params)
 {
   return x * x / (exp(x) + 1);
@@ -195,7 +195,7 @@ double nufrac_low(const double mnu, const double vcrit, const double light)
     F.params = NULL;
     double total_fd;
     gsl_integration_qag (&F, 0, qc, 0, 1e-6,100,GSL_INTEG_GAUSS61, w,&(total_fd), &abserr);
-    //divided by the total F-D probability (which is 3 Zeta(3)/2 ~ 1.8 if MAX_FERMI_DIRAC is large enough
+    /*divided by the total F-D probability (which is 3 Zeta(3)/2 ~ 1.8 if MAX_FERMI_DIRAC is large enough*/
     total_fd /= 1.5*1.202056903159594;
     gsl_integration_workspace_free (w);
     return total_fd;

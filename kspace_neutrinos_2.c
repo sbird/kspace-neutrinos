@@ -14,7 +14,7 @@
 #include "delta_pow.h"
 #include "powerspectrum.h"
 
-//Global variables that need to be set from a parameter file
+/*Global variables that need to be set from a parameter file*/
 struct __kspace_params {
   char	KspaceTransferFunction[500];
   double TimeTransfer;
@@ -26,13 +26,13 @@ struct __kspace_params {
     Note this is unperturbed velocity *TODAY*
     To get velocity at redshift z, multiply by (1+z)*/
     double vcrit;
-    //Time at which to turn on the particle neutrinos.
-    //Ultimately we want something better than this.
+    /*Time at which to turn on the particle neutrinos.
+    Ultimately we want something better than this.*/
     double nu_crit_time;
 #endif
 } kspace_params;
 
-//Setup the config files to load the needed variables
+/*Setup the config files to load the needed variables*/
 int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
 {
       strcpy(tag[nt], "KspaceTransferFunction");
@@ -218,4 +218,5 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   return;
 }
 
-#endif //KSPACE_NEUTRINOS_2
+/*KSPACE_NEUTRINOS_2*/
+#endif

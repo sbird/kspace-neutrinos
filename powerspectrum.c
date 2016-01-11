@@ -7,7 +7,7 @@
 /*Helper function for 1D window function.*/
 inline fftw_real onedinvwindow(int kx, int n)
 {
-    //Return \pi x /(n sin(\pi x / n)) unless x = 0, in which case return 1.
+    /*Return \pi x /(n sin(\pi x / n)) unless x = 0, in which case return 1.*/
     return kx ? M_PI*kx/(n*sin(M_PI*kx/(fftw_real)n)) : 1.0;
 }
 
@@ -54,7 +54,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
             /*Do k=0 mode.*/
             int index=indx+indy;
             double kk=sqrt(pow(KVAL(i),2)+pow(KVAL(j),2));
-            //We don't want the 0,0,0 mode as that is just the mean of the field.
+            /*We don't want the 0,0,0 mode as that is just the mean of the field.*/
             if (kk > 0) {
                 int psindex=floor(binsperunit*log(kk));
                 powerpriv[psindex] += (outfield[index].re*outfield[index].re+outfield[index].im*outfield[index].im)*pow(invwindow(KVAL(i),KVAL(j),0,dims),2);

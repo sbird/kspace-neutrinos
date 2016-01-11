@@ -225,7 +225,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
        /* If so update delta_tot(a) correctly, overwriting current power spectrum */
        update_delta_tot(d_tot, a, delta_cdm_curr, delta_nu_curr, 1);
 #ifdef HYBRID_NEUTRINOS
-    //Check whether we want to stop the particle neutrinos from being tracers.
+    /*Check whether we want to stop the particle neutrinos from being tracers.*/
     slow_neutrinos_analytic(d_tot->omnu, a, d_tot->light);
 #endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
@@ -319,7 +319,7 @@ void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savefile)
     FILE *fd;
     int i;
     char * dfile;
-    //NULL means use current directory
+    /*NULL means use current directory*/
     if (savefile == NULL){
         dfile = "delta_tot_nu.txt";
     }
@@ -463,7 +463,7 @@ inline double Jfrac_high(double x, double vcmnubylight)
     {
         integ+= pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
     }
-    //Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)
+    /*Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)*/
     integ /= 1.8031;
     return integ;
 }
@@ -478,15 +478,15 @@ double specialJ(double x, double vcmnubylight)
     return specialJ_fit(x);
   }
 }
-
-#else //Now for single-component neutrinos
+/*Now for single-component neutrinos*/
+#else
 
 double specialJ(double x, double vcmnubylight)
 {
     return specialJ_fit(x);
 }
-
-#endif //HYBRID_NEUTRINOS
+/*HYBRID_NEUTRINOS*/
+#endif
 
 /*A structure for the parameters for the below integration kernel*/
 struct _delta_nu_int_params
