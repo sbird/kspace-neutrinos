@@ -1,11 +1,11 @@
 /*This file contains functions which need to be called from the PM code in Gadget.
  add_nu_power_to_rhogrid is the main public function. */
+#include "kspace_neutrinos_2.h"
 
 #ifdef KSPACE_NEUTRINOS_2
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include "kspace_neutrinos_2.h"
 #include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
 #include "omega_nu_single.h"

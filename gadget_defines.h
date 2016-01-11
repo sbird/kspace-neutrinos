@@ -5,6 +5,10 @@
  * When used with the test suite, we define them in kspace_neutrinos_private.c.
  * Take care that the constants are in sync with the rest of gadget!*/
 
+#ifndef KSPACE_NEUTRINOS_TEST
+#include "../gadgetconfig.h"
+#endif
+
 /*Speed of light in cm/s: in allvars.h this is called 'C'*/
 #define  LIGHTCGS           2.99792458e10
 #define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */
@@ -32,8 +36,7 @@ double hubble_function(double a);
 #define  terminate(x) {fprintf(stderr,"code termination, function '%s()', file '%s', line %d: '%s'\n", __FUNCTION__, __FILE__, __LINE__, x); exit(1);}
 #endif
 
-/*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.
- If you do define DISABLE_MEMORY_MANAGER in Gadget's Config.sh you will need to define it again in our Makefile.*/
+/*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.*/
 #ifndef DISABLE_MEMORY_MANAGER
     #define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
     #define  myfree(x)                 myfree_fullinfo(x, __FUNCTION__, __FILE__, __LINE__)

@@ -2,6 +2,10 @@
 #ifndef KSPACE_NEUTRINOS_GLOBAL
 #define KSPACE_NEUTRINOS_GLOBAL
 
+#ifndef KSPACE_NEUTRINOS_TEST
+#include "../gadgetconfig.h"
+#endif
+
 #ifdef KSPACE_NEUTRINOS_2
 
 #ifdef NEUTRINOS
