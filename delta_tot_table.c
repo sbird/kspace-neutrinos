@@ -22,6 +22,7 @@
  * before we have the information needed to initialise it*/
 void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
 {
+   int count;
    /*Memory allocations need to be done on all processors*/
    d_tot->nk=nk_in;
    /*Store starting time*/
@@ -38,7 +39,7 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
     * delta_tot[k][a] OR as
     * delta_tot[0][a+k*namax] */
    d_tot->delta_tot[0] = d_tot->scalefact+d_tot->namax;
-   for(int count=1; count< nk_in; count++)
+   for(count=1; count< nk_in; count++)
         d_tot->delta_tot[count] = d_tot->delta_tot[0] + count*d_tot->namax;
    /*Allocate space for the initial neutrino power spectrum*/
    d_tot->delta_nu_init =(double *) mymalloc("kspace_delta_nu_init",2*nk_in*sizeof(double));
@@ -74,6 +75,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Note delta_cdm_curr includes baryons, and is only used if not resuming.*/
 void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
 {
+    int ik;
     if(nk_in > d_tot->nk){
            char err[500];
            sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk);
@@ -89,7 +91,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
     gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
-    for(int ik=0;ik<d_tot->nk;ik++){
+    for(ik=0;ik<d_tot->nk;ik++){
             double T_nubyT_notnu = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
             /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
              * The CAMB transfer functions are defined such that
@@ -129,12 +131,14 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[])
 {
     double Omega_nu_tot=get_omega_nu(d_tot->omnu, a);
+    int mi;
     /*Initialise delta_nu_curr*/
     memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
     /*Get each neutrinos species and density separately and add them to the total.
      * Neglect perturbations in massless neutrinos.*/
-    for(int mi=0; mi<NUSPECIES; mi++) {
+    for(mi=0; mi<NUSPECIES; mi++) {
             if(d_tot->omnu->nu_degeneracies[mi] > 0) {
+                 int ik;
                  double delta_nu_single[d_tot->nk];
                  double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu, a, mi);
 #ifdef HYBRID_NEUTRINOS
@@ -144,7 +148,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
                  double vcrit = 0;
 #endif
                  get_delta_nu(d_tot, a, wavenum, delta_nu_single,d_tot->omnu->RhoNuTab[mi]->mnu, vcrit);
-                 for(int ik=0; ik<d_tot->nk; ik++)
+                 for(ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
     }
@@ -159,12 +163,13 @@ void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[]
   const double OmegaNua3=get_omega_nu(d_tot->omnu, a)*pow(a,3);
   const double OmegaMa = d_tot->Omeganonu + OmegaNua3;
   const double fnu = OmegaNua3/OmegaMa;
+  int ik;
   if(!overwrite)
     d_tot->ia++;
   /*Update the scale factor*/
   d_tot->scalefact[d_tot->ia-1] = log(a);
   /* Update delta_tot(a)*/
-  for (int ik = 0; ik < d_tot->nk; ik++){
+  for (ik = 0; ik < d_tot->nk; ik++){
     d_tot->delta_tot[ik][d_tot->ia-1] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
   }
 }

@@ -36,6 +36,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
     long long int countpriv[nrbins];
     /*How many bins per unit (log) interval in k?*/
     const double binsperunit=(nrbins-1)/log(sqrt(3)*dims/2.0);
+    int i;
     /* Now we compute the powerspectrum in each direction.
      * FFTW is unnormalised, so we need to scale by the length of the array
      * (we do this later). */
@@ -44,10 +45,10 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
     memset(keffspriv, 0, nrbins*sizeof(double));
     /* Want P(k)= F(k).re*F(k).re+F(k).im*F(k).im
      * Use the symmetry of the real fourier transform to half the final dimension.*/
-    for(int i=startslab; i<startslab+nslab;i++){
-        int indx=(i-startslab)*dims*(dims/2+1);
-        for(int j=0; j<dims; j++){
-            int indy=j*(dims/2+1);
+    for(i=startslab; i<startslab+nslab;i++){
+        int j, indx=(i-startslab)*dims*(dims/2+1);
+        for(j=0; j<dims; j++){
+            int k, indy=j*(dims/2+1);
             /* The k=0 and N/2 mode need special treatment here,
                 * as they alone are not doubled.*/
             /*Do k=0 mode.*/
@@ -68,7 +69,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
             keffspriv[psindex]+=kk;
             countpriv[psindex]++;
             /*Now do the rest. Because of the symmetry, each mode counts twice.*/
-            for(int k=1; k<dims/2; k++){
+            for(k=1; k<dims/2; k++){
                     index=indx+indy+k;
                     kk=sqrt(pow(KVAL(i),2)+pow(KVAL(j),2)+pow(KVAL(k),2));
                     int psindex=floor(binsperunit*log(kk));
@@ -83,7 +84,7 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
     MPI_Allreduce(powerpriv, power, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     MPI_Allreduce(keffspriv, keffs, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     /*Normalise by the total mass in the array*/
-    for(int i=0; i<nrbins;i++) {
+    for(i=0; i<nrbins;i++) {
         power[i]/=total_mass*total_mass;
         if(count[i]) {
             keffs[i]/=count[i];

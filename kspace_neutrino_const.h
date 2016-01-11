@@ -14,5 +14,9 @@
 /*Number of bins in integrations*/
 #define GSL_VAL 200
 
+/*M_PI is technically a GNU extension, so define it here just in case*/
+#ifndef M_PI
+#define M_PI 3.14159265358979323846L
+#endif
 
 #endif

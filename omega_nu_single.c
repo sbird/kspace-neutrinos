@@ -14,10 +14,11 @@
 
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam)
 {
+    int mi;
     /*Store conversion between rho and omega*/
     omnu->rhocrit = (3 * HUBBLE * HubbleParam * HUBBLE * HubbleParam)/ (8 * M_PI * GRAVITY);
     /*First compute which neutrinos are degenerate with each other*/
-    for(int mi=0; mi<NUSPECIES; mi++){
+    for(mi=0; mi<NUSPECIES; mi++){
         int mmi;
         omnu->nu_degeneracies[mi]=0;
         for(mmi=0; mmi<mi; mmi++){
@@ -31,7 +32,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
         }
     }
     /*Now allocate a table for the species we want*/
-    for(int mi=0; mi<NUSPECIES; mi++){
+    for(mi=0; mi<NUSPECIES; mi++){
         if(omnu->nu_degeneracies[mi]) {
             omnu->RhoNuTab[mi] = (_rho_nu_single *) mymalloc("RhoNuTab", sizeof(_rho_nu_single));
             rho_nu_init(omnu->RhoNuTab[mi], a0, MNu[mi], HubbleParam);
@@ -50,7 +51,8 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
 double get_omega_nu(_omega_nu *omnu, double a)
 {
         double rhonu=0;
-        for(int mi=0; mi<NUSPECIES; mi++) {
+        int mi;
+        for(mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0)
                  rhonu += omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
         }
@@ -228,7 +230,8 @@ double omega_nu_single(_omega_nu * omnu, double a, int i)
 {
     /*Deal with case where we want a species degenerate with another one*/
     if(omnu->nu_degeneracies[i] == 0) {
-        for(int j=i; j >=0; j--)
+        int j;
+        for(j=i; j >=0; j--)
             if(omnu->nu_degeneracies[j]){
                 i = j;
                 break;
