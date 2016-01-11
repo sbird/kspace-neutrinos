@@ -52,5 +52,10 @@ double hubble_function(double a);
 #define STRING 2
 #define REAL 1
 
+/*M_PI is technically a GNU extension, so define it here just in case*/
+#ifndef M_PI
+#define M_PI 3.14159265358979323846L
+#endif
+
 /*KSPACE_NEUTRINOS_PRIVATE*/
 #endif
