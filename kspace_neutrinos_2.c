@@ -213,6 +213,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
             save_nu_power(&d_pow, Time, snapnum, OutputDir);
   }
   free_d_pow(&d_pow);
+  myfree(count);
   myfree(delta_cdm_curr);
   return;
 }
