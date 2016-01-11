@@ -79,9 +79,9 @@ void total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbin
         }
     }
     /*Now sum the different contributions*/
-    MPI_Allgather(countpriv, nrbins * sizeof(long long int), MPI_BYTE, count, nrbins * sizeof(long long int), MPI_BYTE, MYMPI_COMM_WORLD);
-    MPI_Allgather(powerpriv, nrbins * sizeof(double), MPI_BYTE, power, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
-    MPI_Allgather(keffspriv, nrbins * sizeof(double), MPI_BYTE, keffs, nrbins * sizeof(double), MPI_BYTE, MYMPI_COMM_WORLD);
+    MPI_Allreduce(countpriv, count, nrbins, MPI_LONG_LONG_INT, MPI_SUM, MYMPI_COMM_WORLD);
+    MPI_Allreduce(powerpriv, power, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
+    MPI_Allreduce(keffspriv, keffs, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     /*Normalise by the total mass in the array*/
     for(int i=0; i<nrbins;i++) {
         power[i]/=total_mass*total_mass;
