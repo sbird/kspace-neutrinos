@@ -604,8 +604,8 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
          gsl_integration_workspace_free (w);
          gsl_interp_free(params.spline);
          gsl_interp_accel_free(params.acc);
-         myfree(fslengths);
          myfree(fsscales);
+         myfree(fslengths);
    }
    if(d_tot->ThisTask == 0 && d_tot->debug){
           printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
