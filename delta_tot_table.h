@@ -8,8 +8,10 @@
  * This object needs a constructor, a few private data members, and a way to be read and written from disk.
  * nk is fixed, delta_tot, scalefact and ia are updated in get_delta_nu_update*/
 struct _delta_tot_table {
-    /* Number of k values stored in each power spectrum*/
+    /* Number of actually non-zero k values stored in each power spectrum*/
     int nk;
+    /* Size of arrays allocated to store power spectra*/
+    int nk_allocated;
     /*Maximum number of redshifts to store. Redshifts are stored every delta a = 0.01 */
     int namax;
     /* Number of already "recorded" time steps, i.e. scalefact[0...ia-1] is recorded.

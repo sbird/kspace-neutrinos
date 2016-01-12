@@ -24,6 +24,7 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double T
 {
    int count;
    /*Memory allocations need to be done on all processors*/
+   d_tot->nk_allocated=nk_in;
    d_tot->nk=nk_in;
    /*Store starting time*/
    d_tot->TimeTransfer = TimeTransfer;
@@ -76,9 +77,9 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
 void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
 {
     int ik;
-    if(nk_in > d_tot->nk){
+    if(nk_in > d_tot->nk_allocated){
            char err[500];
-           sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk);
+           sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
            terminate(err);
     }
     gsl_set_error_handler(handler);

@@ -37,7 +37,7 @@ static void test_allocate_delta_tot_table(void **state)
     assert_true(d_tot.delta_nu_init);
     assert_true(d_tot.delta_nu_last);
     assert_true(d_tot.delta_tot);
-    for(int i=0; i<d_tot.nk; i++){
+    for(int i=0; i<d_tot.nk_allocated; i++){
         assert_true(d_tot.delta_tot[i]);
     }
     free_delta_tot_table(&d_tot);
