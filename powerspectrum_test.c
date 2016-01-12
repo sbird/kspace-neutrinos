@@ -19,9 +19,10 @@
 static void test_total_powerspectrum(void **state) {
     (void) state;
     fftw_real field[4*4*2*(4/2+1)]={0};
-    double pow[10];
-    long long int count[10];
-    double keffs[10];
+    const int nrbins=10;
+    double pow[nrbins];
+    long long int count[nrbins];
+    double keffs[nrbins];
     fftw_complex * outfield;
     outfield = (fftw_complex *) &field[0];
     //Pad the input
@@ -35,14 +36,13 @@ static void test_total_powerspectrum(void **state) {
     rfftwnd_one_real_to_complex(pl, &field[0], outfield);
     /* Compute the total powerspectrum from a Fourier-transformed density field in outfield, and store it in power.
      * Before use you may wish to normalise by dividing by count*count*/
-    total_powerspectrum(4,&outfield[0],10,0, 4, pow,count,keffs, total_mass, MPI_COMM_WORLD);
-    assert_true(fabs(keffs[2]-1.73205) < 1e-5);
-    assert_true(count[1]==12);
+    total_powerspectrum(4,&outfield[0],nrbins,0, 4, pow,count,keffs, total_mass, MPI_COMM_WORLD);
+    assert_true(fabs(keffs[3]-1.73205) < 1e-5);
+    assert_true(count[2]==12);
     assert_true(count[0]==6);
     assert_true(fabs(pow[0]-0.0677526) < 1e-5*0.04);
-    assert_true(fabs(pow[1]-0.000565561) < 1e-5*0.005);
-    assert_true(fabs(pow[2]-0.000860793) < 1e-5*0.003);
-    assert_true(fabs(pow[9]) < 1e-6);
+    assert_true(fabs(pow[2]-0.000565561) < 1e-5*0.005);
+    assert_true(fabs(pow[3]-0.000860793) < 1e-5*0.003);
     rfftwnd_destroy_plan(pl);
 }
 
