@@ -142,7 +142,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*kspace_prefac = M_nu / M_cdm */
   const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu);
   int i,x,y,z;
-  const int nk_in = delta_tot_table.nk;
+  int nk_in = delta_tot_table.nk;
   /*Calculate the power for kspace neutrinos*/
   /* (square root of) the power spectrum.*/
   double * delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
@@ -156,7 +156,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
-  total_powerspectrum(pmgrid, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass, MYMPI_COMM_WORLD);
+  nk_in = total_powerspectrum(pmgrid, fft_of_rhogrid, nk_in, slabstart_y, nslab_y, delta_cdm_curr, count, keff, total_mass, MYMPI_COMM_WORLD);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   const double scale=pow(2*M_PI/BoxSize,3);
   for(i=0;i<nk_in;i++){
