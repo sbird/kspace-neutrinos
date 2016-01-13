@@ -45,12 +45,6 @@ struct _delta_tot_table {
      * NOTE! This is not All.TimeBegin, but the time of the transfer function file,
      * so that we can support restarting from snapshots.*/
     double TimeTransfer;
-#ifdef HYBRID_NEUTRINOS
-    /* Critical velocity above which to treat neutrinos with particles.
-    Note this is unperturbed velocity *TODAY*
-    To get velocity at redshift z, multiply by (1+z)*/
-    double vcrit;
-#endif /* HYBRID_NEUTRINOS*/
 };
 typedef struct _delta_tot_table _delta_tot_table;
 
@@ -73,7 +67,7 @@ void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[]
 void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
 
 /*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, double wavenum[], double delta_nu_curr[],double mnu, double vcrit);
+void get_delta_nu(_delta_tot_table *d_tot, double a, double wavenum[], double delta_nu_curr[],double mnu);
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
@@ -95,9 +89,5 @@ double specialJ(double x, double vcmnubylight);
 /* Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
  * Result is in Unit_Length.*/
 double fslength(double logai, double logaf,double mnu, const double light);
-
-#ifdef HYBRID_NEUTRINOS
-int set_slow_neutrinos_analytic(_delta_tot_table * d_tot, const double Time);
-#endif
 
 #endif

@@ -142,13 +142,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
                  int ik;
                  double delta_nu_single[d_tot->nk];
                  double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu, a, mi);
-#ifdef HYBRID_NEUTRINOS
-                 /*Pass a positive value to get_delta_nu if we are making some neutrinos particles.*/
-                 double vcrit = d_tot->omnu->neutrinos_not_analytic ? d_tot->omnu->vcrit : -1;
-#else
-                 double vcrit = 0;
-#endif
-                 get_delta_nu(d_tot, a, wavenum, delta_nu_single,d_tot->omnu->RhoNuTab[mi]->mnu, vcrit);
+                 get_delta_nu(d_tot, a, wavenum, delta_nu_single,d_tot->omnu->RhoNuTab[mi]->mnu);
                  for(ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
             }
@@ -225,10 +219,6 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
    if (a >= exp(d_tot->scalefact[d_tot->ia-2]) + 0.009) {
        /* If so update delta_tot(a) correctly, overwriting current power spectrum */
        update_delta_tot(d_tot, a, delta_cdm_curr, delta_nu_curr, 1);
-#ifdef HYBRID_NEUTRINOS
-    /*Check whether we want to stop the particle neutrinos from being tracers.*/
-    slow_neutrinos_analytic(d_tot->omnu, a, d_tot->light);
-#endif
        /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
        if(d_tot->ThisTask==0 && d_tot->debug)
           save_delta_tot(d_tot, d_tot->ia-1, NULL);
@@ -456,9 +446,8 @@ inline double II(double x, double qc, int n)
  * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
  * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
  * Arguments: vcmnu is vcrit*mnu/LIGHT */
-inline double Jfrac_high(double x, double vcmnubylight)
+inline double Jfrac_high(double x, double qc)
 {
-    double qc = vcmnubylight/(BOLEVK*TNU);
     double integ=0;
     for(int n=1; n<20; n++)
     {
@@ -470,23 +459,23 @@ inline double Jfrac_high(double x, double vcmnubylight)
 }
 
 /*Function that picks whether to use the truncated integrator or not*/
-double specialJ(double x, double vcmnubylight)
+double specialJ(double x, double qc)
 {
-  if( vcmnubylight > 0 ) {
-   return Jfrac_high(x, vcmnubylight);
+  if( qc > 0 ) {
+   return Jfrac_high(x, qc);
   }
-  else {
-    return specialJ_fit(x);
-  }
+  return specialJ_fit(x);
 }
 /*Now for single-component neutrinos*/
 #else
 
-double specialJ(double x, double vcmnubylight)
+/* This has an unused argument: qc, which is used purely so we can have hybrid
+ * and non-hybrid code below without a lot of ifdefs.*/
+double specialJ(double x, double qc)
 {
     return specialJ_fit(x);
 }
-/*HYBRID_NEUTRINOS*/
+
 #endif
 
 /*A structure for the parameters for the below integration kernel*/
@@ -505,9 +494,10 @@ struct _delta_nu_int_params
     /*Make sure this is at the same k as above*/
     double * delta_tot;
     double * scale;
-#ifdef HYBRID_NEUTRINOS
-    double vcrit;
-#endif
+    /* qc is a dimensionless momentum (normalized to TNU): v_c * mnu / (k_B * T_nu).
+     * This is the critical momentum for hybrid neutrinos: it is unused if
+     * hybrid neutrinos are not defined, but left here to save ifdefs.*/
+    double qc;
 };
 typedef struct _delta_nu_int_params delta_nu_int_params;
 
@@ -517,11 +507,7 @@ double get_delta_nu_int(double logai, void * params)
     delta_nu_int_params * p = (delta_nu_int_params *) params;
     double fsl_aia = gsl_interp_eval(p->fs_spline,p->fsscales,p->fslengths,logai,p->fs_acc);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
-#ifdef HYBRID_NEUTRINOS
-    double specJ = specialJ(p->k*fsl_aia, p->vcrit*p->mnu);
-#else
-    double specJ = specialJ_fit(p->k*fsl_aia);
-#endif
+    double specJ = specialJ(p->k*fsl_aia, p->qc);
     double ai = exp(logai);
     return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
 }
@@ -534,19 +520,30 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double delta_nu_curr[],double mnu, double vcrit)
+void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double delta_nu_curr[],double mnu)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
+  /* Variable is unused unless we have hybrid neutrinos,
+   * but we define it anyway to save ifdeffing later.*/
+  double qc = 0;
   /*Number of stored power spectra. This includes the initial guess for the next step*/
   const int Na = d_tot->ia;
   if(d_tot->ThisTask == 0 && d_tot->debug)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
   fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnu, d_tot->light);
+#ifdef HYBRID_NEUTRINOS
+   /* Check whether the particle neutrinos are active at this point.
+    * If they are we want to truncate our integration.*/
+   if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
+        qc = (d_tot->omnu->hybnu.vcrit / d_tot->light) * mnu /(BOLEVK*TNU);
+/*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
+/*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g\n",a, d_tot->omnu->nufrac_low[0]); */
+   }
+#endif
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
   deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)/kTbyaM(d_tot->TimeTransfer*mnu);
-
   for (ik = 0; ik < d_tot->nk; ik++) {
       /* Initial condition piece, assuming linear evolution of delta with a up to startup redshift */
       /* This assumes that delta ~ a, so delta-dot is roughly 1. */
@@ -554,7 +551,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
        * This will be good if all species have similar masses, or
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
-      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, vcrit*mnu/d_tot->light)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, qc)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /*If only one time given, we are still at the initial time*/
   if(Na > 1){
@@ -574,9 +571,7 @@ void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double 
         }
         params.scale=d_tot->scalefact;
         params.mnu=mnu;
-#ifdef HYBRID_NEUTRINOS
-        params.vcrit = vcrit/d_tot->light;
-#endif
+        params.qc = qc;
         /* Massively over-sample the free-streaming lengths.
          * Interpolation is least accurate where the free-streaming length -> 0,
          * which is exactly where it doesn't matter, but

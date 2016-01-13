@@ -25,6 +25,39 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
 /* Compute the density, either by doing the */
 double rho_nu(_rho_nu_single * rho_nu_tab, double a);
 
+#ifdef HYBRID_NEUTRINOS
+struct _hybrid_nu {
+    /* This is the fraction of neutrino mass not followed by the analytic integrator.
+    The analytic method is cutoff at q < qcrit (specified using vcrit, below) and use
+    particles for the slower neutrinos.*/
+    double nufrac_low[NUSPECIES];
+    /* Time at which to turn on the particle neutrinos.
+     * Ultimately we want something better than this.*/
+    double nu_crit_time;
+    /*Critical velocity as a fraction of lightspeed*/
+    double vcrit;
+};
+typedef struct _hybrid_nu _hybrid_nu;
+
+/*Set up parameters for the hybrid neutrinos
+ * vcrit: Critical velocity above which to treat neutrinos with particles.
+ *   Note this is unperturbed velocity *TODAY*
+ *   To get velocity at redshift z, multiply by (1+z)
+ * light: speed of light in internal units
+ * nu_crit_time: critical time to make neutrino particles live
+ */
+void init_hybrid_nu(_hybrid_nu * hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time);
+
+/* Returns the fraction of neutrinos currently traced by particles.
+ * When neutrinos are fully analytic at early times, returns 0.
+ * Last argument: neutrino species to use.
+ */
+double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i);
+
+/*Integrate the fermi-dirac kernel between 0 and qc to find the fraction of neutrinos that are particles*/
+double nufrac_low(const double qc);
+#endif
+
 /*These are the structures you should call externally*/
 struct _omega_nu {
     /*Pointers to the array of structures we use to store rho_nu*/
@@ -34,20 +67,7 @@ struct _omega_nu {
     /*Prefactor to turn density into matter density omega*/
     double rhocrit;
 #ifdef HYBRID_NEUTRINOS
-    /*Are the neutrinos still analytic?*/
-    int neutrinos_not_analytic;
-    /* If this is zero, then we proceed using the analytic method for all neutrinos.
-    If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.
-    Instead cut off the analytic method at q < qcrit (specified using vcrit, below) and use
-    particles for the slower neutrinos.*/
-    double nufrac_low[NUSPECIES];
-    /* Critical velocity above which to treat neutrinos with particles.
-    Note this is unperturbed velocity *TODAY*
-    To get velocity at redshift z, multiply by (1+z)*/
-    double vcrit;
-    /* Time at which to turn on the particle neutrinos.
-     * Ultimately we want something better than this.*/
-    double nu_crit_time;
+    _hybrid_nu hybnu;
 #endif
 };
 typedef struct _omega_nu _omega_nu;
@@ -63,11 +83,5 @@ double get_omegag(_omega_nu * omnu, double a);
 
 /*Get the matter density in a single neutrino species*/
 double omega_nu_single(_omega_nu * rho_nu_tab, double a, int i);
-
-
-#ifdef HYBRID_NEUTRINOS
-/*Check whether the neutrinos are analytic or not*/
-int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light);
-#endif
 
 #endif
