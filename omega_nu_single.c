@@ -6,6 +6,7 @@
 #include <math.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
+#include <string.h>
 
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
 #define STEFAN_BOLTZMANN 5.670373e-5
@@ -43,6 +44,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
     }
 #ifdef HYBRID_NEUTRINOS
     omnu->neutrinos_not_analytic = 0;
+    memset(omnu->nufrac_low, 0, sizeof(double)*NUSPECIES);
 #endif
 }
 
@@ -111,9 +113,6 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
      F.function = &rho_nu_int;
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
-#ifdef HYBRID_NEUTRINOS
-     rho_nu_tab->nufrac_low=0;
-#endif
      /*Shortcircuit if we don't need to do the integration*/
      if(mnu < 1e-6*BOLEVK*TNU || logaf < logA0)
          return;
@@ -166,11 +165,6 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
         else{
             rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,log(a),rho_nu_tab->acc);
         }
-#ifdef HYBRID_NEUTRINOS
-        /* Remove neutrino density which is particle based, if necessary.
-         * nufrac_low will be zero until */
-        rho_nu_val*=(1-rho_nu_tab->nufrac_low);
-#endif
         return rho_nu_val;
 }
 
@@ -209,12 +203,10 @@ int slow_neutrinos_analytic(_omega_nu * omnu, const double a, const double light
     /*Just use a redshift cut for now. Really we want something more sophisticated,
      * based on the shot noise and average overdensity.*/
     if (a > omnu->nu_crit_time){
-/*         if(d_tot->slow_neutrinos_analytic && d_tot->ThisTask==0) */
-/*             printf("Particle neutrinos start to gravitate NOW: nufrac_low is: %g\n",nufrac_low); */
-        if(omnu->neutrinos_not_analytic) {
+        if(!omnu->neutrinos_not_analytic) {
             for(int mi=0; mi<NUSPECIES; mi++) {
-                if(omnu->nu_degeneracies[mi] > 0 && !omnu->RhoNuTab[mi]->nufrac_low)
-                    omnu->RhoNuTab[mi]->nufrac_low = nufrac_low(omnu->RhoNuTab[mi]->mnu, omnu->vcrit, light);
+                if(omnu->nu_degeneracies[mi] > 0)
+                    omnu->nufrac_low[mi] = nufrac_low(omnu->RhoNuTab[mi]->mnu, omnu->vcrit, light);
             }
             omnu->neutrinos_not_analytic = 1;
         }
@@ -237,5 +229,11 @@ double omega_nu_single(_omega_nu * omnu, double a, int i)
                 break;
             }
     }
-    return rho_nu(omnu->RhoNuTab[i], a)/omnu->rhocrit;
+    double omega_nu = rho_nu(omnu->RhoNuTab[i], a)/omnu->rhocrit;
+#ifdef HYBRID_NEUTRINOS
+        /* Remove neutrino density which is particle based, if necessary.
+         * nufrac_low will be zero until */
+        omega_nu*=(1-omnu->nufrac_low[i]);
+#endif
+    return omega_nu;
 }

@@ -16,13 +16,6 @@ struct _rho_nu_single {
     gsl_interp_accel * acc;
     /*Neutrino mass for this structure*/
     double mnu;
-#ifdef HYBRID_NEUTRINOS
-    /* If this is zero, then we proceed using the analytic method for all neutrinos.
-    If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.
-    Instead cut off the analytic method at q < qcrit (specified using vcrit, below) and use
-    particles for the slower neutrinos.*/
-    double nufrac_low;
-#endif
 };
 typedef struct _rho_nu_single _rho_nu_single;
 
@@ -43,6 +36,11 @@ struct _omega_nu {
 #ifdef HYBRID_NEUTRINOS
     /*Are the neutrinos still analytic?*/
     int neutrinos_not_analytic;
+    /* If this is zero, then we proceed using the analytic method for all neutrinos.
+    If this is nonzero, then we assume this fraction of neutrino mass is not followed by the analytic integrator.
+    Instead cut off the analytic method at q < qcrit (specified using vcrit, below) and use
+    particles for the slower neutrinos.*/
+    double nufrac_low[NUSPECIES];
     /* Critical velocity above which to treat neutrinos with particles.
     Note this is unperturbed velocity *TODAY*
     To get velocity at redshift z, multiply by (1+z)*/
