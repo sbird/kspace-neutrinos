@@ -154,6 +154,42 @@ static void test_get_omegag(void **state) {
     assert_true(fabs(get_omegag(&omnu, 0.5)/omegag -1)< 1e-6);
 }
 
+#ifdef HYBRID_NEUTRINOS
+/* Returns the fraction of neutrinos currently traced by particles.
+ * When neutrinos are fully analytic at early times, returns 0.
+ * Last argument: neutrino species to use.
+ */
+double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i);
+
+/*Test integrate the fermi-dirac kernel between 0 and qc*/
+static void test_nufrac_low(void **state)
+{
+    assert_true(nufrac_low(0) == 0);
+    /*Mathematica integral: 1.*Integrate[x*x/(Exp[x] + 1), {x, 0, 0.5}]/(3*Zeta[3]/2)*/
+    assert_true(fabs(nufrac_low(1)/0.0595634-1)< 1e-5);
+    assert_true(fabs(nufrac_low(0.5)/0.00941738-1)< 1e-5);
+}
+
+static void test_hybrid_neutrinos(void **state)
+{
+    /*Check that we get the right answer from get_omegag*/
+    _omega_nu omnu;
+    /*Initialise*/
+    double MNu[3] = {0.2,0.2,0.2};
+    const double HubbleParam = 0.7;
+    init_omega_nu(&omnu, MNu, 0.01, HubbleParam);
+    init_hybrid_nu(&omnu.hybnu, MNu, 700, 299792, 0.5);
+    /*Check that the fraction of omega change over the jump*/
+    double nufrac_part = nufrac_low(700/299792.*0.2/BOLEVK/TNU);
+    assert_true(fabs(particle_nu_fraction(&omnu.hybnu, 0.50001, 0)/nufrac_part -1) < 1e-5);
+    assert_true(particle_nu_fraction(&omnu.hybnu, 0.49999, 0) == 0);
+    assert_true(fabs(get_omega_nu(&omnu, 0.499999)*(1-nufrac_part)/get_omega_nu(&omnu, 0.500001)-1) < 1e-4);
+    /*Ditto omega_nu_single*/
+    assert_true(fabs(omega_nu_single(&omnu, 0.499999, 0)*(1-nufrac_part)/omega_nu_single(&omnu, 0.500001, 0)-1) < 1e-4);
+}
+
+#endif
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_rho_nu_init),
@@ -163,6 +199,10 @@ int main(void) {
         cmocka_unit_test(test_get_omega_nu),
         cmocka_unit_test(test_get_omegag),
         cmocka_unit_test(test_omega_nu_single_exact),
+#ifdef HYBRID_NEUTRINOS
+        cmocka_unit_test(test_nufrac_low),
+        cmocka_unit_test(test_hybrid_neutrinos),
+#endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }
