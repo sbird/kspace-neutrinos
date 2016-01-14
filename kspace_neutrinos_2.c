@@ -83,6 +83,14 @@ double OmegaNu(double a)
     return get_omega_nu(&omeganu_table, a);
 }
 
+#ifdef HYBRID_NEUTRINOS
+/*Compute the matter density in neutrinos*/
+double OmegaNu_nopart(double a)
+{
+    return get_omega_nu(&omeganu_table, a);
+}
+#endif
+
 void save_nu_state(char * savedir)
 {
     if(delta_tot_table.ThisTask == 0)
