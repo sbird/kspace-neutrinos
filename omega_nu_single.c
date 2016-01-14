@@ -52,6 +52,20 @@ double get_omega_nu(_omega_nu *omnu, double a)
         int mi;
         for(mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0){
+                 rhonu += omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
+            }
+        }
+        return rhonu/omnu->rhocrit;
+}
+
+
+/* Return the total matter density in neutrinos, excluding that in active particles.*/
+double get_omega_nu_nopart(_omega_nu *omnu, double a)
+{
+        double rhonu=0;
+        int mi;
+        for(mi=0; mi<NUSPECIES; mi++) {
+            if(omnu->nu_degeneracies[mi] > 0){
                  double rhonu_s = omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
 #ifdef HYBRID_NEUTRINOS
                  rhonu_s *= (1-particle_nu_fraction(&omnu->hybnu, a, mi));

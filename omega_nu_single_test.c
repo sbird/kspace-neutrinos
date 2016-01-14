@@ -183,7 +183,7 @@ static void test_hybrid_neutrinos(void **state)
     double nufrac_part = nufrac_low(700/299792.*0.2/BOLEVK/TNU);
     assert_true(fabs(particle_nu_fraction(&omnu.hybnu, 0.50001, 0)/nufrac_part -1) < 1e-5);
     assert_true(particle_nu_fraction(&omnu.hybnu, 0.49999, 0) == 0);
-    assert_true(fabs(get_omega_nu(&omnu, 0.499999)*(1-nufrac_part)/get_omega_nu(&omnu, 0.500001)-1) < 1e-4);
+    assert_true(fabs(get_omega_nu_nopart(&omnu, 0.499999)*(1-nufrac_part)/get_omega_nu_nopart(&omnu, 0.500001)-1) < 1e-4);
     /*Ditto omega_nu_single*/
     assert_true(fabs(omega_nu_single(&omnu, 0.499999, 0)*(1-nufrac_part)/omega_nu_single(&omnu, 0.500001, 0)-1) < 1e-4);
 }

@@ -82,6 +82,9 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
 /* Return the total matter density in neutrinos.*/
 double get_omega_nu(_omega_nu *omnu, double a);
 
+/* Return the total matter density in neutrinos, excluding active particles.*/
+double get_omega_nu_nopart(_omega_nu *omnu, double a);
+
 /*Return the photon matter density*/
 double get_omegag(_omega_nu * omnu, double a);
 
