@@ -449,7 +449,8 @@ inline double II(double x, double qc, int n)
 inline double Jfrac_high(double x, double qc)
 {
     double integ=0;
-    for(int n=1; n<20; n++)
+    int n;
+    for(n=1; n<20; n++)
     {
         integ+= -1*pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
     }
