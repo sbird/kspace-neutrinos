@@ -151,7 +151,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
   const double OmegaNua3 = get_omega_nu_nopart(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu (analytic) / M_particles */
-  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time)-);
+  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time));
   int i,x,y,z, nk_in;
   const int nk_allocated = delta_tot_table.nk_allocated;
   /*Calculate the power for kspace neutrinos*/
