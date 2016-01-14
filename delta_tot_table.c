@@ -451,7 +451,7 @@ inline double Jfrac_high(double x, double qc)
     double integ=0;
     for(int n=1; n<20; n++)
     {
-        integ+= pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
+        integ+= -1*pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
     }
     /*Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)*/
     integ /= 1.8031;
