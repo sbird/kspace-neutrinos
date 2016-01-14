@@ -23,7 +23,7 @@ struct __kspace_params {
   double MNu[NUSPECIES];
 #if defined HYBRID_NEUTRINOS
     /*Critical velocity above which to treat neutrinos with particles.
-    Note this is unperturbed velocity *TODAY*
+    Note this is unperturbed velocity *TODAY* in Gadget units.
     To get velocity at redshift z, multiply by (1+z)*/
     double vcrit;
     /*Time at which to turn on the particle neutrinos.
@@ -111,6 +111,9 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
   /*Now initialise the background*/
   init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
+#ifdef HYBRID_NEUTRINOS
+  init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time);
+#endif
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
