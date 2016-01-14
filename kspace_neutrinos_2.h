@@ -8,8 +8,10 @@
 
 #ifdef KSPACE_NEUTRINOS_2
 
+#ifndef HYBRID_NEUTRINOS
 #ifdef NEUTRINOS
 #error "Cannot define particle based and Fourier-space neutrinos at the same time!"
+#endif
 #endif
 
 #ifdef KSPACE_NEUTRINOS
