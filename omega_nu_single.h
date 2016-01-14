@@ -3,6 +3,10 @@
 /*This file contains routines for computing the matter density in a single neutrino species*/
 #include <gsl/gsl_interp.h>
 
+#ifndef KSPACE_NEUTRINOS_TEST
+#include "../gadgetconfig.h"
+#endif
+
 /* for three massive neutrino species:
 * Could be made configurable at some point
 * Neutrino masses are in eV*/
