@@ -131,7 +131,7 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
  * so that the final value is for all neutrino species*/
 void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[])
 {
-    double Omega_nu_tot=get_omega_nu(d_tot->omnu, a);
+    double Omega_nu_tot=get_omega_nu_nopart(d_tot->omnu, a);
     int mi;
     /*Initialise delta_nu_curr*/
     memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
@@ -155,8 +155,8 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
  If overwrite is true, overwrite the existing final entry.*/
 void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
 {
-  const double OmegaNua3=get_omega_nu(d_tot->omnu, a)*pow(a,3);
-  const double OmegaMa = d_tot->Omeganonu + OmegaNua3;
+  const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
+  const double OmegaMa = d_tot->Omeganonu + get_omega_nu(d_tot->omnu, a)*pow(a,3);
   const double fnu = OmegaNua3/OmegaMa;
   int ik;
   if(!overwrite)
