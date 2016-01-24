@@ -3,6 +3,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include "delta_tot_table.h"
 #include "delta_pow.h"
@@ -201,7 +202,12 @@ void load_camb_transfer(char * transfer_file, char * matterpow_file, int nk_read
     /* We aren't interested in modes on scales larger than twice the boxsize*/
     const double scale=1000;
     FILE * fd = fopen(transfer_file, "r");
-    assert_true(fd > 0);
+    if(!fd){
+        printf("Could not open '%s' for read.\n", transfer_file);
+        exit(1);
+    }
+    memset(delta_cdm, 0, nk_read*sizeof(double));
+    memset(delta_nu, 0, nk_read*sizeof(double));
     while(count < nk_read) {
         /*Note for T_cdm we actually use the CDM+baryons function.*/
         double k, T_cdm,T_nu, dummy, T_tot;
@@ -231,7 +237,10 @@ void load_camb_transfer(char * transfer_file, char * matterpow_file, int nk_read
 
     /*Now read the matter power spectrum*/
     fd = fopen(matterpow_file, "r");
-    assert_true(fd > 0);
+    if(!fd){
+        printf("Could not open '%s' for read.\n", matterpow_file);
+        exit(1);
+    }
 
     count=0;
     while(count < nk_read) {
