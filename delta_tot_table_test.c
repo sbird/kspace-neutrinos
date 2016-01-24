@@ -343,8 +343,12 @@ static int setup_delta_pow(void **state) {
         logkk = (double *) malloc(nbins*sizeof(double));
         delta_nu_curr = (double *) malloc(nbins*sizeof(double));
         delta_cdm_curr = (double *) malloc(nbins*sizeof(double));
-        if(!delta_nu_curr || !delta_cdm_curr){
+        if(!delta_nu_curr || !delta_cdm_curr || !logkk){
             printf("Failed to allocate memory. nbins=%d\n", nbins);
+            free(d_pow);
+            free(logkk);
+            free(delta_nu_curr);
+            free(delta_cdm_curr);
             return 1;
         }
         for(int i=0; i< nbins; i++){
@@ -355,6 +359,7 @@ static int setup_delta_pow(void **state) {
     }
     else {
         printf("Could not open testdata/powerspec_nu_004.txt\n");
+        free(d_pow);
         return 1;
     }
 
@@ -380,6 +385,10 @@ static int setup_delta_pow(void **state) {
     }
     else {
         printf("Could not open testdata/powerspec_cdm_004.txt\n");
+        free(d_pow);
+        free(logkk);
+        free(delta_nu_curr);
+        free(delta_cdm_curr);
         return 1;
     }
     /*We have actually read the total matter power; so for the CDM power we should subtract off the neutrino power*/
