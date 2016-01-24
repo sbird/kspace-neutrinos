@@ -108,6 +108,16 @@ void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Co
   MPI_Bcast(t_init->logk,2*(t_init->NPowerTable),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
 }
 
+void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
+{
+  /*Broadcast array sizes*/
+  MPI_Bcast(&(d_tot->ia), 1,MPI_INT,0,MYMPI_COMM_WORLD);
+  MPI_Bcast(&(d_tot->nk), 1,MPI_INT,0,MYMPI_COMM_WORLD);
+  /*Broadcast data for scalefact and delta_tot, Delta_tot is allocated as the same block of memory as scalefact.
+    Not all this memory will actually have been used, but it is easiest to bcast all of it.*/
+  MPI_Bcast(d_tot->scalefact,d_tot->namax*(nk_in+1),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
+}
+
 /** This function loads the initial transfer functions from CAMB transfer files.
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
@@ -133,7 +143,11 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   delta_tot_table.ThisTask = ThisTask;
   allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
-  read_all_nu_state(&delta_tot_table, snapdir, Time);
+  if(ThisTask==0) {
+  	read_all_nu_state(&delta_tot_table, snapdir, Time);
+  }
+  /*Broadcast save-data to other processors*/
+  broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
 }
 
 /* This function adds the neutrino power spectrum to the
@@ -187,6 +201,9 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
                   terminate(err);
           }
   }
+  MPI_Barrier(MYMPI_COMM_WORLD);
+  if(delta_tot_table.ThisTask==0)
+	printf("Done get_delta_nu_update on all processors\n");
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
@@ -219,6 +236,9 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
           fft_of_rhogrid[ip].re *= smth;
           fft_of_rhogrid[ip].im *= smth;
         }
+  MPI_Barrier(MYMPI_COMM_WORLD);
+  if(delta_tot_table.ThisTask==0)
+	printf("Done adding neutrinos to grid on all processors\n");
   /*If this is being called to save all particle types, save a file with the neutrino power spectrum as well.*/
   if(snapnum >= 0 && delta_tot_table.ThisTask == 0){
             save_nu_power(&d_pow, Time, snapnum, OutputDir);
