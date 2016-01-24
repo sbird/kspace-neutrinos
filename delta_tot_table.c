@@ -195,6 +195,11 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
       terminate("Should have called delta_tot_init first\n");
   if(nk_in != d_tot->nk)
       terminate("Number of kbins differs from stored delta_tot\n");
+  if(nk_in < 2){
+      char err[150];
+      snprintf(err,150,"Number of kbins is unreasonably small: %d\n",nk_in);
+      terminate(err);
+  }
   /*If we get called twice with the same scale factor, do nothing*/
   if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT){
        for (ik = 0; ik < d_tot->nk; ik++)
