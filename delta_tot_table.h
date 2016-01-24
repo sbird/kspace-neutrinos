@@ -67,7 +67,7 @@ void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[]
 void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double keff[], double P_cdm_curr[], double delta_nu_curr[]);
 
 /*This function does the work and updates delta_nu_curr*/
-void get_delta_nu(_delta_tot_table *d_tot, double a, double wavenum[], double delta_nu_curr[],double mnu);
+void get_delta_nu(const _delta_tot_table *d_tot, const double a, const double wavenum[], double delta_nu_curr[], const double mnu);
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/

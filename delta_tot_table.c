@@ -521,7 +521,7 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(_delta_tot_table * d_tot, double a, double wavenum[],  double delta_nu_curr[],double mnu)
+void get_delta_nu(const _delta_tot_table * d_tot, const double a, const double wavenum[], double delta_nu_curr[],const double mnu)
 {
   double fsl_A0a,deriv_prefac;
   int ik;
