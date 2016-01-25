@@ -274,11 +274,11 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir)
                     if(fscanf(fd, "%lg ", &(d_tot->delta_tot[ik][iia])) != 1){
                         if(iia != 0){
                             char err[150];
-                            snprintf(err,150,"Incomplete delta_tot in delta_tot_nu.txt; a=%g\n",exp(d_tot->scalefact[iia]));
+                            snprintf(err,150,"Expected %d k values, got %d for delta_tot in %s; a=%g\n",d_tot->nk, ik, dfile, exp(d_tot->scalefact[iia]));
                             terminate(err);
                         }
                         else{
-                            d_tot->nk = ik+1;
+                            d_tot->nk = ik;
                             break;
                         }
                     }
@@ -287,7 +287,7 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir)
     /*If our table starts at a different time from the simulation, stop.*/
     if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
             char err[250];
-            snprintf(err,250," delta_tot_nu.txt starts wih a=%g, transfer function is at a=%g\n",exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
+            snprintf(err,250,"%s starts wih a=%g, transfer function is at a=%g\n",dfile, exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
             terminate(err);
     }
 
