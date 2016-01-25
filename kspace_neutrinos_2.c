@@ -112,10 +112,12 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
 {
   /*Broadcast array sizes*/
   MPI_Bcast(&(d_tot->ia), 1,MPI_INT,0,MYMPI_COMM_WORLD);
-  MPI_Bcast(&(d_tot->nk), 1,MPI_INT,0,MYMPI_COMM_WORLD);
-  /*Broadcast data for scalefact and delta_tot, Delta_tot is allocated as the same block of memory as scalefact.
-    Not all this memory will actually have been used, but it is easiest to bcast all of it.*/
-  MPI_Bcast(d_tot->scalefact,d_tot->namax*(nk_in+1),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
+  if(d_tot->ia > 0) {
+      MPI_Bcast(&(d_tot->nk), 1,MPI_INT,0,MYMPI_COMM_WORLD);
+      /*Broadcast data for scalefact and delta_tot, Delta_tot is allocated as the same block of memory as scalefact.
+        Not all this memory will actually have been used, but it is easiest to bcast all of it.*/
+      MPI_Bcast(d_tot->scalefact,d_tot->namax*(nk_in+1),MPI_DOUBLE,0,MYMPI_COMM_WORLD);
+  }
 }
 
 /** This function loads the initial transfer functions from CAMB transfer files.
