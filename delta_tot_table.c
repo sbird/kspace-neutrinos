@@ -236,7 +236,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
 
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir, double Time)
+void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir)
 {
     FILE* fd;
     char * dfile;
@@ -256,13 +256,7 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir, double Tim
     }
     /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
     fd = fopen(dfile, "r");
-    if(fd <= 0) {
-        /*If we are later than the transfer function time, and we can't resume, we likely have a problem*/
-        if(Time > d_tot->TimeTransfer+0.01) {
-            char err[500];
-            snprintf(err,500,"Unable to open resume file: %s \n",dfile);
-            terminate(err);
-        }
+    if(!fd) {
         return;
     }
     /*Read redshifts; Initial one is known already*/
@@ -273,9 +267,6 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir, double Tim
             if(fscanf(fd, "# %lg ", &scale) != 1)
                     break;
             d_tot->scalefact[iia]=scale;
-            /*Only read until we reach the present day*/
-            if(log(Time) <= scale)
-                    break;
             /*Read kvalues*/
             /*If we do not have a complete delta_tot for one redshift, we stop
             * unless this is the first line, in which case we use it to set nk */
@@ -303,7 +294,7 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir, double Tim
     if(iia > 0)
             d_tot->ia=iia;
     if(d_tot->debug)
-        printf("Read %d stored power spectra from delta_tot_nu.txt\n",iia);
+        printf("Read %d stored power spectra from %s\n",iia, dfile);
     fclose(fd);
     if (savedir != NULL)
         myfree(dfile);

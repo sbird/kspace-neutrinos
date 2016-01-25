@@ -123,7 +123,7 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.
  * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
@@ -144,7 +144,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
   if(ThisTask==0) {
-  	read_all_nu_state(&delta_tot_table, snapdir, Time);
+  	read_all_nu_state(&delta_tot_table, snapdir);
   }
   /*Broadcast save-data to other processors*/
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
@@ -190,6 +190,20 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   }
   /*Initialise delta_tot if we didn't already*/
   if(!delta_tot_table.delta_tot_init_done) {
+    /*Discard any delta_tot (read from a file) later than the current time*/
+    for(i=0; i<delta_tot_table.ia; i++) {
+    	if(log(Time) <= delta_tot_table.scalefact[i]) {
+            if(delta_tot_table.ThisTask==0)
+		printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, delta_tot_table.ia, i);
+            delta_tot_table.ia = i;
+ 	    break;
+	}
+    }
+    /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
+    if(Time > delta_tot_table.TimeTransfer+0.01 &&
+	(delta_tot_table.ia == 0 || delta_tot_table.scalefact[delta_tot_table.ia-1] < log(Time-0.04)) ) {
+        terminate("Did not read delta_tot from resume file, but we probably should have\n");
+    }
     delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init);
   }
   /*This sets up P_nu_curr.*/

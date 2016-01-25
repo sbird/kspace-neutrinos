@@ -42,7 +42,7 @@ double OmegaNu_nopart(double a);
 #endif
 
 /* This sets up various structures for the kspace neutrinos, allocates memory, and reads saved data from disc. */
-void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double Time, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);
+void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);
 
 /* Main function, called from pm_periodic.c. 
    Computes the neutrino power, then adds it to the Fourier grid.
