@@ -66,7 +66,7 @@ void save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, cons
     char nu_fname[1000];
     /*The last underscore in the filename will be just before the snapshot number.
     * This is daft, but works.*/
-    snprintf(nu_fname, 1000,"%s/powerspec_nu_%d.txt", OutputDir, snapnum);
+    snprintf(nu_fname, 1000,"%s/powerspec_nu_%03d.txt", OutputDir, snapnum);
     if(!(fd = fopen(nu_fname, "w"))){
         char buf[1000];
         snprintf(buf, 1000, "can't open file `%s` for writing\n", nu_fname);
