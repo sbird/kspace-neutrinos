@@ -20,7 +20,7 @@
 
 /*Allocate memory for delta_tot_table. This is separate from delta_tot_init because we need to allocate memory
  * before we have the information needed to initialise it*/
-void allocate_delta_tot_table(_delta_tot_table *d_tot, int nk_in, const double TimeTransfer, const double TimeMax, const double Omega0, _omega_nu * omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
+void allocate_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, const double TimeTransfer, const double TimeMax, const double Omega0, const _omega_nu * const omnu, const double UnitTime_in_s, const double UnitLength_in_cm, int debug)
 {
    int count;
    /*Memory allocations need to be done on all processors*/
@@ -74,7 +74,7 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons, and is only used if not resuming.*/
-void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double delta_cdm_curr[], _transfer_init_table *t_init)
+void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const double wavenum[], const double delta_cdm_curr[], const _transfer_init_table * const t_init)
 {
     int ik;
     if(nk_in > d_tot->nk_allocated){
@@ -129,9 +129,9 @@ void delta_tot_init(_delta_tot_table *d_tot, int nk_in, double wavenum[], double
 
 /*Function which wraps three get_delta_nu calls to get delta_nu three times,
  * so that the final value is for all neutrino species*/
-void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[],  double delta_nu_curr[])
+void get_delta_nu_combined(const _delta_tot_table * const d_tot, const double a, const double wavenum[],  double delta_nu_curr[])
 {
-    double Omega_nu_tot=get_omega_nu_nopart(d_tot->omnu, a);
+    const double Omega_nu_tot=get_omega_nu_nopart(d_tot->omnu, a);
     int mi;
     /*Initialise delta_nu_curr*/
     memset(delta_nu_curr, 0, d_tot->nk*sizeof(double));
@@ -141,7 +141,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
             if(d_tot->omnu->nu_degeneracies[mi] > 0) {
                  int ik;
                  double delta_nu_single[d_tot->nk];
-                 double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu, a, mi);
+                 const double omeganu = d_tot->omnu->nu_degeneracies[mi] * omega_nu_single(d_tot->omnu, a, mi);
                  get_delta_nu(d_tot, a, wavenum, delta_nu_single,d_tot->omnu->RhoNuTab[mi]->mnu);
                  for(ik=0; ik<d_tot->nk; ik++)
                     delta_nu_curr[ik]+=delta_nu_single[ik]*omeganu/Omega_nu_tot;
@@ -153,7 +153,7 @@ void get_delta_nu_combined(_delta_tot_table *d_tot, double a, double wavenum[], 
 /*Update the last value of delta_tot in the table with a new value computed
  from the given delta_cdm_curr and delta_nu_curr.
  If overwrite is true, overwrite the existing final entry.*/
-void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[], double delta_nu_curr[], int overwrite)
+void update_delta_tot(_delta_tot_table * const d_tot, const double a, const double delta_cdm_curr[], const double delta_nu_curr[], const int overwrite)
 {
   const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
   const double OmegaMa = d_tot->Omeganonu + get_omega_nu(d_tot->omnu, a)*pow(a,3);
@@ -187,7 +187,7 @@ void update_delta_tot(_delta_tot_table *d_tot, double a, double delta_cdm_curr[]
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
 ******************************************************************************************************/
-void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double keff[], double delta_cdm_curr[], double delta_nu_curr[])
+void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double delta_cdm_curr[], double delta_nu_curr[])
 {
   int ik;
   /* Get a delta_nu_curr from CAMB.*/
@@ -236,7 +236,7 @@ void get_delta_nu_update(_delta_tot_table *d_tot, double a, int nk_in, double ke
 
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir)
+void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
 {
     FILE* fd;
     char * dfile;
@@ -301,7 +301,7 @@ void read_all_nu_state(_delta_tot_table *d_tot, const char * savedir)
 }
 
 /*Save a single delta_nu power spectrum into a file*/
-void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savefile)
+void save_delta_tot(const _delta_tot_table * const d_tot, const int iia, char * savefile)
 {
     FILE *fd;
     int i;
@@ -330,7 +330,7 @@ void save_delta_tot(_delta_tot_table *d_tot, int iia, char * savefile)
 
 /* Function to save all the internal state of the neutrino integrator to disc.
  * Must be called for resume to work*/
-void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
+void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
 {
 
     int ik;
@@ -373,17 +373,17 @@ void save_all_nu_state(_delta_tot_table *d_tot, char * savedir)
 /*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
  * where it is kT / (a^2 m_nu^2 + (kT)^2)^(1/2)
  * Takes a* M_nu as argument. */
-inline double kTbyaM(double amnu)
+inline double kTbyaM(const double amnu)
 {
   const double kT=BOLEVK*TNU;
   return kT/amnu;
 }
 
 /*Kernel function for the fslength integration*/
-double fslength_int(double loga, void *params)
+double fslength_int(const double loga, void *params)
 {
     double mnu = *((double *)params);
-    double a = exp(loga);
+    const double a = exp(loga);
     return kTbyaM(a*mnu)/(a*hubble_function(a));
 }
 
@@ -392,14 +392,16 @@ Free-streaming length for a non-relativistic particle of momentum q = T0, from s
 Result is in Unit_Length.
 ******************************************************************************************************/
 
-double fslength(double logai, double logaf,double mnu, const double light)
+double fslength(const double logai, const double logaf, const double mnu, const double light)
 {
   double abserr;
   double fslength_val;
+  /*This is to avoid a gcc warning: it is still const really.*/
+  double mnu_ncst = mnu;
   gsl_function F;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
   F.function = &fslength_int;
-  F.params = &mnu;
+  F.params = &mnu_ncst;
   if(logai >= logaf)
       return 0;
   gsl_integration_qag (&F, logai, logaf, 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
@@ -415,7 +417,7 @@ Fit to the special function J(x) that is accurate to better than 3% relative and
    (PolyGamma[1, 1/2 - i x/2] - PolyGamma[1, 1 - i x/2] -    PolyGamma[1, 1/2 + i x/2] +
    PolyGamma[1, 1 + i x/2])/(12 x Zeta[3]), which we could evaluate exactly if we wanted to.
 ***************************************************************************************************/
-inline double specialJ_fit(double x)
+inline double specialJ_fit(const double x)
 {
 
   double x2, x4, x8;
@@ -431,7 +433,7 @@ inline double specialJ_fit(double x)
 #ifdef HYBRID_NEUTRINOS
 
 /*Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.*/
-inline double II(double x, double qc, int n)
+inline double II(const double x, const double qc, const int n)
 {
     return (n*n+n*n*n*qc+n*qc*x*x - x*x)* qc*gsl_sf_bessel_j0(qc*x) + (2*n+n*n*qc+qc*x*x)*cos(qc*x);
 }
@@ -442,7 +444,7 @@ inline double II(double x, double qc, int n)
  * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
  * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
  * Arguments: vcmnu is vcrit*mnu/LIGHT */
-inline double Jfrac_high(double x, double qc)
+inline double Jfrac_high(const double x, const double qc)
 {
     double integ=0;
     int n;
@@ -456,7 +458,7 @@ inline double Jfrac_high(double x, double qc)
 }
 
 /*Function that picks whether to use the truncated integrator or not*/
-double specialJ(double x, double qc)
+double specialJ(const double x, const double qc)
 {
   if( qc > 0 ) {
    return Jfrac_high(x, qc);
@@ -468,7 +470,7 @@ double specialJ(double x, double qc)
 
 /* This has an unused argument: qc, which is used purely so we can have hybrid
  * and non-hybrid code below without a lot of ifdefs.*/
-double specialJ(double x, double qc)
+double specialJ(const double x, const double qc)
 {
     return specialJ_fit(x);
 }
@@ -517,7 +519,7 @@ Na is the number of currently stored time steps.
 Requires transfer_init_tabulate to have been called prior to first call.
 ******************************************************************************************************/
 
-void get_delta_nu(const _delta_tot_table * d_tot, const double a, const double wavenum[], double delta_nu_curr[],const double mnu)
+void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const double wavenum[], double delta_nu_curr[],const double mnu)
 {
   double fsl_A0a,deriv_prefac;
   int ik;

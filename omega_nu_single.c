@@ -46,7 +46,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
 
 /* Return the total matter density in neutrinos.
  * rho_nu and friends are not externally callable*/
-double get_omega_nu(_omega_nu *omnu, double a)
+double get_omega_nu(const _omega_nu * const omnu, const double a)
 {
         double rhonu=0;
         int mi;
@@ -60,7 +60,7 @@ double get_omega_nu(_omega_nu *omnu, double a)
 
 
 /* Return the total matter density in neutrinos, excluding that in active particles.*/
-double get_omega_nu_nopart(_omega_nu *omnu, double a)
+double get_omega_nu_nopart(const _omega_nu * const omnu, const double a)
 {
         double rhonu=0;
         int mi;
@@ -77,9 +77,9 @@ double get_omega_nu_nopart(_omega_nu *omnu, double a)
 }
 
 /*Return the photon density*/
-double get_omegag(_omega_nu * omnu, double a)
+double get_omegag(const _omega_nu * const omnu, const double a)
 {
-    double omegag = 4*STEFAN_BOLTZMANN/(LIGHTCGS*LIGHTCGS*LIGHTCGS)*pow(T_CMB0,4)/omnu->rhocrit;
+    const double omegag = 4*STEFAN_BOLTZMANN/(LIGHTCGS*LIGHTCGS*LIGHTCGS)*pow(T_CMB0,4)/omnu->rhocrit;
     return omegag/pow(a,4);
 }
 
@@ -116,7 +116,7 @@ double get_rho_nu_conversion()
 }
 
 /*Seed a pre-computed table of rho_nu values for speed*/
-void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, double HubbleParam)
+void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const double mnu, const double HubbleParam)
 {
      int i;
      double abserr;
@@ -209,7 +209,7 @@ double nufrac_low(const double qc)
     return total_fd;
 }
 
-void init_hybrid_nu(_hybrid_nu * hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time)
+void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time)
 {
     int i;
     hybnu->nu_crit_time = nu_crit_time;
@@ -224,7 +224,7 @@ void init_hybrid_nu(_hybrid_nu * hybnu, const double mnu[], const double vcrit, 
  * When neutrinos are fully analytic at early times, returns 0.
  * Last argument: neutrino species to use.
  */
-double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i)
+double particle_nu_fraction(const _hybrid_nu * const hybnu, const double a, const int i)
 {
     /*Just use a redshift cut for now. Really we want something more sophisticated,
      * based on the shot noise and average overdensity.*/
@@ -237,7 +237,7 @@ double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i)
 #endif
 
 /* Return the matter density in neutrino species i.*/
-double omega_nu_single(_omega_nu * omnu, double a, int i)
+double omega_nu_single(const _omega_nu * const omnu, const double a, int i)
 {
     /*Deal with case where we want a species degenerate with another one*/
     if(omnu->nu_degeneracies[i] == 0) {

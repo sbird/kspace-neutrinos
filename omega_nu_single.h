@@ -50,13 +50,13 @@ typedef struct _hybrid_nu _hybrid_nu;
  * light: speed of light in internal units
  * nu_crit_time: critical time to make neutrino particles live
  */
-void init_hybrid_nu(_hybrid_nu * hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time);
+void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time);
 
 /* Returns the fraction of neutrinos currently traced by particles.
  * When neutrinos are fully analytic at early times, returns 0.
  * Last argument: neutrino species to use.
  */
-double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i);
+double particle_nu_fraction(const _hybrid_nu * const hybnu, const double a, int i);
 
 /*Integrate the fermi-dirac kernel between 0 and qc to find the fraction of neutrinos that are particles*/
 double nufrac_low(const double qc);
@@ -77,18 +77,18 @@ struct _omega_nu {
 typedef struct _omega_nu _omega_nu;
 
 /*Initialise the above structure, allocating memory for the subclass rho_nu_single*/
-void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam);
+void init_omega_nu(_omega_nu * const omnu, const double MNu[], const double a0, const double HubbleParam);
 
 /* Return the total matter density in neutrinos.*/
-double get_omega_nu(_omega_nu *omnu, double a);
+double get_omega_nu(const _omega_nu * const omnu, const double a);
 
 /* Return the total matter density in neutrinos, excluding active particles.*/
-double get_omega_nu_nopart(_omega_nu *omnu, double a);
+double get_omega_nu_nopart(const _omega_nu * const omnu, const double a);
 
 /*Return the photon matter density*/
-double get_omegag(_omega_nu * omnu, double a);
+double get_omegag(const _omega_nu * const omnu, const double a);
 
 /*Get the matter density in a single neutrino species*/
-double omega_nu_single(_omega_nu * rho_nu_tab, double a, int i);
+double omega_nu_single(const _omega_nu * const rho_nu_tab, const double a, const int i);
 
 #endif

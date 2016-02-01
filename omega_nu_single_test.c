@@ -155,12 +155,6 @@ static void test_get_omegag(void **state) {
 }
 
 #ifdef HYBRID_NEUTRINOS
-/* Returns the fraction of neutrinos currently traced by particles.
- * When neutrinos are fully analytic at early times, returns 0.
- * Last argument: neutrino species to use.
- */
-double particle_nu_fraction(_hybrid_nu * hybnu, const double a, int i);
-
 /*Test integrate the fermi-dirac kernel between 0 and qc*/
 static void test_nufrac_low(void **state)
 {
