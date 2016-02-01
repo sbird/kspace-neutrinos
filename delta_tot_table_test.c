@@ -56,7 +56,7 @@ static void test_save_resume(void **state)
     allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
-    read_all_nu_state(&d_tot, "testdata/", 0.33333333);
+    read_all_nu_state(&d_tot, "testdata/");
     assert_true(d_tot.ia == 25);
     assert_true(fabs(d_tot.scalefact[0]/log(0.01)-1) < 1e-5);
     for(int i=1; i < d_tot.ia; i++) {
@@ -77,7 +77,7 @@ static void test_save_resume(void **state)
     save_all_nu_state(&d_tot, "testdata/");
     _delta_tot_table d_tot2;
     allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
-    read_all_nu_state(&d_tot2, "testdata/", 0.33333333);
+    read_all_nu_state(&d_tot2, "testdata/");
     assert_true(d_tot.ia == d_tot2.ia);
     assert_true(d_tot.nk == d_tot2.nk);
     for(int i=1; i < d_tot.ia; i++) {
@@ -169,7 +169,7 @@ static void test_get_delta_nu_update(void **state)
     allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
-    read_all_nu_state(&d_tot, "testdata/", 0.33333333);
+    read_all_nu_state(&d_tot, "testdata/");
     /*Then init delta_tot*/
     delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer);
     /*Check that we will actually do something*/
