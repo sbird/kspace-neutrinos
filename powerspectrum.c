@@ -30,7 +30,7 @@ fftw_real invwindow(int kx, int ky, int kz, int n)
  * Returns the number of bins with non-zero mode counts.
  * The power spectrum returned is normalised conventionally, and
  * reordered to omit zero bins.*/
-int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins, const int startslab, const int nslab, double *power, long long int *count, double *keffs, const double total_mass, MPI_Comm MYMPI_COMM_WORLD)
+int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins, const int startslab, const int nslab, double *power, long long int *count, double *keffs, MPI_Comm MYMPI_COMM_WORLD)
 {
     /*First we sum the power on this processor, then we do an MPI_allgather*/
     double powerpriv[nrbins];
@@ -39,6 +39,9 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
     /*How many bins per unit (log) interval in k?*/
     const double binsperunit=(nrbins-1)/log(sqrt(3)*dims/2.0);
     int i, nonzero;
+    /*First element of the FFT stores the total mass*/
+    const double total_mass2 = outfield[0].re*outfield[0].re + outfield[0].im*outfield[0].im;
+    printf("total:%g\n", sqrt(total_mass2));
     /* Now we compute the powerspectrum in each direction.
      * FFTW is unnormalised, so we need to scale by the length of the array
      * (we do this later). */
@@ -87,7 +90,7 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
     MPI_Allreduce(keffspriv, keffs, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     /*Normalise by the total mass in the array*/
     for(i=0; i<nrbins;i++) {
-        power[i]/=total_mass*total_mass;
+        power[i]/=total_mass2;
         if(count[i]) {
             keffs[i]/=count[i];
             power[i] /= count[i];
