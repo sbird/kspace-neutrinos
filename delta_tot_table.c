@@ -370,34 +370,30 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
 
 /*What follows are private functions for the integration routine get_delta_nu*/
 
-/*Returns kT / a M_nu (which is dimensionless) in the relativistic limit
- * where it is kT / (a^2 m_nu^2 + (kT)^2)^(1/2)
- * Takes a* M_nu as argument. */
-inline double kTbyaM(const double amnu)
-{
-  const double kT=BOLEVK*TNU;
-  return kT/amnu;
-}
-
 /*Kernel function for the fslength integration*/
 double fslength_int(const double loga, void *params)
 {
-    double mnu = *((double *)params);
+    /*This should be M_nu / k_B T_nu (which is dimensionless)*/
+    double mnubykT = *((double *)params);
     const double a = exp(loga);
-    return kTbyaM(a*mnu)/(a*hubble_function(a));
+    return 1./a/mnubykT/(a*hubble_function(a));
 }
 
 /******************************************************************************************************
 Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
-Result is in Unit_Length.
+Arguments:
+logai - log of initial scale factor
+logaf - log of final scale factor
+mnubykT - M_nu / k_B T_nu (dimensionless)
+light - speed of light in internal units.
+Result is in Unit_Length/Unit_Time.
 ******************************************************************************************************/
-
-double fslength(const double logai, const double logaf, const double mnu, const double light)
+double fslength(const double logai, const double logaf, const double mnubykT, const double light)
 {
   double abserr;
   double fslength_val;
   /*This is to avoid a gcc warning: it is still const really.*/
-  double mnu_ncst = mnu;
+  double mnu_ncst = mnubykT;
   gsl_function F;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
   F.function = &fslength_int;
@@ -469,7 +465,8 @@ struct _delta_nu_int_params
 {
     /*Current wavenumber*/
     double k;
-    double mnu;
+    /*Neutrino mass divided by k_B T_nu*/
+    double mnubykT;
     gsl_interp_accel *acc;
     gsl_interp *spline;
     /*Precomputed free-streaming lengths*/
@@ -495,9 +492,8 @@ double get_delta_nu_int(double logai, void * params)
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
     double specJ = specialJ(p->k*fsl_aia, p->qc);
     double ai = exp(logai);
-    return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a/(ai*kTbyaM(ai*p->mnu));
+    return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a * p->mnubykT;
 }
-
 
 /*****************************************************************************************************
 Main function: given tables of wavenumbers, total delta at Na earlier times (<= a),
@@ -515,20 +511,21 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
   double qc = 0;
   /*Number of stored power spectra. This includes the initial guess for the next step*/
   const int Na = d_tot->ia;
+  const double mnubykT = mnu /d_tot->omnu->kBtnu;
   if(d_tot->ThisTask == 0 && d_tot->debug)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
-  fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnu, d_tot->light);
+  fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnubykT, d_tot->light);
    /* Check whether the particle neutrinos are active at this point.
     * If they are we want to truncate our integration.
     * Only do this is hybrid neutrinos are activated in the param file.*/
    if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
-        qc = (d_tot->omnu->hybnu.vcrit / d_tot->light) * mnu /(BOLEVK*TNU);
+        qc = (d_tot->omnu->hybnu.vcrit / d_tot->light) * mnubykT;
 /*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
 /*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g\n",a, d_tot->omnu->nufrac_low[0]); */
    }
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
-  deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)/kTbyaM(d_tot->TimeTransfer*mnu);
+  deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)* d_tot->TimeTransfer*mnubykT;
   for (ik = 0; ik < d_tot->nk; ik++) {
       /* Initial condition piece, assuming linear evolution of delta with a up to startup redshift */
       /* This assumes that delta ~ a, so delta-dot is roughly 1. */
@@ -555,7 +552,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
                 params.spline=gsl_interp_alloc(gsl_interp_linear,Na);
         }
         params.scale=d_tot->scalefact;
-        params.mnu=mnu;
+        params.mnubykT=mnubykT;
         params.qc = qc;
         /* Massively over-sample the free-streaming lengths.
          * Interpolation is least accurate where the free-streaming length -> 0,
@@ -570,7 +567,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
         double * fsscales = mymalloc("fsscales", Nfs* sizeof(double));
         for(ik=0; ik < Nfs; ik++) {
             fsscales[ik] = log(d_tot->TimeTransfer) + ik*(log(a) - log(d_tot->TimeTransfer))/(Nfs-1.);
-            fslengths[ik] = fslength(fsscales[ik], log(a),mnu, d_tot->light);
+            fslengths[ik] = fslength(fsscales[ik], log(a),mnubykT, d_tot->light);
         }
         params.fslengths = fslengths;
         params.fsscales = fsscales;

@@ -9,13 +9,15 @@
 #include "gadget_defines.h"
 #include "kspace_neutrino_const.h"
 
+#define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */
+
 /* A test case that checks initialisation. */
 static void test_rho_nu_init(void **state) {
     (void) state; /* unused */
     double mnu = 0.06;
     _rho_nu_single rho_nu_tab;
     /*Initialise*/
-    rho_nu_init(&rho_nu_tab, 0.01, mnu, 0.7);
+    rho_nu_init(&rho_nu_tab, 0.01, mnu, 0.7,BOLEVK*TNUCMB*T_CMB0);
     /*Check everything initialised ok*/
     assert_true(rho_nu_tab.mnu == mnu);
     assert_true(rho_nu_tab.acc);
@@ -39,7 +41,7 @@ static void test_omega_nu_single(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {mnu, mnu, 0};
-    init_omega_nu(&omnu, MNu, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7,T_CMB0);
     assert_true(omnu.RhoNuTab[0]->mnu == mnu);
     /*This is the critical density at z=0:
      * we allow it to change by what is (at the time of writing) the uncertainty on G.*/
@@ -73,10 +75,11 @@ double do_exact_rho_nu_integration(double a, double mnu, double rhocrit)
     gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
     double abserr;
     F.function = &rho_nu_int;
-    double param = mnu * a;
+    double kTnu = BOLEVK*TNUCMB*T_CMB0;
+    double param[2] = {mnu * a, kTnu};
     F.params = &param;
     double result;
-    gsl_integration_qag (&F, 0, 500*BOLEVK*TNU,0 , 1e-9,GSL_VAL,6,w,&result, &abserr);
+    gsl_integration_qag (&F, 0, 500*kTnu,0 , 1e-9,GSL_VAL,6,w,&result, &abserr);
     result*=get_rho_nu_conversion()/pow(a,4)/rhocrit;
     gsl_integration_workspace_free (w);
     return result;
@@ -90,7 +93,7 @@ static void test_omega_nu_single_exact(void **state)
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {mnu, mnu, mnu};
-    init_omega_nu(&omnu, MNu, 0.01, hubble);
+    init_omega_nu(&omnu, MNu, 0.01, hubble,T_CMB0);
     double omnuz0 = omega_nu_single(&omnu, 1, 0);
     double rhocrit = omnu.rhocrit;
     assert_true(fabs(1 - do_exact_rho_nu_integration(1, mnu, rhocrit)/omnuz0) < 1e-6);
@@ -109,7 +112,7 @@ static void test_omega_nu_init_degenerate(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.2,0.2};
-    init_omega_nu(&omnu, MNu, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7,T_CMB0);
     /*Check that we initialised the right number of arrays*/
     assert_int_equal(omnu.nu_degeneracies[0], 3);
     assert_int_equal(omnu.nu_degeneracies[1], 0);
@@ -122,7 +125,7 @@ static void test_omega_nu_init_nondeg(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
-    init_omega_nu(&omnu, MNu, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7,T_CMB0);
     /*Check that we initialised the right number of arrays*/
     for(int i=0; i<3; i++) {
         assert_int_equal(omnu.nu_degeneracies[i], 1);
@@ -135,7 +138,7 @@ static void test_get_omega_nu(void **state) {
     _omega_nu omnu;
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
-    init_omega_nu(&omnu, MNu, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7,T_CMB0);
     double total =0;
     for(int i=0; i<3; i++) {
         total += omega_nu_single(&omnu, 0.5, i);
@@ -149,7 +152,7 @@ static void test_get_omegag(void **state) {
     /*Initialise*/
     double MNu[3] = {0.2,0.1,0.3};
     const double HubbleParam = 0.7;
-    init_omega_nu(&omnu, MNu, 0.01, HubbleParam);
+    init_omega_nu(&omnu, MNu, 0.01, HubbleParam,T_CMB0);
     const double omegag = OMEGAR/pow(0.5,4);
     assert_true(fabs(get_omegag(&omnu, 0.5)/omegag -1)< 1e-6);
 }
@@ -170,10 +173,10 @@ static void test_hybrid_neutrinos(void **state)
     /*Initialise*/
     double MNu[3] = {0.2,0.2,0.2};
     const double HubbleParam = 0.7;
-    init_omega_nu(&omnu, MNu, 0.01, HubbleParam);
-    init_hybrid_nu(&omnu.hybnu, MNu, 700, 299792, 0.5);
+    init_omega_nu(&omnu, MNu, 0.01, HubbleParam,T_CMB0);
+    init_hybrid_nu(&omnu.hybnu, MNu, 700, 299792, 0.5,omnu.kBtnu);
     /*Check that the fraction of omega change over the jump*/
-    double nufrac_part = nufrac_low(700/299792.*0.2/BOLEVK/TNU);
+    double nufrac_part = nufrac_low(700/299792.*0.2/omnu.kBtnu);
     assert_true(fabs(particle_nu_fraction(&omnu.hybnu, 0.50001, 0)/nufrac_part -1) < 1e-5);
     assert_true(particle_nu_fraction(&omnu.hybnu, 0.49999, 0) == 0);
     assert_true(fabs(get_omega_nu_nopart(&omnu, 0.499999)*(1-nufrac_part)/get_omega_nu_nopart(&omnu, 0.500001)-1) < 1e-4);

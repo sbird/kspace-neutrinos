@@ -118,15 +118,25 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
  * Then, on all processors, it allocates memory for delta_tot_table.
- * This must be called *EARLY*, before OmegaNu, just after the parameters are read.*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
+ * This must be called *EARLY*, before OmegaNu, just after the parameters are read.
+ * Arguments:
+ * nk_in - number of bins desired in the neutrino power spectrum
+ * ThisTask - MPI rank
+ * BoxSize - size of box in internal units
+ * UnitTime_in_s, UnitLength_in_cm - conversion factors from internal units to cgs.
+ * Omega0 - total matter density (including massive neutrinos and baryons but not including radiation)
+ * tcmb0 - present-day CMB temperature
+ * snapdir - snapshot directory to try to read state and resume from
+ * TimeMax - Final redshift desired, sets number of output redshift bins
+ * MYMPI_COMM_WORLD - MPI  communicator*/
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
   /*Now initialise the background*/
-  init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
+  init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam, tcmb0);
   if(kspace_params.hybrid_neutrinos_on)
-    init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time);
+    init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time, omeganu_table.kBtnu);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {

@@ -7,6 +7,15 @@
 #include "../gadgetconfig.h"
 #endif
 
+/* Ratio between the massless neutrino temperature and the CMB temperature.
+ * Note there is a slight correction from 4/11
+ * due to the neutrinos being slightly coupled at e+- annihilation.
+ * See Mangano et al 2005 (hep-ph/0506164)
+ * We use the CLASS default value, chosen so that omega_nu = m_nu / 93.14 h^2
+ * At time of writing this is T_nu / T_gamma = 0.71611.
+ * See https://github.com/lesgourg/class_public/blob/master/explanatory.ini
+ */
+#define TNUCMB     (pow(4/11.,1/3.)*1.00328)              /* Neutrino + antineutrino background temperature in Kelvin */
 /* for three massive neutrino species:
 * Could be made configurable at some point
 * Neutrino masses are in eV*/
@@ -24,10 +33,10 @@ struct _rho_nu_single {
 typedef struct _rho_nu_single _rho_nu_single;
 
 /* Initialise the tables for the structure, by doing numerical integration*/
-void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, double HubbleParam);
+void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, const double HubbleParam, const double kBtnu);
 
-/* Compute the density, either by doing the */
-double rho_nu(_rho_nu_single * rho_nu_tab, double a);
+/* Compute the density, either by looking up in a table, or a simple calculation in the limits, or by direct integration.*/
+double rho_nu(_rho_nu_single * rho_nu_tab, const double a, const double kT);
 
 /*The following functions and structures are used for hybrid neutrinos only*/
 struct _hybrid_nu {
@@ -52,7 +61,7 @@ typedef struct _hybrid_nu _hybrid_nu;
  * light: speed of light in internal units
  * nu_crit_time: critical time to make neutrino particles live
  */
-void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time);
+void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time, const double kBtnu);
 
 /* Returns the fraction of neutrinos currently traced by particles.
  * When neutrinos are fully analytic at early times, returns 0.
@@ -73,13 +82,17 @@ struct _omega_nu {
     int nu_degeneracies[NUSPECIES];
     /* Prefactor to turn density into matter density omega*/
     double rhocrit;
+    /*neutrino temperature times Boltzmann constant*/
+    double kBtnu;
+    /*CMB temperature*/
+    double tcmb0;
     /* Pointer to structure for hybrid neutrinos. */
     _hybrid_nu hybnu;
 };
 typedef struct _omega_nu _omega_nu;
 
 /*Initialise the above structure, allocating memory for the subclass rho_nu_single*/
-void init_omega_nu(_omega_nu * const omnu, const double MNu[], const double a0, const double HubbleParam);
+void init_omega_nu(_omega_nu * const omnu, const double MNu[], const double a0, const double HubbleParam, const double tcmb0);
 
 /* Return the total matter density in neutrinos.*/
 double get_omega_nu(const _omega_nu * const omnu, const double a);

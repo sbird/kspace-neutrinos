@@ -10,7 +10,9 @@
 #include "transfer_init.h"
 #include "omega_nu_single.h"
 #include "gadget_defines.h"
+#include "kspace_neutrino_const.h"
 
+#define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */
 /*Initialise the hubble function: this is defined in gadget_defines.c and forward declared here,
  *to avoid accidentally using it anywhere except in tests.*/
 void init_hubble_function(_omega_nu * omnu, const double Omega0, const double UnitTime_in_s);
@@ -30,7 +32,7 @@ static void test_allocate_delta_tot_table(void **state)
     _delta_tot_table d_tot;
     _omega_nu omnu;
     double MNu[3] = {0, 0, 0};
-    init_omega_nu(&omnu, MNu, 0.01, 0.7);
+    init_omega_nu(&omnu, MNu, 0.01, 0.7,T_CMB0);
     allocate_delta_tot_table(&d_tot, 300, 0.01, 1, 0.2793, &omnu, 1, 1, 0);
     assert_true(d_tot.ia == 0);
     assert_true(d_tot.namax > 10);
@@ -149,8 +151,9 @@ static void test_fslength(void **state)
 {
     /*Note that MNu is the mass of a single neutrino species:
      *we use large masses so that we don't have to compute omega_nu in mathematica.*/
-    assert_true(fabs(fslength(log(0.5), log(1),0.45, 299792.)/ 1272.92 -1 ) < 1e-5);
-    assert_true(fabs(fslength(log(0.1), log(0.5),0.6, 299792.)/ 5427.8 -1 ) < 1e-5);
+    double kT = BOLEVK*TNUCMB*T_CMB0;
+    assert_true(fabs(fslength(log(0.5), log(1),0.45/kT, 299792.)/ 1272.92 -1 ) < 1e-5);
+    assert_true(fabs(fslength(log(0.1), log(0.5),0.6/kT, 299792.)/ 5427.8 -1 ) < 1e-5);
 }
 
 static void test_get_delta_nu_update(void **state)
@@ -403,7 +406,7 @@ static int setup_delta_pow(void **state) {
     ts->transfer = malloc(sizeof(_transfer_init_table));
     ts->d_pow = d_pow;
     const double MNu[3] = {0.15, 0.15, 0.15};
-    init_omega_nu(ts->omnu, MNu, 0.01, 0.7);
+    init_omega_nu(ts->omnu, MNu, 0.01, 0.7,T_CMB0);
     const double OmegaNua3=get_omega_nu(ts->omnu, 0.01)*pow(0.01,3);
     const double OmegaMa = 0.2793 - get_omega_nu(ts->omnu, 1) + OmegaNua3;
     const double fnu = OmegaNua3/OmegaMa;

@@ -13,11 +13,15 @@
 /*Size of matter density tables*/
 #define NRHOTAB 200
 
-void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam)
+void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam, const double tcmb0)
 {
     int mi;
     /*Explicitly disable hybrid neutrinos*/
     omnu->hybnu.enabled=0;
+    /*CMB temperature*/
+    omnu->tcmb0 = tcmb0;
+    /*Neutrino temperature times k_B*/
+    omnu->kBtnu = BOLEVK * TNUCMB * tcmb0;
     /*Store conversion between rho and omega*/
     omnu->rhocrit = (3 * HUBBLE * HubbleParam * HUBBLE * HubbleParam)/ (8 * M_PI * GRAVITY);
     /*First compute which neutrinos are degenerate with each other*/
@@ -38,7 +42,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
     for(mi=0; mi<NUSPECIES; mi++){
         if(omnu->nu_degeneracies[mi]) {
             omnu->RhoNuTab[mi] = (_rho_nu_single *) mymalloc("RhoNuTab", sizeof(_rho_nu_single));
-            rho_nu_init(omnu->RhoNuTab[mi], a0, MNu[mi], HubbleParam);
+            rho_nu_init(omnu->RhoNuTab[mi], a0, MNu[mi], HubbleParam, omnu->kBtnu);
         }
         else {
             omnu->RhoNuTab[mi] = NULL;
@@ -54,7 +58,7 @@ double get_omega_nu(const _omega_nu * const omnu, const double a)
         int mi;
         for(mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0){
-                 rhonu += omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
+                 rhonu += omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a, omnu->kBtnu);
             }
         }
         return rhonu/omnu->rhocrit;
@@ -68,7 +72,7 @@ double get_omega_nu_nopart(const _omega_nu * const omnu, const double a)
         int mi;
         for(mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0){
-                 double rhonu_s = omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
+                 double rhonu_s = omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a,omnu->kBtnu);
                  /*Take away the particle neutrinos if these are enabled*/
                  rhonu_s *= (1-particle_nu_fraction(&omnu->hybnu, a, mi));
                  rhonu+=rhonu_s;
@@ -80,7 +84,7 @@ double get_omega_nu_nopart(const _omega_nu * const omnu, const double a)
 /*Return the photon density*/
 double get_omegag(const _omega_nu * const omnu, const double a)
 {
-    const double omegag = 4*STEFAN_BOLTZMANN/(LIGHTCGS*LIGHTCGS*LIGHTCGS)*pow(T_CMB0,4)/omnu->rhocrit;
+    const double omegag = 4*STEFAN_BOLTZMANN/(LIGHTCGS*LIGHTCGS*LIGHTCGS)*pow(omnu->tcmb0,4)/omnu->rhocrit;
     return omegag/pow(a,4);
 }
 
@@ -93,8 +97,9 @@ double get_omegag(const _omega_nu * const omnu, const double a)
 double rho_nu_int(double q, void * params)
 {
         double amnu = *((double *)params);
+        double kT = *((double *)params+1);
         double epsilon = sqrt(q*q+amnu*amnu);
-        double f0 = 1./(exp(q/(BOLEVK*TNU))+1);
+        double f0 = 1./(exp(q/kT)+1);
         return q*q*epsilon*f0;
 }
 
@@ -117,20 +122,20 @@ double get_rho_nu_conversion()
 }
 
 /*Seed a pre-computed table of rho_nu values for speed*/
-void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const double mnu, const double HubbleParam)
+void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const double mnu, const double HubbleParam, const double kBtnu)
 {
      int i;
      double abserr;
      /*Make the table over a slightly wider range than requested, in case there is roundoff error*/
      const double logA0=log(a0)-log(1.2);
-     const double logaf=log(NU_SW*BOLEVK*TNU/mnu)+log(1.2);
+     const double logaf=log(NU_SW*kBtnu/mnu)+log(1.2);
      gsl_function F;
      gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
      F.function = &rho_nu_int;
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
      /*Shortcircuit if we don't need to do the integration*/
-     if(mnu < 1e-6*BOLEVK*TNU || logaf < logA0)
+     if(mnu < 1e-6*kBtnu || logaf < logA0)
          return;
 
      /*Allocate memory for arrays*/
@@ -142,11 +147,12 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
          terminate("Could not initialise tables for neutrino matter density\n");
 
      for(i=0; i< NRHOTAB; i++){
-        double param;
+        double param[2];
         rho_nu_tab->loga[i]=logA0+i*(logaf-logA0)/(NRHOTAB-1);
-        param=mnu*exp(rho_nu_tab->loga[i]);
+        param[0]=mnu*exp(rho_nu_tab->loga[i]);
+        param[1] = kBtnu;
         F.params = &param;
-        gsl_integration_qag (&F, 0, 500*BOLEVK*TNU,0 , 1e-9,GSL_VAL,6,w,&(rho_nu_tab->rhonu[i]), &abserr);
+        gsl_integration_qag (&F, 0, 500*kBtnu,0 , 1e-9,GSL_VAL,6,w,&(rho_nu_tab->rhonu[i]), &abserr);
         rho_nu_tab->rhonu[i]=rho_nu_tab->rhonu[i]/pow(exp(rho_nu_tab->loga[i]),4)*get_rho_nu_conversion();
      }
      gsl_integration_workspace_free (w);
@@ -157,11 +163,10 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
 
 /*Finds the physical density in neutrinos for a single neutrino species
   1.878 82(24) x 10-29 h02 g/cm3 = 1.053 94(13) x 104 h02 eV/cm3*/
-double rho_nu(_rho_nu_single * rho_nu_tab, double a)
+double rho_nu(_rho_nu_single * rho_nu_tab, const double a, const double kT)
 {
         double rho_nu_val;
         double amnu=a*rho_nu_tab->mnu;
-        const double kT=BOLEVK*TNU;
         const double kTamnu2=(kT*kT/amnu/amnu);
         /*Do it analytically if we are in a regime where we can
          * The next term is 141682 (kT/amnu)^8.
@@ -210,14 +215,14 @@ double nufrac_low(const double qc)
     return total_fd;
 }
 
-void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time)
+void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time, const double kBtnu)
 {
     hybnu->enabled=1;
     int i;
     hybnu->nu_crit_time = nu_crit_time;
     hybnu->vcrit = vcrit / light;
     for(i=0; i< NUSPECIES; i++) {
-        const double qc = mnu[i] * vcrit / light / (BOLEVK*TNU);
+        const double qc = mnu[i] * vcrit / light / kBtnu;
         hybnu->nufrac_low[i] = nufrac_low(qc);
     }
 }
@@ -253,7 +258,7 @@ double omega_nu_single(const _omega_nu * const omnu, const double a, int i)
                 break;
             }
     }
-    double omega_nu = rho_nu(omnu->RhoNuTab[i], a)/omnu->rhocrit;
+    double omega_nu = rho_nu(omnu->RhoNuTab[i], a,omnu->kBtnu)/omnu->rhocrit;
     omega_nu *= (1-particle_nu_fraction(&omnu->hybnu, a, i));
     return omega_nu;
 
