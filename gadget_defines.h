@@ -5,10 +5,6 @@
  * When used with the test suite, we define them in kspace_neutrinos_private.c.
  * Take care that the constants are in sync with the rest of gadget!*/
 
-#ifndef KSPACE_NEUTRINOS_TEST
-#include "../gadgetconfig.h"
-#endif
-
 /*Speed of light in cm/s: in allvars.h this is called 'C'*/
 #define  LIGHTCGS           2.99792458e10
 #define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/

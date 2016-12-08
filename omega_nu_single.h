@@ -3,10 +3,6 @@
 /*This file contains routines for computing the matter density in a single neutrino species*/
 #include <gsl/gsl_interp.h>
 
-#ifndef KSPACE_NEUTRINOS_TEST
-#include "../gadgetconfig.h"
-#endif
-
 /* Ratio between the massless neutrino temperature and the CMB temperature.
  * Note there is a slight correction from 4/11
  * due to the neutrinos being slightly coupled at e+- annihilation.
