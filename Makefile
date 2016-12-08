@@ -39,7 +39,7 @@ delta_tot_table_test: delta_tot_table_test.c delta_tot_table.o delta_pow.o trans
 #This needs MPI
 #The fftw link must match the include in powerspectrum_test.c
 powerspectrum_test: powerspectrum_test.c powerspectrum.o omega_nu_single.o gadget_defines.o
-	mpicc $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) -lsfftw -lsrfftw
+	mpicc $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) -lsrfftw -lsfftw
 
 clean:
 	rm -f $(OBJS) gadget_defines.o
