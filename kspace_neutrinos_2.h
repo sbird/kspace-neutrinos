@@ -8,12 +8,6 @@
 
 #ifdef KSPACE_NEUTRINOS_2
 
-#ifndef HYBRID_NEUTRINOS
-#ifdef NEUTRINOS
-#error "Cannot define particle based and Fourier-space neutrinos at the same time!"
-#endif
-#endif
-
 #ifdef KSPACE_NEUTRINOS
 #error "KSPACE_NEUTRINOS_2 is incompatible with KSPACE_NEUTRINOS"
 #endif
@@ -33,13 +27,6 @@
 
 /* Return the total matter density in all neutrino species.*/
 double OmegaNu(double a);
-#ifdef HYBRID_NEUTRINOS
-/* Return the total matter density in all neutrino species
- * EXCLUDING PARTICLE density, if we are using hybrid neutrinos and they are active.*/
-double OmegaNu_nopart(double a);
-#else
-#define OmegaNu_nopart(a) OmegaNu(a)
-#endif
 
 /* This sets up various structures for the kspace neutrinos, allocates memory, and reads saved data from disc. */
 void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);

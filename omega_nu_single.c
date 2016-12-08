@@ -16,6 +16,8 @@
 void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const double HubbleParam)
 {
     int mi;
+    /*Explicitly disable hybrid neutrinos*/
+    omnu->hybnu.enabled=0;
     /*Store conversion between rho and omega*/
     omnu->rhocrit = (3 * HUBBLE * HubbleParam * HUBBLE * HubbleParam)/ (8 * M_PI * GRAVITY);
     /*First compute which neutrinos are degenerate with each other*/
@@ -67,9 +69,8 @@ double get_omega_nu_nopart(const _omega_nu * const omnu, const double a)
         for(mi=0; mi<NUSPECIES; mi++) {
             if(omnu->nu_degeneracies[mi] > 0){
                  double rhonu_s = omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a);
-#ifdef HYBRID_NEUTRINOS
+                 /*Take away the particle neutrinos if these are enabled*/
                  rhonu_s *= (1-particle_nu_fraction(&omnu->hybnu, a, mi));
-#endif
                  rhonu+=rhonu_s;
             }
         }
@@ -183,7 +184,7 @@ double rho_nu(_rho_nu_single * rho_nu_tab, double a)
         return rho_nu_val;
 }
 
-#ifdef HYBRID_NEUTRINOS
+/*The following function definitions are only used for hybrid neutrinos*/
 
 /*Fermi-Dirac kernel for below*/
 double fermi_dirac_kernel(double x, void * params)
@@ -211,6 +212,7 @@ double nufrac_low(const double qc)
 
 void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double vcrit, const double light, const double nu_crit_time)
 {
+    hybnu->enabled=1;
     int i;
     hybnu->nu_crit_time = nu_crit_time;
     hybnu->vcrit = vcrit / light;
@@ -226,6 +228,9 @@ void init_hybrid_nu(_hybrid_nu * const hybnu, const double mnu[], const double v
  */
 double particle_nu_fraction(const _hybrid_nu * const hybnu, const double a, const int i)
 {
+    /*Return zero if hybrid neutrinos not enabled*/
+    if(!hybnu->enabled)
+        return 0;
     /*Just use a redshift cut for now. Really we want something more sophisticated,
      * based on the shot noise and average overdensity.*/
     if (a > hybnu->nu_crit_time){
@@ -234,7 +239,7 @@ double particle_nu_fraction(const _hybrid_nu * const hybnu, const double a, cons
     return 0;
 }
 
-#endif
+/*End functions used only for hybrid neutrinos*/
 
 /* Return the matter density in neutrino species i.*/
 double omega_nu_single(const _omega_nu * const omnu, const double a, int i)
@@ -249,9 +254,7 @@ double omega_nu_single(const _omega_nu * const omnu, const double a, int i)
             }
     }
     double omega_nu = rho_nu(omnu->RhoNuTab[i], a)/omnu->rhocrit;
-#ifdef HYBRID_NEUTRINOS
     omega_nu *= (1-particle_nu_fraction(&omnu->hybnu, a, i));
-#endif
     return omega_nu;
 
 }

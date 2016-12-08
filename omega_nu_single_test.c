@@ -154,7 +154,6 @@ static void test_get_omegag(void **state) {
     assert_true(fabs(get_omegag(&omnu, 0.5)/omegag -1)< 1e-6);
 }
 
-#ifdef HYBRID_NEUTRINOS
 /*Test integrate the fermi-dirac kernel between 0 and qc*/
 static void test_nufrac_low(void **state)
 {
@@ -182,7 +181,6 @@ static void test_hybrid_neutrinos(void **state)
     assert_true(fabs(omega_nu_single(&omnu, 0.499999, 0)*(1-nufrac_part)/omega_nu_single(&omnu, 0.500001, 0)-1) < 1e-4);
 }
 
-#endif
 
 int main(void) {
     const struct CMUnitTest tests[] = {
@@ -193,10 +191,8 @@ int main(void) {
         cmocka_unit_test(test_get_omega_nu),
         cmocka_unit_test(test_get_omegag),
         cmocka_unit_test(test_omega_nu_single_exact),
-#ifdef HYBRID_NEUTRINOS
         cmocka_unit_test(test_nufrac_low),
         cmocka_unit_test(test_hybrid_neutrinos),
-#endif
     };
     return cmocka_run_group_tests(tests, NULL, NULL);
 }

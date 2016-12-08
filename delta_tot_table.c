@@ -430,8 +430,6 @@ inline double specialJ_fit(const double x)
   return (1.+ 0.0168 * x2 + 0.0407* x4)/(1. + 2.1734 * x2 + 1.6787 * exp(4.1811*log(x)) +  0.1467 * x8);
 }
 
-#ifdef HYBRID_NEUTRINOS
-
 /*Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.*/
 inline double II(const double x, const double qc, const int n)
 {
@@ -465,17 +463,6 @@ double specialJ(const double x, const double qc)
   }
   return specialJ_fit(x);
 }
-/*Now for single-component neutrinos*/
-#else
-
-/* This has an unused argument: qc, which is used purely so we can have hybrid
- * and non-hybrid code below without a lot of ifdefs.*/
-double specialJ(const double x, const double qc)
-{
-    return specialJ_fit(x);
-}
-
-#endif
 
 /*A structure for the parameters for the below integration kernel*/
 struct _delta_nu_int_params
@@ -532,15 +519,14 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
   fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnu, d_tot->light);
-#ifdef HYBRID_NEUTRINOS
    /* Check whether the particle neutrinos are active at this point.
-    * If they are we want to truncate our integration.*/
+    * If they are we want to truncate our integration.
+    * Only do this is hybrid neutrinos are activated in the param file.*/
    if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
         qc = (d_tot->omnu->hybnu.vcrit / d_tot->light) * mnu /(BOLEVK*TNU);
 /*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
 /*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g\n",a, d_tot->omnu->nufrac_low[0]); */
    }
-#endif
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
   deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)/kTbyaM(d_tot->TimeTransfer*mnu);
   for (ik = 0; ik < d_tot->nk; ik++) {

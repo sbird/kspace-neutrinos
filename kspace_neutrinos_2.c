@@ -1,5 +1,6 @@
-/*This file contains functions which need to be called from the PM code in Gadget.
- add_nu_power_to_rhogrid is the main public function. */
+/* This file contains functions which need to be called from the PM code in Gadget.
+ * Everything required to interface with the main code should be in this file.
+ * add_nu_power_to_rhogrid is the main public function. */
 #include "kspace_neutrinos_2.h"
 
 #ifdef KSPACE_NEUTRINOS_2
@@ -21,15 +22,14 @@ struct __kspace_params {
   double OmegaBaryonCAMB;
   double InputSpectrum_UnitLength_in_cm;
   double MNu[NUSPECIES];
-#if defined HYBRID_NEUTRINOS
-    /*Critical velocity above which to treat neutrinos with particles.
-    Note this is unperturbed velocity *TODAY* in Gadget units.
-    To get velocity at redshift z, multiply by (1+z)*/
-    double vcrit;
-    /*Time at which to turn on the particle neutrinos.
-    Ultimately we want something better than this.*/
-    double nu_crit_time;
-#endif
+  int hybrid_neutrinos_on;
+  /*These variables are only used for hybrid neutrinos*/
+  /*Critical velocity above which to treat neutrinos with particles.
+  Note this is unperturbed velocity *TODAY* in Gadget units.
+  To get velocity at redshift z, multiply by (1+z)*/
+  double vcrit;
+  /*Time at which to turn on the particle neutrinos.*/
+  double nu_crit_time;
 } kspace_params;
 
 /*Setup the config files to load the needed variables*/
@@ -60,15 +60,16 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
       strcpy(tag[nt], "MNut");
       addr[nt] = &(kspace_params.MNu[2]);
       id[nt++] = REAL;
-#if defined HYBRID_NEUTRINOS
-    strcpy(tag[nt], "VCRIT");
-    addr[nt] = &(kspace_params.vcrit);
-    id[nt++] = REAL;
-    strcpy(tag[nt], "NuPartTime");
-    addr[nt] = &(kspace_params.nu_crit_time);
-    id[nt++] = REAL;
-#endif
-    return nt;
+      strcpy(tag[nt], "HybridNeutrinosOn");
+      addr[nt] = &(kspace_params.hybrid_neutrinos_on);
+      id[nt++] = INT;
+      strcpy(tag[nt], "VCRIT");
+      addr[nt] = &(kspace_params.vcrit);
+      id[nt++] = REAL;
+      strcpy(tag[nt], "NuPartTime");
+      addr[nt] = &(kspace_params.nu_crit_time);
+      id[nt++] = REAL;
+      return nt;
 }
 
 static _transfer_init_table transfer_init;
@@ -82,14 +83,6 @@ double OmegaNu(double a)
 {
     return get_omega_nu(&omeganu_table, a);
 }
-
-#ifdef HYBRID_NEUTRINOS
-/*Compute the matter density in neutrinos*/
-double OmegaNu_nopart(double a)
-{
-    return get_omega_nu_nopart(&omeganu_table, a);
-}
-#endif
 
 void save_nu_state(char * savedir)
 {
@@ -131,9 +124,8 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
   /*Now initialise the background*/
   init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam);
-#ifdef HYBRID_NEUTRINOS
-  init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time);
-#endif
+  if(kspace_params.hybrid_neutrinos_on)
+    init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {

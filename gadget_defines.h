@@ -49,6 +49,7 @@ double hubble_function(double a);
 #endif
 
 /*These are defined in begrun.c*/
+#define INT 3
 #define STRING 2
 #define REAL 1
 

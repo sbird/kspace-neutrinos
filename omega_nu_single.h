@@ -29,8 +29,10 @@ void rho_nu_init(_rho_nu_single * rho_nu_tab, double a0, const double mnu, doubl
 /* Compute the density, either by doing the */
 double rho_nu(_rho_nu_single * rho_nu_tab, double a);
 
-#ifdef HYBRID_NEUTRINOS
+/*The following functions and structures are used for hybrid neutrinos only*/
 struct _hybrid_nu {
+    /*True if hybrid neutrinos are enabled*/
+    int enabled;
     /* This is the fraction of neutrino mass not followed by the analytic integrator.
     The analytic method is cutoff at q < qcrit (specified using vcrit, below) and use
     particles for the slower neutrinos.*/
@@ -60,7 +62,8 @@ double particle_nu_fraction(const _hybrid_nu * const hybnu, const double a, int 
 
 /*Integrate the fermi-dirac kernel between 0 and qc to find the fraction of neutrinos that are particles*/
 double nufrac_low(const double qc);
-#endif
+
+/*End hybrid neutrino-only structures.*/
 
 /*These are the structures you should call externally*/
 struct _omega_nu {
@@ -68,11 +71,10 @@ struct _omega_nu {
     _rho_nu_single * RhoNuTab[NUSPECIES];
     /* Which species have the same mass and can thus be counted together.*/
     int nu_degeneracies[NUSPECIES];
-    /*Prefactor to turn density into matter density omega*/
+    /* Prefactor to turn density into matter density omega*/
     double rhocrit;
-#ifdef HYBRID_NEUTRINOS
+    /* Pointer to structure for hybrid neutrinos. */
     _hybrid_nu hybnu;
-#endif
 };
 typedef struct _omega_nu _omega_nu;
 
