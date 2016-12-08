@@ -1,8 +1,6 @@
 #ifndef KSPACE_NEUTRINO_CONSTANTS
 #define KSPACE_NEUTRINO_CONSTANTS
-/*This file defines constants specific to the neutrinos.
- * It is separate from gadget_defines.h in that those constants are also defined in gadget*/
-
+/*This file defines constants specific to the neutrinos.*/
 /* for three massive neutrino species:
  * Could be made configurable at some point
  * Neutrino masses are in eV*/

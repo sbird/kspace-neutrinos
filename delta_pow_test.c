@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "delta_pow.h"
-#include "gadget_defines.h"
 
 static void test_init_delta_pow(void **state) {
     /*Load initialised structure*/

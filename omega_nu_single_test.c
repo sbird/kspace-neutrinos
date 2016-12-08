@@ -6,7 +6,6 @@
 #include <math.h>
 #include <gsl/gsl_integration.h>
 #include "omega_nu_single.h"
-#include "gadget_defines.h"
 #include "kspace_neutrino_const.h"
 
 #define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */

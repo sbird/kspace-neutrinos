@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "transfer_init.h"
-#include "gadget_defines.h"
 
 
 // void allocate_transfer_init_table(_transfer_init_table *t_init, int nk_in, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const char * KspaceTransferFunction, _omega_nu * omnu);
