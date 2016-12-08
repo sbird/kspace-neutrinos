@@ -26,16 +26,11 @@ double hubble_function(double a);
 #endif
 
 /*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.*/
-#ifndef DISABLE_MEMORY_MANAGER
-    #define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
-    #define  myfree(x)                 myfree_fullinfo(x, __FUNCTION__, __FILE__, __LINE__)
-    /*These functions need bodies; normally this is provided by gadget. We fake it in gadget_defines.c for the tests.*/
-    void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line);
-    void myfree_fullinfo(void * ptr, const char *func, const char *file, int line);
-#else
-    #define  mymalloc(x, y)            malloc(y)
-    #define  myfree(x)                 free(x)
-#endif
+#define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
+#define  myfree(x)                 myfree_fullinfo(x, __FUNCTION__, __FILE__, __LINE__)
+/*These functions need bodies; normally this is provided by gadget. We fake it in gadget_defines.c for the tests.*/
+void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line);
+void myfree_fullinfo(void * ptr, const char *func, const char *file, int line);
 
 /*These are defined in begrun.c*/
 #define INT 3
