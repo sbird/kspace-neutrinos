@@ -5,11 +5,6 @@
  * When used with the test suite, we define them in kspace_neutrinos_private.c.
  * Take care that the constants are in sync with the rest of gadget!*/
 
-/*Speed of light in cm/s: in allvars.h this is called 'C'*/
-#define  LIGHTCGS           2.99792458e10
-#define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/
-#define  HUBBLE          3.24077929e-18	/* 100 km/s in h/sec */
-
 /*Forward define the hubble function*/
 double hubble_function(double a);
 
@@ -32,11 +27,6 @@ void myfree_fullinfo(void * ptr, const char *func, const char *file, int line);
 #define INT 3
 #define STRING 2
 #define REAL 1
-
-/*M_PI is technically a GNU extension, so define it here just in case*/
-#ifndef M_PI
-#define M_PI 3.14159265358979323846L
-#endif
 
 /*KSPACE_NEUTRINOS_PRIVATE*/
 #endif
