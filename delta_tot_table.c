@@ -332,7 +332,6 @@ void save_delta_tot(const _delta_tot_table * const d_tot, const int iia, char * 
  * Must be called for resume to work*/
 void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
 {
-
     int ik;
     char * savefile;
     if(savedir) {
