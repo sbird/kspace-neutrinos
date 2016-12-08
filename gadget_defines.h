@@ -23,7 +23,8 @@ double hubble_function(double a);
 void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line);
 void myfree_fullinfo(void * ptr, const char *func, const char *file, int line);
 
-/*These are defined in begrun.c*/
+/*These are defined in begrun.c. They correspond to types and are very specific to P-Gadget3!
+ * Only used in set_kspace_vars*/
 #define INT 3
 #define STRING 2
 #define REAL 1

@@ -15,24 +15,11 @@
 #include "delta_pow.h"
 #include "powerspectrum.h"
 
-/*Global variables that need to be set from a parameter file*/
-struct __kspace_params {
-  char	KspaceTransferFunction[500];
-  double TimeTransfer;
-  double OmegaBaryonCAMB;
-  double InputSpectrum_UnitLength_in_cm;
-  double MNu[NUSPECIES];
-  int hybrid_neutrinos_on;
-  /*These variables are only used for hybrid neutrinos*/
-  /*Critical velocity above which to treat neutrinos with particles.
-  Note this is unperturbed velocity *TODAY* in Gadget units.
-  To get velocity at redshift z, multiply by (1+z)*/
-  double vcrit;
-  /*Time at which to turn on the particle neutrinos.*/
-  double nu_crit_time;
-} kspace_params;
+/*Global neutrino module parameters*/
+struct __kspace_params kspace_params;
 
-/*Setup the config files to load the needed variables*/
+/*Setup the config files to load the needed variables.
+ * This is an example config file reader specific to P-Gadget3.*/
 int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
 {
       strcpy(tag[nt], "KspaceTransferFunction");
@@ -63,7 +50,7 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
       strcpy(tag[nt], "HybridNeutrinosOn");
       addr[nt] = &(kspace_params.hybrid_neutrinos_on);
       id[nt++] = INT;
-      strcpy(tag[nt], "VCRIT");
+      strcpy(tag[nt], "Vcrit");
       addr[nt] = &(kspace_params.vcrit);
       id[nt++] = REAL;
       strcpy(tag[nt], "NuPartTime");

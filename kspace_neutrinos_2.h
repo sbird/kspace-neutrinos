@@ -6,6 +6,8 @@
 #error "KSPACE_NEUTRINOS_2 is incompatible with KSPACE_NEUTRINOS"
 #endif
 
+#include "kspace_neutrino_const.h"
+
 /*We only need this for fftw_complex*/
 #ifdef NOTYPEPREFIX_FFTW
 #include        <fftw.h>
@@ -18,6 +20,30 @@
 #endif
 
 #include <mpi.h>
+
+
+/*Global variables that need to be set from a parameter file*/
+extern struct __kspace_params {
+  /*File containing CAMB-formatted transfer functions*/
+  char	KspaceTransferFunction[500];
+  /*Scale factor of CAMB output*/
+  double TimeTransfer;
+  /*OmegaBaryon used for CAMB*/
+  double OmegaBaryonCAMB;
+  /*Units for the CAMB transfer functions in cm. By default 1 Mpc*/
+  double InputSpectrum_UnitLength_in_cm;
+  /*Neutrino masses in eV*/
+  double MNu[NUSPECIES];
+  /*Flag to enable hybrid neutrinos*/
+  int hybrid_neutrinos_on;
+  /*These variables are only used if hybrid_neutrinos_on = 1*/
+  /*Critical velocity above which to treat neutrinos with particles.
+  Note this is unperturbed velocity *TODAY* in Gadget units.
+  To get velocity at redshift z, multiply by (1+z)*/
+  double vcrit;
+  /*Scale factor at which to turn on the particle neutrinos.*/
+  double nu_crit_time;
+} kspace_params;
 
 /* Return the total matter density in all neutrino species.
  * This is not just OmegaNu(1)/a^3 because at early times neutrinos are relativistic.
@@ -64,7 +90,9 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 
 /* Function which sets up the parameter reader to read kspace neutrino parameters from the parameter file. 
  * It will store them in a static variable, kspace_params, in the translation unit where the function is defined
- * (which is the same as the above functions). */
+ * (which is the same as the above functions).
+ * This is an example for Gadget-3, using that codes parameter reading scheme.
+ * It may need changing!*/
 int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt);
 
 /*Save the internal state of the integrator to disc.
