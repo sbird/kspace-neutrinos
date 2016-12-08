@@ -6,8 +6,6 @@
 #include "../gadgetconfig.h"
 #endif
 
-#ifdef KSPACE_NEUTRINOS_2
-
 #ifdef KSPACE_NEUTRINOS
 #error "KSPACE_NEUTRINOS_2 is incompatible with KSPACE_NEUTRINOS"
 #endif
@@ -43,7 +41,5 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt);
 
 /*Save the internal state of the integrator to disc.*/
 void save_nu_state(char * savedir);
-/*KSPACE_NEUTRINOS_2*/
-#endif
 /*KSPACE_NEUTRINOS_GLOBAL*/
 #endif

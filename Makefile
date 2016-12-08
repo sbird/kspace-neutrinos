@@ -1,5 +1,4 @@
 OPT   +=  -DKSPACE_NEUTRINOS_TEST #For testing purposes, don't include gadget's header file
-OPT   += -DKSPACE_NEUTRINOS_2  # Enable kspace neutrinos
 
 LFLAGS += -lgsl -lgslcblas -lpthread
 CFLAGS +=-O2 -ffast-math -g -Wall -fopenmp ${OPT}

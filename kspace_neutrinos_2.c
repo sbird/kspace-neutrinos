@@ -4,7 +4,6 @@
  * add_nu_power_to_rhogrid is the main public function. */
 #include "kspace_neutrinos_2.h"
 
-#ifdef KSPACE_NEUTRINOS_2
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -272,6 +271,3 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   myfree(delta_cdm_curr);
   return;
 }
-
-/*KSPACE_NEUTRINOS_2*/
-#endif
