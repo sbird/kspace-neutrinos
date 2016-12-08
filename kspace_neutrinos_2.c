@@ -1,5 +1,6 @@
 /* This file contains functions which need to be called from the PM code in Gadget.
  * Everything required to interface with the main code should be in this file.
+ * All MPI communication is also done here.
  * add_nu_power_to_rhogrid is the main public function. */
 #include "kspace_neutrinos_2.h"
 
@@ -145,13 +146,18 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
 }
 
 /* This function adds the neutrino power spectrum to the
- * density grid. It calls the gadget power spectrum routines, which output their
- * results in SumPower (the total power in all modes in a bin),
- * SumPowerUncorrected (the total power, minus a correction for the bin width)
- * and CountModes (the number of modes per bin).
- * SumPower[1] is from box scale to grid cell scale,
- * SumPower[0] is the folded power on smaller scales.
- * It also touches fft_of_rhogrid, which is the fourier transformed density grid.
+ * density grid. It calls the internal power spectrum routine and the neutrino integrator.
+ * It then adds the neutrino power to fft_of_rhogrid, which is the fourier transformed density grid from the PM code.
+ * Arguments:
+ * Time - scale factor, a.
+ * BoxSize - size of the box in internal units.
+ * fft_of_rhogrid - Fourier transformed density grid.
+ * pmgrid - size of one dimension of the density grid.
+ * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
+ * nslab_y - number of elements of the FFT on this rank.
+ * snapnum - number of snapshot to save neutrino power spectrum as powerspec_nu_$(snapnum).txt
+ * OutputDir - output directory for neutrino power spectrum.
+ * MYMPI_COMM_WORLD - MPI communicator to use
  */
 void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD)
 {
