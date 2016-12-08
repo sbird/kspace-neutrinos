@@ -255,6 +255,8 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
            * which gives the right power spectrum, once we divide by
            * M_cdm +M_nu in powerspec*/
           smth=(1+kspace_prefac * get_dnudcdm_powerspec(&d_pow, k2));
+          if(isnan(smth))
+                terminate("delta_nu or delta_cdm is nan\n");
           ip = pmgrid * (pmgrid / 2 + 1) * (y - slabstart_y) + (pmgrid / 2 + 1) * x + z;
           fft_of_rhogrid[ip].re *= smth;
           fft_of_rhogrid[ip].im *= smth;
@@ -264,7 +266,8 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 	printf("Done adding neutrinos to grid on all processors\n");
   /*If this is being called to save all particle types, save a file with the neutrino power spectrum as well.*/
   if(snapnum >= 0 && delta_tot_table.ThisTask == 0){
-            save_nu_power(&d_pow, Time, snapnum, OutputDir);
+            if(save_nu_power(&d_pow, Time, snapnum, OutputDir))
+                terminate("Could not save neutrino power\n");
   }
   free_d_pow(&d_pow);
   myfree(count);

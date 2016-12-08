@@ -2,7 +2,6 @@
 #include <gsl/gsl_interp.h>
 #include <math.h>
 #include "delta_pow.h"
-#include "gadget_defines.h"
 
 void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins)
 {
@@ -44,22 +43,19 @@ double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk)
             kk = d_pow->logkk[0];
         }
         if(kk < d_pow->logkk[0]-log(2)){
-                char err[300];
-                snprintf(err,300,"trying to extract a k= %g < min stored = %g \n",kk,d_pow->logkk[0]);
-                terminate(err);
+            fprintf(stderr,"trying to extract a k= %g < min stored = %g \n",kk,d_pow->logkk[0]);
+            kk = d_pow->logkk[0];
         }
         /*This is just to guard against floating point roundoff*/
         if( kk > d_pow->logkk[d_pow->nbins-1])
                 kk=d_pow->logkk[d_pow->nbins-1];
         delta_cdm=gsl_interp_eval(d_pow->spline_cdm,d_pow->logkk, d_pow->delta_cdm_curr,kk,d_pow->acc);
         delta_nu=gsl_interp_eval(d_pow->spline_nu,d_pow->logkk, d_pow->delta_nu_curr, kk,d_pow->acc_nu);
-        if(isnan(delta_cdm) || isnan(delta_nu))
-                terminate("delta_nu or delta_cdm is nan\n");
         return delta_nu/delta_cdm;
 }
 
 /*Save the neutrino power spectrum to disc*/
-void save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir)
+int save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir)
 {
     FILE *fd;
     int i;
@@ -68,9 +64,8 @@ void save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, cons
     * This is daft, but works.*/
     snprintf(nu_fname, 1000,"%s/powerspec_nu_%03d.txt", OutputDir, snapnum);
     if(!(fd = fopen(nu_fname, "w"))){
-        char buf[1000];
-        snprintf(buf, 1000, "can't open file `%s` for writing\n", nu_fname);
-        terminate(buf);
+        fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
+        return -1;
     }
     fprintf(fd, "%g\n", Time);
     fprintf(fd, "%d\n", d_pow->nbins);
@@ -78,7 +73,7 @@ void save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, cons
         fprintf(fd, "%g %g\n", exp(d_pow->logkk[i]), d_pow->delta_nu_curr[i]*d_pow->delta_nu_curr[i]);
     }
     fclose(fd);
-    return;
+    return 0;
 }
 
 void free_d_pow(_delta_pow * d_pow)

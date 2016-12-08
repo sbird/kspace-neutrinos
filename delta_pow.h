@@ -22,8 +22,8 @@ void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], d
 /*Get P_nu(k)/P_cdm(k) for arbitrary k*/
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);
 
-/*Save P_nu(k) to disc*/
-void save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir);
+/*Save P_nu(k) to disc. Returns 0 on success.*/
+int save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir);
 
 /*Free memory for the GSL structure*/
 void free_d_pow(_delta_pow * d_pow);
