@@ -3,7 +3,6 @@
 #include "transfer_init.h"
 #include "gadget_defines.h"
 
-
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
