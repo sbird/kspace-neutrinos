@@ -5,7 +5,6 @@
 #include <math.h>
 #include "gadget_defines.h"
 #include "omega_nu_single.h"
-#include "kspace_neutrino_const.h"
 
 /*These functions need bodies; normally this is provided by gadget*/
 void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line)

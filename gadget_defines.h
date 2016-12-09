@@ -5,6 +5,8 @@
  * When used with the test suite, we define them in kspace_neutrinos_private.c.
  * Take care that the constants are in sync with the rest of gadget!*/
 
+#define  HUBBLE          3.24077929e-18	/* 100 km/s in h/sec */
+
 /*Forward define the hubble function*/
 double hubble_function(double a);
 

@@ -6,7 +6,6 @@
 #include <math.h>
 #include <gsl/gsl_integration.h>
 #include "omega_nu_single.h"
-#include "kspace_neutrino_const.h"
 
 #define  T_CMB0      2.7255	/* present-day CMB temperature, from Fixsen 2009 */
 
@@ -30,6 +29,8 @@ static void test_rho_nu_init(void **state) {
 }
 /*Check massless neutrinos work*/
 #define STEFAN_BOLTZMANN 5.670373e-5
+#define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/
+#define  HUBBLE          3.24077929e-18	/* 100 km/s in h/sec */
 #define OMEGAR (4*STEFAN_BOLTZMANN*8*M_PI*GRAVITY/(3*LIGHTCGS*LIGHTCGS*LIGHTCGS*HUBBLE*HUBBLE*HubbleParam*HubbleParam)*pow(T_CMB0,4))
 
 /* Check that the table gives the right answer. */

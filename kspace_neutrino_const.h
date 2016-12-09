@@ -8,8 +8,6 @@
 
 /*Speed of light in cm/s: in allvars.h this is called 'C'*/
 #define  LIGHTCGS           2.99792458e10
-#define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/
-#define  HUBBLE          3.24077929e-18	/* 100 km/s in h/sec */
 #define BOLEVK 8.61734e-5        /*The Boltzmann constant in units of eV/K*/
 
 #define FLOAT   1e-6            /*Floating point accuracy*/

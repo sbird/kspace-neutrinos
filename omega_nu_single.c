@@ -1,6 +1,5 @@
 #include "omega_nu_single.h"
 
-#include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
 
 #include <math.h>
@@ -10,6 +9,7 @@
 
 #define HBAR    6.582119e-16  /*hbar in units of eV s*/
 #define STEFAN_BOLTZMANN 5.670373e-5
+#define  GRAVITY     6.67408e-8 /*Newton's constant in cgs*/
 /*Size of matter density tables*/
 #define NRHOTAB 200
 
