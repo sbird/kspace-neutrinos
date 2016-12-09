@@ -172,6 +172,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+2*nk_allocated;
   long long int * count = mymalloc("temp_modecount", nk_allocated*sizeof(long long int));
+  const double scale=pow(2*M_PI/BoxSize,3);
   if(!delta_cdm_curr || !delta_nu_curr || !keff || !count)
       terminate("Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
@@ -179,7 +180,6 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
    * This function stores the total power*no. modes.*/
   nk_in = total_powerspectrum(pmgrid, fft_of_rhogrid, nk_allocated, slabstart_y, nslab_y, delta_cdm_curr, count, keff, MYMPI_COMM_WORLD);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
-  const double scale=pow(2*M_PI/BoxSize,3);
   for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
       keff[i] *= (2*M_PI/BoxSize);
