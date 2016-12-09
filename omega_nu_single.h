@@ -2,6 +2,7 @@
 #define OMEGA_NU_SINGLE_H
 /*This file contains routines for computing the matter density in a single neutrino species*/
 #include <gsl/gsl_interp.h>
+#include "kspace_neutrino_const.h"
 
 /* Ratio between the massless neutrino temperature and the CMB temperature.
  * Note there is a slight correction from 4/11
@@ -12,10 +13,7 @@
  * See https://github.com/lesgourg/class_public/blob/master/explanatory.ini
  */
 #define TNUCMB     (pow(4/11.,1/3.)*1.00328)              /* Neutrino + antineutrino background temperature in Kelvin */
-/* for three massive neutrino species:
-* Could be made configurable at some point
-* Neutrino masses are in eV*/
-#define NUSPECIES 3
+
 /* Tables for rho_nu: stores precomputed values between
  * simulation start and a M_nu = 20 kT_nu for a single neutrino species.*/
 struct _rho_nu_single {
