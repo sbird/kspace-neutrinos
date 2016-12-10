@@ -52,6 +52,11 @@ extern struct __kspace_params {
  * Arguments: a - scale factor. */
 double OmegaNu(double a);
 
+/* Compute the matter density in neutrinos, 
+ * excluding density in particles.
+ * Mostly useful for Gadget's check_omega.*/
+double OmegaNu_nopart(double a);
+
 /** This function allocates memory for the neutrino tables, and loads the initial transfer
  * functions from CAMB transfer files.
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.

@@ -71,6 +71,13 @@ double OmegaNu(double a)
     return get_omega_nu(&omeganu_table, a);
 }
 
+/* Compute the matter density in neutrinos, 
+ * excluding density in particles.*/
+double OmegaNu_nopart(double a)
+{
+    return get_omega_nu_nopart(&omeganu_table, a);
+}
+
 void save_nu_state(char * savedir)
 {
     if(delta_tot_table.ThisTask == 0)
