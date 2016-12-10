@@ -34,7 +34,7 @@ MNum                        MNu[1]                    -         Second neutrino 
 MNut                        MNu[2]                    -         Third neutrino mass. Note the observed mass splitting is not enforced.
 Vcrit                       vcrit                    500        Critical velocity in the Fermi-Dirac distribution below which the neutrinos
                                                                 are followed with particles, if hybrid neutrinos are on.
-NuPartTime                  nu_crit_time              2.        Scale factor at which to 'turn on', ie, make active gravitators, 
+NuPartTime                  nu_crit_time              0.3333    Scale factor at which to 'turn on', ie, make active gravitators, 
                                                                 the particle neutrinos, if hybrid neutrinos are on.
 INTS:
 HybridNeutrinosOn           hybrid_neutrinos_on       0         Whether hybrid neutrinos are enabled.
