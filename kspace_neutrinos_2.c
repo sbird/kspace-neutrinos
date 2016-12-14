@@ -213,7 +213,8 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
    * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
   const double OmegaNua3 = get_omega_nu_nopart(&omeganu_table, Time)*pow(Time,3);
   /*kspace_prefac = M_nu (analytic) / M_particles */
-  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time));
+  const double OmegaNu_nop = get_omega_nu_nopart(&omeganu_table, Time);
+  const double kspace_prefac = OmegaNu_nop*pow(Time,3)/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time) - OmegaNu_nop);
   init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
   return d_pow;
 }
