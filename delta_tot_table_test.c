@@ -175,7 +175,7 @@ static void test_get_delta_nu_update(void **state)
     assert_true(log(0.3333333)-d_tot.scalefact[d_tot.ia-1] > 1e-5);
     /*So now we have a fully initialised d_tot. Update it!*/
     double delta_nu_curr[d_pow->nbins];
-    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr);
+    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
     /*Check that we did indeed update*/
     assert_true(d_tot.ia == 25);
     /*Check that we get the same answer as the saved powerspectrum*/
@@ -184,7 +184,7 @@ static void test_get_delta_nu_update(void **state)
     }
     /*Throw out the last stored power spectrum and try again, so that we will perform a save*/
     d_tot.ia--;
-    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr);
+    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
     assert_true(d_tot.ia == 25);
     /*Check that we get the same answer as the saved powerspectrum*/
     for(int ik=0; ik < d_tot.nk; ik++) {
@@ -316,7 +316,7 @@ static void test_reproduce_linear(void **state)
         snprintf(tfile, 150, "camb_linear/ics_transfer_%2g.dat",scalefact);
         snprintf(mfile, 150, "camb_linear/ics_matterpow_%2g.dat",scalefact);
         load_camb_transfer(tfile, mfile, NREAD, delta_cdm, delta_nu_camb, keffs, 2*M_PI/512.);
-        get_delta_nu_update(&d_tot, scalefact, NREAD, keffs, delta_cdm, delta_nu);
+        get_delta_nu_update(&d_tot, scalefact, NREAD, keffs, delta_cdm, delta_nu, &transfer);
         if(d_tot.ia != i+1)
             printf("%d %d \n", d_tot.ia, i+1);
         assert_true(d_tot.ia == i+1);

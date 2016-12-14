@@ -199,10 +199,15 @@ void update_delta_tot(_delta_tot_table * const d_tot, const double a, const doub
  * @param keff is an array of length nk containing (natural) log k
  * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
  * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
+ * @param transfer_init is a pointer to the structure containing transfer tables.
 ******************************************************************************************************/
-void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double delta_cdm_curr[], double delta_nu_curr[])
+void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double delta_cdm_curr[], double delta_nu_curr[], _transfer_init_table * transfer_init)
 {
   int ik;
+  /*Initialise delta_tot if we didn't already*/
+  if(!d_tot->delta_tot_init_done) {
+    delta_tot_init(d_tot, nk_in, keff, delta_cdm_curr, transfer_init, a);
+  }
   /* Get a delta_nu_curr from CAMB.*/
   if(!d_tot->delta_tot_init_done)
       terminate("Should have called delta_tot_init first\n");
@@ -244,6 +249,14 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
    /*Otherwise discard the last powerspectrum*/
    else
        d_tot->ia--;
+   /*Sanity-check the output*/
+   for(ik=0;ik<d_tot->nk;ik++){
+          if(isnan(delta_nu_curr[ik]) || delta_nu_curr[ik] < 0){
+                  char err[300];
+                  snprintf(err,300,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
+                  terminate(err);
+          }
+   }
    return;
 }
 

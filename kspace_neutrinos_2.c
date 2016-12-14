@@ -187,19 +187,9 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
       keff[i] *= (2*M_PI/BoxSize);
   }
-  /*Initialise delta_tot if we didn't already*/
-  if(!delta_tot_table.delta_tot_init_done) {
-    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init, Time);
-  }
   /*This sets up P_nu_curr.*/
-  get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr);
-  for(i=0;i<nk_in;i++){
-          if(isnan(delta_nu_curr[i]) || delta_nu_curr[i] < 0){
-                  char err[300];
-                  snprintf(err,300,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[i],i,delta_cdm_curr[i],keff[i]);
-                  terminate(err);
-          }
-  }
+  get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
+
   MPI_Barrier(MYMPI_COMM_WORLD);
   if(delta_tot_table.ThisTask==0)
 	printf("Done get_delta_nu_update on all processors\n");

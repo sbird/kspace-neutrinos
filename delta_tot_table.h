@@ -64,7 +64,7 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
 void update_delta_tot(_delta_tot_table * const d_tot, const double a, const double delta_cdm_curr[], const double delta_nu_curr[], const int overwrite);
 
 /*Function called by add_nu_power_to_rhogrid*/
-void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double P_cdm_curr[], double delta_nu_curr[]);
+void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double P_cdm_curr[], double delta_nu_curr[], _transfer_init_table * transfer_init);
 
 /*This function does the work and updates delta_nu_curr*/
 void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const double wavenum[], double delta_nu_curr[], const double mnu);
