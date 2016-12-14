@@ -159,7 +159,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
  * nslab_y - number of elements of the FFT on this rank.
  * MYMPI_COMM_WORLD - MPI communicator to use
- * Global state used: delta_tot_table
+ * Global state used: delta_tot_table, transfer_init, omeganu_table
  * Returns: _delta_pow, containing delta_nu/delta_cdm*/
 _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
 {
@@ -189,21 +189,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   }
   /*Initialise delta_tot if we didn't already*/
   if(!delta_tot_table.delta_tot_init_done) {
-    /*Discard any delta_tot (read from a file) later than the current time*/
-    for(i=0; i<delta_tot_table.ia; i++) {
-    	if(log(Time) <= delta_tot_table.scalefact[i]) {
-            if(delta_tot_table.ThisTask==0)
-                printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, delta_tot_table.ia, i);
-            delta_tot_table.ia = i;
-            break;
-	    }
-    }
-    /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
-    if(Time > delta_tot_table.TimeTransfer+0.01 &&
-	(delta_tot_table.ia == 0 || delta_tot_table.scalefact[delta_tot_table.ia-1] < log(Time-0.04)) ) {
-        terminate("Did not read delta_tot from resume file, but we probably should have\n");
-    }
-    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init);
+    delta_tot_init(&delta_tot_table, nk_in, keff, delta_cdm_curr, &transfer_init, Time);
   }
   /*This sets up P_nu_curr.*/
   get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr);

@@ -67,7 +67,7 @@ static void test_save_resume(void **state)
     }
     /*Now check that calling delta_tot_init after this works.*/
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer);
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer, 0.3333333);
     assert_true(d_tot.ia == 25);
     /*Check we initialised delta_nu_init and delta_nu_last*/
     for(int ik=0; ik < d_tot.nk; ik++) {
@@ -100,7 +100,7 @@ static void test_delta_tot_init(void **state)
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer);
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer,0.01);
     assert_true(d_tot.ia == 1);
     assert_true(d_tot.scalefact[0] == log(0.01));
     /*Check the initial power spectra were created properly*/
@@ -170,7 +170,7 @@ static void test_get_delta_nu_update(void **state)
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/");
     /*Then init delta_tot*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer);
+    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer,0.33333333);
     /*Check that we will actually do something*/
     assert_true(log(0.3333333)-d_tot.scalefact[d_tot.ia-1] > 1e-5);
     /*So now we have a fully initialised d_tot. Update it!*/
@@ -298,7 +298,7 @@ static void test_reproduce_linear(void **state)
     _delta_tot_table d_tot;
     allocate_delta_tot_table(&d_tot, NREAD, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /*Initialise*/
-    delta_tot_init(&d_tot, NREAD, keffs, delta_cdm, &transfer);
+    delta_tot_init(&d_tot, NREAD, keffs, delta_cdm, &transfer,0.01);
     /* Desired accuracy. The first few integrations are less accurate.
      * For the first values we have fewer integration points,
      * and later we assume non-relativistic neutrinos.

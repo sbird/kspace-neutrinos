@@ -74,9 +74,22 @@ void handler (const char * reason, const char * file, int line, int gsl_errno)
  * Initialises delta_tot (including from a file) and delta_nu_init from the transfer functions.
  * read_all_nu_state must be called before this if you want reloading from a snapshot to work
  * Note delta_cdm_curr includes baryons, and is only used if not resuming.*/
-void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const double wavenum[], const double delta_cdm_curr[], const _transfer_init_table * const t_init)
+void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const double wavenum[], const double delta_cdm_curr[], const _transfer_init_table * const t_init, const double Time)
 {
     int ik;
+    /*Discard any delta_tot (read from a file) later than the current time*/
+    for(ik=0; ik<d_tot->ia; ik++) {
+        if(log(Time) <= d_tot->scalefact[ik]) {
+            if(d_tot->ThisTask==0)
+                printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, d_tot->ia, ik);
+            d_tot->ia = ik;
+            break;
+	    }
+    }
+    /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
+    if(Time > d_tot->TimeTransfer+0.01 && (d_tot->ia == 0 || d_tot->scalefact[d_tot->ia-1] < log(Time-0.04)) ) {
+        terminate("Did not read delta_tot from resume file, but we probably should have\n");
+    }
     if(nk_in > d_tot->nk_allocated){
            char err[500];
            sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
