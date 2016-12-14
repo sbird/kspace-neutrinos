@@ -201,7 +201,12 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   }
   /*kspace_prefac = M_nu (analytic) / M_particles */
   const double OmegaNu_nop = get_omega_nu_nopart(&omeganu_table, Time);
-  const double kspace_prefac = OmegaNu_nop*pow(Time,3)/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time) - OmegaNu_nop);
+  /* Note if (hybrid) neutrino particles are off, this is zero.
+   * We cannot just use OmegaNu(1) as we need to know
+   * whether hybrid neutrinos are on at this redshift.*/
+  const double omega_hybrid = get_omega_nu(&omeganu_table, Time) - OmegaNu_nop;
+  /* Omega0 - Omega in neutrinos + Omega in particle neutrinos = Omega in particles*/
+  const double kspace_prefac = OmegaNu_nop/(delta_tot_table.Omeganonu/pow(Time,3) + omega_hybrid);
   init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
   return d_pow;
 }
