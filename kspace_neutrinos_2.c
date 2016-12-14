@@ -121,7 +121,8 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
  * tcmb0 - present-day CMB temperature
  * snapdir - snapshot directory to try to read state and resume from
  * TimeMax - Final redshift desired, sets number of output redshift bins
- * MYMPI_COMM_WORLD - MPI  communicator*/
+ * MYMPI_COMM_WORLD - MPI  communicator
+ * Global state used: omeganu_table, delta_tot_table, transfer_init */
 void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
@@ -148,9 +149,8 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
 }
 
-/* This function adds the neutrino power spectrum to the
- * density grid. It calls the internal power spectrum routine and the neutrino integrator.
- * It then adds the neutrino power to fft_of_rhogrid, which is the fourier transformed density grid from the PM code.
+/* This function calculates the matter power spectrum, then calls the integrator to compute the neutrino power spectrum,
+ * which is stored in _delta_pow and returned.
  * Arguments:
  * Time - scale factor, a.
  * BoxSize - size of the box in internal units.
@@ -158,13 +158,12 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * pmgrid - size of one dimension of the density grid.
  * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
  * nslab_y - number of elements of the FFT on this rank.
- * snapnum - number of snapshot to save neutrino power spectrum as powerspec_nu_$(snapnum).txt
- * OutputDir - output directory for neutrino power spectrum.
  * MYMPI_COMM_WORLD - MPI communicator to use
- */
-void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD)
+ * Global state used: delta_tot_table
+ * Returns: _delta_pow, containing delta_nu/delta_cdm*/
+_delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
 {
-  int i,x,y,z, nk_in;
+  int i, nk_in;
   const int nk_allocated = delta_tot_table.nk_allocated;
   /*Calculate the power for kspace neutrinos*/
   /* (square root of) the power spectrum.*/
@@ -181,6 +180,8 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
   nk_in = total_powerspectrum(pmgrid, fft_of_rhogrid, nk_allocated, slabstart_y, nslab_y, delta_cdm_curr, count, keff, MYMPI_COMM_WORLD);
+  /*Don't need count memory any more*/
+  myfree(count);
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
@@ -192,10 +193,10 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
     for(i=0; i<delta_tot_table.ia; i++) {
     	if(log(Time) <= delta_tot_table.scalefact[i]) {
             if(delta_tot_table.ThisTask==0)
-		printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, delta_tot_table.ia, i);
+                printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, delta_tot_table.ia, i);
             delta_tot_table.ia = i;
- 	    break;
-	}
+            break;
+	    }
     }
     /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
     if(Time > delta_tot_table.TimeTransfer+0.01 &&
@@ -228,6 +229,27 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*kspace_prefac = M_nu (analytic) / M_particles */
   const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time));
   init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
+  return d_pow;
+}
+
+/* This function adds the neutrino power spectrum to the
+ * density grid. It calls the internal power spectrum routine and the neutrino integrator.
+ * It then adds the neutrino power to fft_of_rhogrid, which is the fourier transformed density grid from the PM code.
+ * Arguments:
+ * Time - scale factor, a.
+ * BoxSize - size of the box in internal units.
+ * fft_of_rhogrid - Fourier transformed density grid.
+ * pmgrid - size of one dimension of the density grid.
+ * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
+ * nslab_y - number of elements of the FFT on this rank.
+ * snapnum - number of snapshot to save neutrino power spectrum as powerspec_nu_$(snapnum).txt
+ * OutputDir - output directory for neutrino power spectrum.
+ * MYMPI_COMM_WORLD - MPI communicator to use
+ */
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD)
+{
+  int x,y,z;
+  _delta_pow d_pow = compute_neutrino_power_spectrum(Time, BoxSize, fft_of_rhogrid, pmgrid, slabstart_y, nslab_y, MYMPI_COMM_WORLD);
   /*Add P_nu to fft_of_rhgrid*/
   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
     for(x = 0; x < pmgrid; x++)
@@ -263,8 +285,8 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
             if(save_nu_power(&d_pow, Time, snapnum, OutputDir))
                 terminate("Could not save neutrino power\n");
   }
+  /*Free memory*/
   free_d_pow(&d_pow);
-  myfree(count);
-  myfree(delta_cdm_curr);
+  myfree(d_pow.delta_cdm_curr);
   return;
 }
