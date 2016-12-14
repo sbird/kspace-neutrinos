@@ -12,12 +12,13 @@ struct _delta_pow{
     gsl_interp *spline_cdm;
     gsl_interp_accel * acc;
     int nbins;
+    double norm;
 };
 typedef struct _delta_pow _delta_pow;
 
 /* Initialise the structure for given power spectra. Note only pointers are stored; no copy of the actual array is made.
  * The thing interpolated is delta_nu_curr/delta_cdm_curr.*/
-void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins);
+void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins, double norm);
 
 /*Get P_nu(k)/P_cdm(k) for arbitrary k*/
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);

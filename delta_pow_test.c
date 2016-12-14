@@ -135,7 +135,7 @@ static int setup_delta_pow(void **state) {
         return 1;
     }
     /*Now initialise data structure*/
-    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins);
+    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins,1.);
     *state = (void *) d_pow;
     return 0;
 }

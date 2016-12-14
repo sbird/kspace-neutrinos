@@ -413,7 +413,7 @@ static int setup_delta_pow(void **state) {
          delta_cdm_curr[ik] = (delta_cdm_curr[ik] - fnu*delta_nu_curr[ik])/(1.-fnu);
     }
     /*Now initialise data structure*/
-    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins);
+    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins,1.);
     const double UnitLength_in_cm = 3.085678e21;
     allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, get_omega_nu(ts->omnu, 1), 0.2793, "testdata/ics_transfer_99.dat");
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;

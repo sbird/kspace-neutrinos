@@ -164,11 +164,6 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  */
 void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD)
 {
-  /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
-   * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
-  const double OmegaNua3 = get_omega_nu_nopart(&omeganu_table, Time)*pow(Time,3);
-  /*kspace_prefac = M_nu (analytic) / M_particles */
-  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time));
   int i,x,y,z, nk_in;
   const int nk_allocated = delta_tot_table.nk_allocated;
   /*Calculate the power for kspace neutrinos*/
@@ -227,7 +222,12 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   for(i=0;i<nk_in;i++){
       keff[i] = log(keff[i]);
   }
-  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in);
+  /*Some of the neutrinos will be relativistic at early times. However, the transfer function for the massless neutrinos
+   * is very similar to the transfer function for the massive neutrinos, so treat them the same*/
+  const double OmegaNua3 = get_omega_nu_nopart(&omeganu_table, Time)*pow(Time,3);
+  /*kspace_prefac = M_nu (analytic) / M_particles */
+  const double kspace_prefac = OmegaNua3/(delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)-get_omega_nu_nopart(&omeganu_table, Time));
+  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
   /*Add P_nu to fft_of_rhgrid*/
   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
     for(x = 0; x < pmgrid; x++)
@@ -248,7 +248,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
            * We have delta_t = (M_cdm+M_nu)*delta_cdm (1-f_nu + f_nu (delta_nu / delta_cdm)^1/2)
            * which gives the right power spectrum, once we divide by
            * M_cdm +M_nu in powerspec*/
-          smth=(1+kspace_prefac * get_dnudcdm_powerspec(&d_pow, k2));
+          smth=(1+get_dnudcdm_powerspec(&d_pow, k2));
           if(isnan(smth))
                 terminate("delta_nu or delta_cdm is nan\n");
           ip = pmgrid * (pmgrid / 2 + 1) * (y - slabstart_y) + (pmgrid / 2 + 1) * x + z;
