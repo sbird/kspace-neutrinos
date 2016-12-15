@@ -119,7 +119,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
  * MYMPI_COMM_WORLD - MPI communicator to use
  * Global state used: delta_tot_table, transfer_init, omeganu_table
  * Returns: _delta_pow, containing delta_nu/delta_cdm*/
-_delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const double Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
+_delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
 {
   int i;
   /*Allocate memory to copy power spectrum to. The caller may free the input before we are done.*/

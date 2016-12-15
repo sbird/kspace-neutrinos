@@ -61,7 +61,7 @@ double OmegaNu_nopart(double a);
 void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);
 
 /*Compute the neutrino power spectrum using an externally computed matter power spectrum*/
-_delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const double Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD);
+_delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD);
 
 /*Save the internal state of the integrator to disc.
  * Arguments: savedir - Output file is savedir/delta_tot_nu.txt.
