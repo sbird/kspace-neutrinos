@@ -2,8 +2,8 @@ LFLAGS += -lgsl -lgslcblas -lpthread
 CFLAGS +=-O2 -ffast-math -g -Wall -fopenmp ${OPT}
 LFLAGS += -lm -lgomp
 
-OBJS = transfer_init.o delta_tot_table.o powerspectrum.o delta_pow.o kspace_neutrinos_2.o omega_nu_single.o
-INCL = kspace_neutrino_const.h kspace_neutrinos_2.h powerspectrum.h delta_pow.h omega_nu_single.h gadget_defines.h transfer_init.h delta_tot_table.h Makefile
+OBJS = transfer_init.o delta_tot_table.o powerspectrum.o delta_pow.o interface_common.o omega_nu_single.o interface_gadget.o
+INCL = kspace_neutrino_const.h interface_common.h interface_gadget.h powerspectrum.h delta_pow.h omega_nu_single.h gadget_defines.h transfer_init.h delta_tot_table.h Makefile
 
 .PHONY : clean all test
 
@@ -20,7 +20,10 @@ run_%_test: %_test
 %.o: %.c ${INCL}
 	$(CC) -c $(CFLAGS) $< -o $@
 
-kspace_neutrinos_2.o: kspace_neutrinos_2.c ${INCL}
+interface_common.o: interface_common.c ${INCL}
+	mpicc -c $(CFLAGS) $< -o $@
+
+interface_gadget.o: interface_gadget.c ${INCL}
 	mpicc -c $(CFLAGS) $< -o $@
 
 powerspectrum.o: powerspectrum.c ${INCL}

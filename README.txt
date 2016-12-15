@@ -17,7 +17,7 @@ cmocka for the test suite.
 The neutrino linear response code takes the following parameters, which should 
 be set in the parameter file of your N-body code. Parameter file name shows the default key 
 as written in the parameter file, while internal variable gives the member of the 
-kspace_params structure in kspace_neutrinos_2.c . Default values are given where relevant:
+kspace_params structure in interface_common.c . Default values are given where relevant:
 Parameter file name         Internal Variable       Default     Description
 
 STRINGS:
@@ -52,31 +52,37 @@ variety of codes in use, some manual adjustment may still be necessary.
 This document details the steps to take.
 
 All interfacing between the neutrino integrator and the rest of 
-the code goes through the routines in kspace_neutrinos_2.c 
-and kspace_neutrinos_2.h Ideally therefore, you should just 
+the code goes through the routines in interface_common.c 
+and interface_common.h Ideally therefore, you should just 
 call these routines at the correct points in your code 
 and add the .c files to your Makefile. 
+Interfaces specific to Gadget-3, in particular assuming FFTW2 and Gadget's 
+parameter reading routines, are found in interface_gadget.[ch]. 
+If you are using Gadget-3, you can just include these files.
 Note we do not use global Gadget variables, nor Gadget configuration switches.
 
 The three main routines are:
 OmegaNu(a): the matter density in neutrinos, should be added to the Hubble function
 allocate_kspace_memory(): allocates and sets up the neutrino module. Do it before calling OmegaNu.
+
 add_nu_power_to_rhogrid(): call this inside your PM routine to add the neutrino power to the grid,
-Further documentation is provided inside kspace_neutrinos_2.h
+Further documentation is provided inside interface_gadget.h
 
 Note that add_nu_power_to_rhogrid assumes the (slab-decomposed) FFTW 2, with a type complex number type fftw_complex,
-as this is used in almost all gadget versions. If this does not match your code, you will need to alter 
-powerspectrum.c (or use a power spectrum routine built into your code) and change the loop on line 225 
-of kspace_neutrinos_2.c just after init_delta_pow.
+as this is used in almost all gadget versions. If this does not match your code, the routine 
+compute_neutrino_power_from_cdm takes a pre-computed matter power spectrum, and you should adapt the for loop
+in add_nu_power_to_rhogrid to your own FFT routines.
 
 The .c files which need to be compiled in are:
 delta_pow.c - GSL interpolation for neutrino power spectra
 delta_tot_table.c - Core integrator that computes delta_nu given a matter power spectrum.
-kspace_neutrinos_2.c - Routines to do the messy business of interfacing with Gadget. 
+interface_common.c - Routines to do the messy business of interfacing with Gadget. 
                        Also stores the state for the neutrino code in the form of global variables.
-omega_nu_single.c -  Routines to compute OmegaNu and OmegaR 
+interface_gadget.c - Interface routines which assume FFTW2 and are only suitable for Gadget-3.
+                       Also stores the state for the neutrino code in the form of global variables.
 powerspectrum.c - Routine to compute the power spectrum of a Fourier-transformed density field, 
                     divided up between processors as by FFTW2.
+omega_nu_single.c -  Routines to compute OmegaNu and OmegaR 
 transfer_init.c - Routine to read and parse CAMB formatter transfer functions.
 
 Other c files are: 
@@ -86,7 +92,7 @@ gadget_defines.c - support infrastructure normally in gadget for the tests.
 You should also provide a routine to read the parameters required 
 by the neutrino integrator from your code's parameter file. 
 An example routine for Gadget-3 called set_kspace_vars is provided in
-kspace_neutrinos_2.h
+interface_gadget.h
 
 Your code should provide the routines declared in gadget_defines.h.
 These are:
