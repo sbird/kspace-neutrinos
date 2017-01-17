@@ -1,4 +1,5 @@
-/*This file contains calculations for the Fourier-space semi-linear neutrino method
+/**\file
+ * Contains calculations for the Fourier-space semi-linear neutrino method
  * described in Ali-Haimoud and Bird 2012.
  * delta_tot_table stores the state of the integrator, which includes the matter power spectrum over all past time.
  * This file contains routines for manipulating this structure; updating it by computing a new neutrino power spectrum,
@@ -182,25 +183,6 @@ void update_delta_tot(_delta_tot_table * const d_tot, const double a, const doub
   }
 }
 
-/** Callable function to calculate the power spectra.
- * Calls the rest of the code internally.
- * In reality we will be given P_cdm(current) but not delta_tot.
- * Here is the full function that deals with this
- * Static variables used:
- * nk is the number of k values stored in each power spectrum
- * double scalefact[] is an array of length namax containing log (scale factor) at which the power spectrum is stored
- * double **delta_tot is a pointer to nk arrays of length namax containing the total power spectrum.
- * int ia is the number of already "recorded" time steps, i.e. scalefact[0...ia-1] is recorded.
- * Current time corresponds to index ia (but is only recorded if sufficiently far from previous time).
- * Caution: ia here is different from Na in get_delta_nu (Na = ia+1).
- * @param d_tot contains the state of the integrator; samples of the total power spectrum at earlier times.
- * @param a is the current scale factor
- * @param nk_in is the number of k bins in delta_cdm_curr and keff.
- * @param keff is an array of length nk containing (natural) log k
- * @param delta_cdm_curr is an array of length nk containing the square root of the current cdm power spectrum
- * @param delta_nu_curr is an array of length nk which stores the square root of the current neutrino power spectrum. Main output of the function.
- * @param transfer_init is a pointer to the structure containing transfer tables.
-******************************************************************************************************/
 void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const int nk_in, const double keff[], const double delta_cdm_curr[], double delta_nu_curr[], _transfer_init_table * transfer_init)
 {
   int ik;
@@ -485,31 +467,31 @@ double specialJ(const double x, const double qc)
   return specialJ_fit(x);
 }
 
-/*A structure for the parameters for the below integration kernel*/
+/**A structure for the parameters for the below integration kernel*/
 struct _delta_nu_int_params
 {
-    /*Current wavenumber*/
+    /**Current wavenumber*/
     double k;
-    /*Neutrino mass divided by k_B T_nu*/
+    /**Neutrino mass divided by k_B T_nu*/
     double mnubykT;
     gsl_interp_accel *acc;
     gsl_interp *spline;
-    /*Precomputed free-streaming lengths*/
+    /**Precomputed free-streaming lengths*/
     gsl_interp_accel *fs_acc;
     gsl_interp *fs_spline;
     double * fslengths;
     double * fsscales;
-    /*Make sure this is at the same k as above*/
+    /**Make sure this is at the same k as above*/
     double * delta_tot;
     double * scale;
-    /* qc is a dimensionless momentum (normalized to TNU): v_c * mnu / (k_B * T_nu).
+    /** qc is a dimensionless momentum (normalized to TNU): v_c * mnu / (k_B * T_nu).
      * This is the critical momentum for hybrid neutrinos: it is unused if
      * hybrid neutrinos are not defined, but left here to save ifdefs.*/
     double qc;
 };
 typedef struct _delta_nu_int_params delta_nu_int_params;
 
-/*Integration kernel for below*/
+/**GSL integration kernel for get_delta_nu*/
 double get_delta_nu_int(double logai, void * params)
 {
     delta_nu_int_params * p = (delta_nu_int_params *) params;
@@ -520,13 +502,11 @@ double get_delta_nu_int(double logai, void * params)
     return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a * p->mnubykT;
 }
 
-/*****************************************************************************************************
+/*
 Main function: given tables of wavenumbers, total delta at Na earlier times (<= a),
 and initial conditions for neutrinos, computes the current delta_nu.
 Na is the number of currently stored time steps.
-Requires transfer_init_tabulate to have been called prior to first call.
-******************************************************************************************************/
-
+*/
 void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const double wavenum[], double delta_nu_curr[],const double mnu)
 {
   double fsl_A0a,deriv_prefac;

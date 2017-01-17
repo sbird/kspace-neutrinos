@@ -65,22 +65,6 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
   }
 }
 
-/** This function loads the initial transfer functions from CAMB transfer files.
- * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
- * Output stored in T_nu_init and friends and has length NPowerTable is then broadcast to all processors.
- * Then, on all processors, it allocates memory for delta_tot_table.
- * This must be called *EARLY*, before OmegaNu, just after the parameters are read.
- * Arguments:
- * nk_in - number of bins desired in the neutrino power spectrum
- * ThisTask - MPI rank
- * BoxSize - size of box in internal units
- * UnitTime_in_s, UnitLength_in_cm - conversion factors from internal units to cgs.
- * Omega0 - total matter density (including massive neutrinos and baryons but not including radiation)
- * tcmb0 - present-day CMB temperature
- * snapdir - snapshot directory to try to read state and resume from
- * TimeMax - Final redshift desired, sets number of output redshift bins
- * MYMPI_COMM_WORLD - MPI  communicator
- * Global state used: omeganu_table, delta_tot_table, transfer_init */
 void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
@@ -107,18 +91,6 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
 }
 
-/* This function calls the integrator to compute the neutrino power spectrum,
- * taking as input a pre-computed matter power spectrum, assumed to have the same units as stored in transfer_init.
- * neutrino power spectrum is stored in _delta_pow and returned.
- * Memory allocated here must be freed later.
- * Arguments:
- * Time - scale factor, a.
- * keff_in - k values for each power bin. Has units of UnitLength_in_cm passed to transfer_init
- * P_cdm - Normalised matter power spectrum. Has units of UnitLength_in_cm passed to transfer_init
- * Nmodes - number of modes in each bin. Used only to see if bin is nonempty.
- * MYMPI_COMM_WORLD - MPI communicator to use
- * Global state used: delta_tot_table, transfer_init, omeganu_table
- * Returns: _delta_pow, containing delta_nu/delta_cdm*/
 _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
 {
   int i;

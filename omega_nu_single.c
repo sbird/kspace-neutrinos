@@ -88,7 +88,7 @@ double get_omegag(const _omega_nu * const omnu, const double a)
     return omegag/pow(a,4);
 }
 
-/* Value of kT/aM_nu on which to switch from the
+/** Value of kT/aM_nu on which to switch from the
  * analytic expansion to the numerical integration*/
 #define NU_SW 100
 

@@ -1,8 +1,12 @@
 #ifndef DELTA_POW_H
 #define DELTA_POW_H
-
+/**\file
+ * Functions for manipulating _delta_pow, which stores and interpolates a power spectrum.
+ */
 #include <gsl/gsl_interp.h>
 
+/** Opaque structure storing the interpolation functions and pointers to the memory
+ * holding the power spectra*/
 struct _delta_pow{
     double *logkk;
     double *delta_nu_curr;
@@ -16,16 +20,36 @@ struct _delta_pow{
 };
 typedef struct _delta_pow _delta_pow;
 
-/* Initialise the structure for given power spectra. Note only pointers are stored; no copy of the actual array is made.
- * The thing interpolated is delta_nu_curr/delta_cdm_curr.*/
+/** Initialise the structure for given power spectra. This initialises various interpolation routines 
+ * from precomputed delta_cdm and delta_nu.
+ * Note only pointers are stored; no copy of the actual array is made, so you must not free memory while d_pow is active.
+ * The thing interpolated is delta_nu_curr/delta_cdm_curr.
+ * @param d_pow (opaque) structure being initialised.
+ * @param logkk Array containing log-k
+ * @param delta_nu_curr array containing neutrino power spectrum at bins specified by logkk
+ * @param delta_cdm_curr array containing CDM power spectrum at bins specified by logkk
+ * @param nbins number of bins in earlier arrays.
+ * @param norm constant which multiplies the value returned by get_dnudcdm_powerspec. 
+ * Useful for reintroducing dimensions in the power spectrum.*/
 void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins, double norm);
 
-/*Get P_nu(k)/P_cdm(k) for arbitrary k*/
+/**Get P_nu(k)/P_cdm(k) for arbitrary k. This will become: 
+ * \f$\delta_\nu = \delta_{CDM}(\vec{k}) \left(\delta_\nu(k) / \delta_{CDM} (k)\right)\f$,
+ * thus we get the right powerspectrum.
+ * @param d_pow (opaque) structure containing stored power spectrum and GSL interpolators.
+ * @param kk log(k) value to get delta_nu at
+ * @returns delta_nu / delta_CDM
+ * */
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);
 
-/*Save P_nu(k) to disc. Returns 0 on success.*/
+/** Save P_nu(k) to disc.
+ * @param d_pow power spectrum structure with data to save.
+ * @param Time output time.
+ * @param snapnum Number of snapshot directory to save into.
+ * @param OutputDir Output directory to save data in. If NULL, will save in current directory.
+ * @returns 0 on success*/
 int save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir);
 
-/*Free memory for the GSL structure*/
+/** Free memory for the GSL structure*/
 void free_d_pow(_delta_pow * d_pow);
 #endif

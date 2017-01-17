@@ -20,20 +20,6 @@ void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], d
   gsl_interp_init(d_pow->spline_nu,d_pow->logkk,d_pow->delta_nu_curr,nbins);
 }
 
-/*Get the neutrino power spectrum. This will become:
- * \delta_\nu = \delta_{CDM}(\vec{k}) * delta_\nu(k) / delta_{CDM} (k),
- * thus we get the right powerspectrum.
- * @param kk log(k) value to get delta_nu at
- * @param logkk[] vector of k values corresponding to delta_nu_curr
- * @param delta_nu_curr vector of delta_nu
- * @param spline_nu interpolating spline for delta_nu_curr
- * @param acc_nu accelerator for spline_nu
- * @param delta_cdm_curr vector of delta_cdm
- * @param spline_cdm interpolating spline for delta_cdm_curr
- * @param acc accelerator for spline_cdm
- * @param nbins number of bins in delta_nu_curr and delta_cdm_curr
- * @returns delta_nu / delta_CDM
- * */
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk)
 {
         double delta_cdm,delta_nu;

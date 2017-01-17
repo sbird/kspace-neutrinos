@@ -5,9 +5,12 @@ LFLAGS += -lm -lgomp
 OBJS = transfer_init.o delta_tot_table.o powerspectrum.o delta_pow.o interface_common.o omega_nu_single.o interface_gadget.o
 INCL = kspace_neutrino_const.h interface_common.h interface_gadget.h powerspectrum.h delta_pow.h omega_nu_single.h gadget_defines.h transfer_init.h delta_tot_table.h Makefile
 
-.PHONY : clean all test
+.PHONY : clean all test doc
 
 all: lib
+
+doc:
+	doxygen
 
 lib: ${OBJS}
 	ar rcs libkspace_neutrinos_2.a $^
