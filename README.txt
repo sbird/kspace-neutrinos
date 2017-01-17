@@ -6,6 +6,12 @@ which can be run with 'make test' and aims to be easily portable to a variety of
 You are welcome to use it as desired, but please cite Ali-Haimoud & Bird 2013, and 
 Bird & Ali-Haimoud 2017 if you use the hybrid neutrinos.
 
+==Building==
+'make all' will make a static library
+'make test' will perform the runtime tests.
+'make doc' will run doxygen (if installed) and generate html documentation,
+which can be browsed by opening doc/html/index.html in a web browser.
+
 ==Dependencies==
 
 GSL
