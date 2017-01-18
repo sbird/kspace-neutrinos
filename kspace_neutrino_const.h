@@ -14,7 +14,7 @@
 #define BOLEVK 8.61734e-5
 
 /** Floating point accuracy*/
-#define FLOAT   1e-6
+#define FLOAT_ACC   1e-6
 /** Number of bins in integrations*/
 #define GSL_VAL 200
 

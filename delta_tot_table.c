@@ -201,7 +201,7 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
       terminate(err);
   }
   /*If we get called twice with the same scale factor, do nothing*/
-  if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT){
+  if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT_ACC){
        for (ik = 0; ik < d_tot->nk; ik++)
                delta_nu_curr[ik] = d_tot->delta_nu_last[ik];
        return;

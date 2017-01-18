@@ -29,7 +29,7 @@ void init_omega_nu(_omega_nu * omnu, const double MNu[], const double a0, const 
         int mmi;
         omnu->nu_degeneracies[mi]=0;
         for(mmi=0; mmi<mi; mmi++){
-            if(fabs(MNu[mi] -MNu[mmi]) < FLOAT){
+            if(fabs(MNu[mi] -MNu[mmi]) < FLOAT_ACC){
                 omnu->nu_degeneracies[mmi]+=1;
                 break;
             }
