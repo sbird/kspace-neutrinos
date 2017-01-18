@@ -17,11 +17,11 @@
 /*Global neutrino module parameters*/
 struct __kspace_params kspace_params;
 
-static _transfer_init_table transfer_init;
+_transfer_init_table transfer_init;
 
-static _delta_tot_table delta_tot_table;
+_delta_tot_table delta_tot_table;
 
-static _omega_nu omeganu_table;
+_omega_nu omeganu_table;
 
 /*Compute the matter density in neutrinos*/
 double OmegaNu(double a)
