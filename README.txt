@@ -49,6 +49,32 @@ Note that total_powerspectrum returns a power spectrum which is in units of the 
 that is, P(k) * N^2, where N is the number of modes in each bin. After investigation, no attempt 
 is made to smooth the power spectrum by averaging neighbouring bins.
 
+==Using kspace neutrinos with your version of Gadget.==
+
+===MP-Gadget===
+The easiest way to use the code is with the public MP-Gadget,
+into which it is natively included, and which has many other features.
+
+===Gadget-2===
+As a convenience, we include patches to the
+public version of Gadget-2, which add the required function calls.
+To use kspace-neutrinos with Gadget-2:
+1) Extract this code to the "Gadget-2.0.7/Gadget2/kspace-neutrinos" subdirectory.
+2) Execute the script Gadget-2.0.7/Gadget2/kspace-neutrinos/gadget-2/apply-patches"
+which will patch the copy of Gadget-2.0.7 within which it finds itself.
+3) Add the two Makefile options:
+OPT   += -DINCLUDE_RADIATION
+OPT   += -DKSPACE_NEUTRINOS_2
+to your Makefile to enable kspace neutrinos.
+The first enables radiation density in the background Hubble expansion,
+the second enables massive neutrinos.
+
+===Gadget-3===
+We internally maintain patches to Gadget-3 which incorporate the neutrino code.
+Since Gadget-3 is not public at this time, and many different versions exist,
+these patches often require some work to apply. If you are interested in using
+them, we encourage you to contact Simeon Bird (spb@ias.edu) directly.
+
 ==Porting the neutrino library to a new code==
 
 This version of the neutrino integration library is written
