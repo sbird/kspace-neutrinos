@@ -1,0 +1,154 @@
+From fdd1d300b0f327294f66f99e27b05828d390eb1f Mon Sep 17 00:00:00 2001
+From: Simeon Bird <sbird4@jhu.edu>
+Date: Wed, 18 Jan 2017 10:01:09 -0500
+Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
+
+This will output a neutrino powerspectrum on every PM timestep.
+---
+ begrun.c      | 27 +++++++++++++++++++++++++--
+ init.c        |  6 ++++++
+ io.c          |  3 +++
+ pm_periodic.c |  5 +++++
+ proto.h       |  4 ++++
+ restart.c     |  8 ++++++++
+ 6 files changed, 51 insertions(+), 2 deletions(-)
+
+diff --git a/begrun.c b/begrun.c
+index f4a92d9..9fedff5 100644
+--- a/begrun.c
++++ b/begrun.c
+@@ -6,11 +6,10 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ #include <gsl/gsl_rng.h>
++#include <libgen.h>
+ 
+ #include "allvars.h"
+ #include "proto.h"
+-
+-
+ /*! \file begrun.c
+  *  \brief initial set-up of a simulation run
+  *
+@@ -41,6 +40,26 @@ void begrun(void)
+ 				   exchange during force computation */
+   set_units();
+ 
++#ifdef KSPACE_NEUTRINOS_2
++  /*This must be called before hubblefunction(a) is used for the first time*/
++  {
++      char *savedir = All.OutputDir;
++      char buf[1000];
++      /* If we are loading from a snapshot, load the neutrino state from the snapshot directory.
++       * Otherwise load it from the current working directory*/
++      if(RestartFlag == 2)
++      {
++        dirname(strcpy(All.InitCondFile,buf));
++        savedir = buf;
++      }
++      /*Load from a restart file*/
++      if(RestartFlag == 1)
++      {
++        savedir = All.OutputDir;
++      }
++      allocate_kspace_memory(PMGRID/2, ThisTask,All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, All.HubbleParam, 2.7255, savedir, All.TimeMax, MPI_COMM_WORLD);
++  }
++#endif
+ #if defined(PERIODIC) && (!defined(PMGRID) || defined(FORCETEST))
+   ewald_init();
+ #endif
+@@ -586,6 +605,10 @@ void read_parameter_file(char *fname)
+       addr[nt] = &All.MinGasTemp;
+       id[nt++] = DOUBLE;
+ 
++#if defined KSPACE_NEUTRINOS_2
++    nt = set_kspace_vars(tag, addr, id, nt);
++#endif
++
+       if((fd = fopen(fname, "r")))
+ 	{
+ 	  sprintf(buf, "%s%s", fname, "-usedvalues");
+diff --git a/init.c b/init.c
+index 7565646..76b58ee 100644
+--- a/init.c
++++ b/init.c
+@@ -171,6 +171,12 @@ void check_omega(void)
+   omega =
+     masstot / (All.BoxSize * All.BoxSize * All.BoxSize) / (3 * All.Hubble * All.Hubble / (8 * M_PI * All.G));
+ 
++#ifdef KSPACE_NEUTRINOS_2
++  /* Note this assumes that at z=0 hybrid neutrino particles will be active.
++   * If not, this will fail.*/
++  omega += OmegaNu_nopart(1);
++#endif//KSPACE_NEUTRINOS
++
+   if(fabs(omega - All.Omega0) > 1.0e-3)
+     {
+       if(ThisTask == 0)
+diff --git a/io.c b/io.c
+index 314527c..e63a19a 100644
+--- a/io.c
++++ b/io.c
+@@ -99,6 +99,9 @@ void savepositions(int num)
+     sprintf(buf, "%s%s_%03d.%d", All.OutputDir, All.SnapshotFileBase, num, filenr);
+   else
+     sprintf(buf, "%s%s_%03d", All.OutputDir, All.SnapshotFileBase, num);
++#ifdef KSPACE_NEUTRINOS_2
++      save_nu_state(buf);
++#endif
+ 
+   ngroups = All.NumFilesPerSnapshot / All.NumFilesWrittenInParallel;
+   if((All.NumFilesPerSnapshot % All.NumFilesWrittenInParallel))
+diff --git a/pm_periodic.c b/pm_periodic.c
+index 4d7859d..9c01fbb 100644
+--- a/pm_periodic.c
++++ b/pm_periodic.c
+@@ -374,6 +374,11 @@ void pmforce_periodic(void)
+ 
+   rfftwnd_mpi(fft_forward_plan, 1, rhogrid, workspace, FFTW_TRANSPOSED_ORDER);
+ 
++#ifdef KSPACE_NEUTRINOS_2
++  /*Add neutrino power to the Fourier grid*/
++  add_nu_power_to_rhogrid(All.Time, All.BoxSize, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, All.Time, All.OutputDir, MPI_COMM_WORLD);
++#endif
++
+   /* multiply with Green's function for the potential */
+ 
+   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
+diff --git a/proto.h b/proto.h
+index 364db59..d82a1e3 100644
+--- a/proto.h
++++ b/proto.h
+@@ -10,6 +10,10 @@
+ #include <hdf5.h>
+ #endif
+ 
++#ifdef KSPACE_NEUTRINOS_2
++#include "kspace-neutrinos/interface_gadget.h"
++#endif
++
+ void   advance_and_find_timesteps(void);
+ void   allocate_commbuffers(void);
+ void   allocate_memory(void);
+diff --git a/restart.c b/restart.c
+index 9fd4665..f6e07f6 100644
+--- a/restart.c
++++ b/restart.c
+@@ -40,6 +40,14 @@ void restart(int modus)
+   struct global_data_all_processes all_task0;
+ 
+ 
++#ifdef KSPACE_NEUTRINOS_2
++  if(ThisTask == 0 && modus == 0)
++    {
++      save_nu_state(All.OutputDir);
++    }
++  MPI_Barrier(MPI_COMM_WORLD);
++#endif
++
+   sprintf(buf, "%s%s.%d", All.OutputDir, All.RestartFile, ThisTask);
+   sprintf(buf_bak, "%s%s.%d.bak", All.OutputDir, All.RestartFile, ThisTask);
+   sprintf(buf_mv, "mv %s %s", buf, buf_bak);
+-- 
+2.9.3
+

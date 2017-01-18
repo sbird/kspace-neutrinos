@@ -1,0 +1,9 @@
+#!/bin/bash
+
+patchdir=$PWD
+echo $patchdir
+cd ../../
+for pp in $patchdir/*.patch; do
+    patch -p1 -N -i $pp
+done
+cd $patchdir
