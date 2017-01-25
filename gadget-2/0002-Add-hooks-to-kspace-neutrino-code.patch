@@ -1,4 +1,4 @@
-From fdd1d300b0f327294f66f99e27b05828d390eb1f Mon Sep 17 00:00:00 2001
+From 8319852d3fe069966b6b156fcf5d4e79effbf40b Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 10:01:09 -0500
 Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
@@ -14,7 +14,7 @@ This will output a neutrino powerspectrum on every PM timestep.
  6 files changed, 51 insertions(+), 2 deletions(-)
 
 diff --git a/begrun.c b/begrun.c
-index f4a92d9..9fedff5 100644
+index f4a92d9..298a995 100644
 --- a/begrun.c
 +++ b/begrun.c
 @@ -6,11 +6,10 @@
@@ -51,7 +51,7 @@ index f4a92d9..9fedff5 100644
 +      {
 +        savedir = All.OutputDir;
 +      }
-+      allocate_kspace_memory(PMGRID/2, ThisTask,All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, All.HubbleParam, 2.7255, savedir, All.TimeMax, MPI_COMM_WORLD);
++      allocate_kspace_memory(PMGRID/2, ThisTask,All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, All.HubbleParam, 2.7255, savedir, All.TimeBegin, All.TimeMax, MPI_COMM_WORLD);
 +  }
 +#endif
  #if defined(PERIODIC) && (!defined(PMGRID) || defined(FORCETEST))
