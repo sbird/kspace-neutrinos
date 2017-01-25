@@ -28,13 +28,16 @@ Parameter file name         Internal Variable       Default     Description
 
 STRINGS:
 KspaceTransferFunction      KspaceTransferFunction    -         File containing CAMB formatted output transfer functions.
-
+                                                                Used to set initial conditions for the neutrino integration.
 FLOATS:
-TimeTransfer                TimeTransfer              -         Scale factor at which the CAMB transfer functions were generated.
+TimeTransfer                TimeTransfer              -         Scale factor from which the neutrino integration should start.
+                                                                Must be equal to the scale factor of the simulation initial conditions, and should
+                                                                generally be the scale factor at which the CAMB transfer functions were generated.
 OmegaBaryonCAMB             OmegaBaryonCAMB           -         OmegaBaryon used for the CAMB transfer functions. 
                                                                 If the simulation is DM only, Gadget's OmegaBaryon=0, 
-                                                                but CAMB's does not.
-InputSpectrum_UnitLength_in_cm   ""                3.085678e24  Units of the CAMB transfer function in cm. By default Mpc.
+                                                                but CAMB's does not. Used to set the ratios of the
+                                                                transfer functions in the initial conditions.
+InputSpectrum_UnitLength_in_cm   ""                3.085678e24  Units of the CAMB transfer function in cm. By default 1 Mpc.
 MNue                        MNu[0]                    -         Mass of the lightest neutrino in eV.
 MNum                        MNu[1]                    -         Second neutrino mass in eV.
 MNut                        MNu[2]                    -         Third neutrino mass. Note the observed mass splitting is not enforced.
