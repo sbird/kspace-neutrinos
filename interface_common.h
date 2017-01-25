@@ -63,7 +63,7 @@ double OmegaNu_nopart(double a);
  * @param snapdir snapshot directory to try to read state and resume from
  * @param TimeMax Final scale factor desired, sets number of output redshift bins
  * @param MYMPI_COMM_WORLD MPI  communicator*/
-void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);
+void allocate_kspace_memory(const int nk_in, const int ThisTask,const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeBegin, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD);
 
 /** This function calls the integrator to compute the neutrino power spectrum,
  * taking as input a pre-computed matter power spectrum, assumed to have the same units as stored in transfer_init.

@@ -65,7 +65,7 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
   }
 }
 
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeBegin, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
@@ -76,6 +76,8 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
+      if(kspace_params.TimeTransfer > TimeBegin + 0.01)
+          terminate("TimeTransfer must be <= simulation start time\n");
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
   /*Broadcast data to other processors*/
