@@ -38,9 +38,13 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
     /*How many bins per unit (log) interval in k?*/
     const double binsperunit=(nrbins-1)/log(sqrt(3)*dims/2.0);
     int i, nonzero;
-    /*First element of the FFT stores the total mass*/
-    const double total_mass2 = outfield[0].re*outfield[0].re + outfield[0].im*outfield[0].im;
-    printf("total:%g\n", sqrt(total_mass2));
+    double total_mass2 = 0;
+    /* First element of the FFT stores the total mass, on the processor with the first slab.
+     * Note this may not be the rank 0 processor! */
+    if(startslab == 0){
+        total_mass2 = outfield[0].re*outfield[0].re + outfield[0].im*outfield[0].im;
+        printf("Total powerspectrum mass: %g\n", sqrt(total_mass2));
+    }
     /* Now we compute the powerspectrum in each direction.
      * FFTW is unnormalised, so we need to scale by the length of the array
      * (we do this later). */
@@ -87,6 +91,8 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
     MPI_Allreduce(countpriv, count, nrbins, MPI_LONG_LONG_INT, MPI_SUM, MYMPI_COMM_WORLD);
     MPI_Allreduce(powerpriv, power, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     MPI_Allreduce(keffspriv, keffs, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
+    /*Make sure total_mass is same on all processors.*/
+    MPI_Allreduce(MPI_IN_PLACE, &total_mass2, 1, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     /*Normalise by the total mass in the array*/
     for(i=0; i<nrbins;i++) {
         power[i]/=total_mass2;
