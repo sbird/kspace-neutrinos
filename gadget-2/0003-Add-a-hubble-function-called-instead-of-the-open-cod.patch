@@ -1,4 +1,4 @@
-From c8a2d993899f5828d13209dca4d5c2119c9c22ba Mon Sep 17 00:00:00 2001
+From 821ee1802c54a49535ce83240008c1aef67bde5c Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 16:56:03 -0500
 Subject: [PATCH 3/3] Add a hubble function, called instead of the open-coded
