@@ -35,7 +35,7 @@
  * @param OutputDir output directory for neutrino power spectrum. Neutrino power will be saved if this is non-null.
  * @param MYMPI_COMM_WORLD MPI communicator to use
  */
-void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD);
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD);
 
 /** Function which sets up the parameter reader to read kspace neutrino parameters from the parameter file. 
  * It will store them in a static variable, kspace_params, in the translation unit where the function is defined

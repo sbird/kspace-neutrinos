@@ -134,11 +134,9 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
  * pmgrid - size of one dimension of the density grid.
  * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
  * nslab_y - number of elements of the FFT on this rank.
- * snapnum - number of snapshot to save neutrino power spectrum as powerspec_nu_$(snapnum).txt
- * OutputDir - output directory for neutrino power spectrum.
  * MYMPI_COMM_WORLD - MPI communicator to use
  */
-void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, const int snapnum, const char * OutputDir, MPI_Comm MYMPI_COMM_WORLD)
+void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
 {
   int x,y,z;
   _delta_pow d_pow = compute_neutrino_power_spectrum(Time, BoxSize, fft_of_rhogrid, pmgrid, slabstart_y, nslab_y, MYMPI_COMM_WORLD);

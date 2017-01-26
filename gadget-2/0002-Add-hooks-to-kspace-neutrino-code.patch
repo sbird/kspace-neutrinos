@@ -1,4 +1,4 @@
-From ac8ab9c4f1c6084deed637d31a4ed3680ba4a186 Mon Sep 17 00:00:00 2001
+From 4c087769070146b8605690e8caaba3e20e3a5326 Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 10:01:09 -0500
 Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
@@ -101,7 +101,7 @@ index 314527c..0cf7cb3 100644
    ngroups = All.NumFilesPerSnapshot / All.NumFilesWrittenInParallel;
    if((All.NumFilesPerSnapshot % All.NumFilesWrittenInParallel))
 diff --git a/pm_periodic.c b/pm_periodic.c
-index 4d7859d..9c01fbb 100644
+index 4d7859d..0cfe6b7 100644
 --- a/pm_periodic.c
 +++ b/pm_periodic.c
 @@ -374,6 +374,11 @@ void pmforce_periodic(void)
@@ -110,7 +110,7 @@ index 4d7859d..9c01fbb 100644
  
 +#ifdef KSPACE_NEUTRINOS_2
 +  /*Add neutrino power to the Fourier grid*/
-+  add_nu_power_to_rhogrid(All.Time, All.BoxSize, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, All.Time, All.OutputDir, MPI_COMM_WORLD);
++  add_nu_power_to_rhogrid(All.Time, All.BoxSize, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, MPI_COMM_WORLD);
 +#endif
 +
    /* multiply with Green's function for the potential */
