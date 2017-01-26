@@ -44,8 +44,9 @@ void allocate_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, const do
    for(count=1; count< nk_in; count++)
         d_tot->delta_tot[count] = d_tot->delta_tot[0] + count*d_tot->namax;
    /*Allocate space for the initial neutrino power spectrum*/
-   d_tot->delta_nu_init =(double *) mymalloc("kspace_delta_nu_init",2*nk_in*sizeof(double));
+   d_tot->delta_nu_init =(double *) mymalloc("kspace_delta_nu_init",3*nk_in*sizeof(double));
    d_tot->delta_nu_last=d_tot->delta_nu_init+nk_in;
+   d_tot->wavenum=d_tot->delta_nu_init+2*nk_in;
    /*Setup pointer to the matter density*/
    d_tot->omnu = omnu;
    /*Set the prefactor for delta_nu, and the units system*/
@@ -123,6 +124,7 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
             /* Also initialise delta_nu_init here to save time later.
              * Use the first delta_tot, in case we are resuming.*/
             d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/CDMtoTot*fabs(T_nubyT_notnu);
+            d_tot->wavenum[ik] = wavenum[ik];
     }
     gsl_interp_accel_free(acc);
     gsl_interp_free(spline);
@@ -375,6 +377,26 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
         myfree(savefile);
 }
 
+
+/*Save the last-seen neutrino power spectrum to disc*/
+int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const int snapnum, const char * OutputDir)
+{
+    FILE *fd;
+    int i;
+    char nu_fname[1000];
+    snprintf(nu_fname, 1000,"%s/powerspec_nu_%03d.txt", OutputDir, snapnum);
+    if(!(fd = fopen(nu_fname, "w"))){
+        fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
+        return -1;
+    }
+    fprintf(fd, "%g\n", Time);
+    fprintf(fd, "%d\n", d_tot->nk);
+    for(i = 0; i < d_tot->nk; i++){
+        fprintf(fd, "%g %g\n", d_tot->wavenum[i], d_tot->delta_nu_last[i]*d_tot->delta_nu_last[i]);
+    }
+    fclose(fd);
+    return 0;
+}
 /*What follows are private functions for the integration routine get_delta_nu*/
 
 /*Kernel function for the fslength integration*/

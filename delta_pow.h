@@ -42,14 +42,6 @@ void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], d
  * */
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);
 
-/** Save P_nu(k) to disc.
- * @param d_pow power spectrum structure with data to save.
- * @param Time output time.
- * @param snapnum Number of snapshot directory to save into.
- * @param OutputDir Output directory to save data in. If NULL, will save in current directory.
- * @returns 0 on success*/
-int save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir);
-
 /** Free memory for the GSL structure*/
 void free_d_pow(_delta_pow * d_pow);
 #endif

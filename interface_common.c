@@ -42,6 +42,13 @@ void save_nu_state(char * savedir)
         save_all_nu_state(&delta_tot_table, savedir);
 }
 
+int save_neutrino_power(const double Time, const int snapnum, const char * OutputDir)
+{
+    if(delta_tot_table.ThisTask != 0)
+        return 0;
+    return save_nu_power(&delta_tot_table, Time, snapnum, OutputDir);
+}
+
 void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Comm MYMPI_COMM_WORLD)
 {
   MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);

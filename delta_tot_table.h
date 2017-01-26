@@ -42,6 +42,8 @@ struct _delta_tot_table {
     /** Pointer to array of length nk storing the last neutrino power spectrum we saw, for a first estimate
     * of the new delta_tot */
     double * delta_nu_last;
+    /**Pointer to array storing the effective wavenumbers for the above power spectra*/
+    double * wavenum;
     /** Pointer to a structure for computing omega_nu*/
     const _omega_nu * omnu;
     /** Matter density excluding neutrinos*/
@@ -119,6 +121,14 @@ void save_delta_tot(const _delta_tot_table *const d_tot, const int iia, char * s
 
 /** Save a complete delta_tot table to disc*/
 void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir);
+
+/** Save P_nu(k) to disc.
+ * @param d_tot will save delta_nu_last from d_tot.
+ * @param Time output scale factor.
+ * @param snapnum Number of snapshot. Will save to powerspec_nu_$(snapnum).txt.
+ * @param OutputDir Output directory to save data in.
+ * @returns 0 on success*/
+int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const int snapnum, const char * OutputDir);
 
 /** Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/

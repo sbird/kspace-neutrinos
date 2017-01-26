@@ -96,12 +96,14 @@ parameter reading routines, are found in interface_gadget.[ch].
 If you are using Gadget-3, you can just include these files.
 Note we do not use global Gadget variables, nor Gadget configuration switches.
 
-The three main routines are:
-OmegaNu(a): the matter density in neutrinos, should be added to the Hubble function
-allocate_kspace_memory(): allocates and sets up the neutrino module. Do it before calling OmegaNu.
+The main routines are:
+1. OmegaNu(a): the matter density in neutrinos, should be added to the Hubble function
+2. allocate_kspace_memory(): allocates and sets up the neutrino module. Do it before calling OmegaNu.
 
-add_nu_power_to_rhogrid(): call this inside your PM routine to add the neutrino power to the grid,
+3. add_nu_power_to_rhogrid(): call this inside your PM routine to add the neutrino power to the grid,
 Further documentation is provided inside interface_gadget.h
+4. save_nu_state(): Saves the internal state of the neutrino integrator to disc, so that resuming from a snapshot works.
+5. save_nu_power(): Call this to save the neutrino power spectrum whenever you make a snapshot, or otherwise save the DM power.
 
 Note that add_nu_power_to_rhogrid assumes the (slab-decomposed) FFTW 2, with a type complex number type fftw_complex,
 as this is used in almost all gadget versions. If this does not match your code, the routine 

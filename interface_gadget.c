@@ -172,11 +172,6 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   MPI_Barrier(MYMPI_COMM_WORLD);
   if(delta_tot_table.ThisTask==0)
 	printf("Done adding neutrinos to grid on all processors\n");
-  /*If this is being called to save all particle types, save a file with the neutrino power spectrum as well.*/
-  if(snapnum >= 0 && delta_tot_table.ThisTask == 0){
-            if(save_nu_power(&d_pow, Time, snapnum, OutputDir))
-                terminate("Could not save neutrino power\n");
-  }
   /*Free memory*/
   free_d_pow(&d_pow);
   myfree(d_pow.delta_cdm_curr);

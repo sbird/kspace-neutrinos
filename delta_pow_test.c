@@ -45,35 +45,6 @@ static void test_get_dnudcdm_powerspec(void **state) {
     assert_true(fabs(get_dnudcdm_powerspec(d_pow, d_pow->logkk[d_pow->nbins-1]+0.01) - pklarge) < 5e-3*pklarge);
 }
 
-static void test_save_nu_power(void **state) {
-    /*Load initialised structure*/
-    _delta_pow * d_pow = (_delta_pow *) *state;
-    /*Check it initialised correctly.*/
-    assert_true(d_pow);
-    /*Save P_nu(k) to disc*/
-    save_nu_power(d_pow, 1/3., 005, "./");
-    /*Load it again and check it is the same.*/
-    FILE * fd = fopen("testdata/powerspec_nu_004.txt", "r");
-    assert_true(fd > 0);
-    /*Read redshift*/
-    double scale;
-    assert_true(fscanf(fd, "%lg", &scale));
-    assert_true(fabs(scale - 1./3) < 1e-5);
-    /*Read number of bins*/
-    int nbins;
-    assert_true(fscanf(fd,"%d",&nbins));
-    assert_true(nbins == d_pow->nbins);
-    for(int i=0; i< nbins; i++){
-        /*Read kvalues and P(k)*/
-        double logkk, delta_nu_curr;
-        assert_true(fscanf(fd, "%lg %lg", &logkk, &delta_nu_curr) == 2);
-        assert_true(fabs(log(logkk) - d_pow->logkk[i]) < 1e-5*fabs(logkk));
-        assert_true(fabs(sqrt(delta_nu_curr) - d_pow->delta_nu_curr[i]) < 1e-5*delta_nu_curr);
-    }
-    fclose(fd);
-}
-
-
 /*Test we can initialise a delta_pow structure from disc correctly.
  *Note if one of these assertions is false we won't actually get an error; just a message saying group setup failed.*/
 static int setup_delta_pow(void **state) {
@@ -156,7 +127,6 @@ int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_init_delta_pow),
         cmocka_unit_test(test_get_dnudcdm_powerspec),
-        cmocka_unit_test(test_save_nu_power),
     };
     return cmocka_run_group_tests(tests, setup_delta_pow, teardown_delta_pow);
 }

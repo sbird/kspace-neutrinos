@@ -41,28 +41,6 @@ double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk)
         return d_pow->norm * delta_nu/delta_cdm;
 }
 
-/*Save the neutrino power spectrum to disc*/
-int save_nu_power(_delta_pow *d_pow, const double Time, const int snapnum, const char * OutputDir)
-{
-    FILE *fd;
-    int i;
-    char nu_fname[1000];
-    /*The last underscore in the filename will be just before the snapshot number.
-    * This is daft, but works.*/
-    snprintf(nu_fname, 1000,"%s/powerspec_nu_%03d.txt", OutputDir, snapnum);
-    if(!(fd = fopen(nu_fname, "w"))){
-        fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
-        return -1;
-    }
-    fprintf(fd, "%g\n", Time);
-    fprintf(fd, "%d\n", d_pow->nbins);
-    for(i = 0; i < d_pow->nbins; i++){
-        fprintf(fd, "%g %g\n", exp(d_pow->logkk[i]), d_pow->delta_nu_curr[i]*d_pow->delta_nu_curr[i]);
-    }
-    fclose(fd);
-    return 0;
-}
-
 void free_d_pow(_delta_pow * d_pow)
 {
   gsl_interp_free(d_pow->spline_nu);

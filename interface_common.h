@@ -84,5 +84,14 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
  * Each row of the output file contains a scale factor and
  * the total matter power spectrum at that scale factor.*/
 void save_nu_state(char * savedir);
+
+/** Save a file containing the neutrino power spectrum.
+ * Output to OutputDir/powerspec_nu_$(snapnum).txt
+ * File format is:
+ * Time
+ * Nbins
+ * k   P(k)   (repeated Nbins times)
+ * .*/
+int save_neutrino_power(const double Time, const int snapnum, const char * OutputDir);
 /*KSPACE_NEUTRINOS_GLOBAL*/
 #endif
