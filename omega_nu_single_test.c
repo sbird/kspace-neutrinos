@@ -60,6 +60,8 @@ static void test_omega_nu_single(void **state) {
     double omnunomassz0 = omega_nu_single(&omnu, 1, 2);
     assert_true(omnunomassz0 - OMEGAR*7./8.*pow(pow(4/11.,1/3.)*1.00381,4)< 1e-5*omnunomassz0);
     assert_true(omnunomassz0/pow(0.5,4) == omega_nu_single(&omnu, 0.5, 2));
+    /*Check that we return something vaguely sensible for very early times*/
+    assert_true(omega_nu_single(&omnu,1e-4,0) > omega_nu_single(&omnu, 1,0)/pow(1e-4,3));
 }
 
 

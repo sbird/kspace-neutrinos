@@ -160,6 +160,19 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
      return;
 }
 
+/*Heavily non-relativistic*/
+inline double non_rel_rho_nu(const double a, const double kT, const double amnu, const double kTamnu2)
+{
+    /*The constants are Riemann zetas: 3,5,7 respectively*/
+    return amnu*(kT*kT*kT)/(a*a*a*a)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
+}
+
+/*Heavily relativistic: we could be more accurate here,
+ * but in practice this will only be called for massless neutrinos, so don't bother.*/
+inline double rel_rho_nu(const double a, const double kT)
+{
+    return 7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
+}
 
 /*Finds the physical density in neutrinos for a single neutrino species
   1.878 82(24) x 10-29 h02 g/cm3 = 1.053 94(13) x 104 h02 eV/cm3*/
@@ -174,17 +187,24 @@ double rho_nu(_rho_nu_single * rho_nu_tab, const double a, const double kT)
          * Don't go lower than 50 here. */
         if(NU_SW*NU_SW*kTamnu2 < 1){
             /*Heavily non-relativistic*/
-            /*The constants are Riemann zetas: 3,5,7 respectively*/
-            rho_nu_val=amnu*(kT*kT*kT)/(a*a*a*a)*
-            (1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
+            rho_nu_val = non_rel_rho_nu(a, kT, amnu, kTamnu2);
         }
-        else if(amnu < 1e-6*kT || log(a) < rho_nu_tab->loga[0]){
-            /*Heavily relativistic: we could be more accurate here,
-             * but in practice this will only be called for massless neutrinos, so don't bother.*/
-            rho_nu_val=7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
+        else if(amnu < 1e-6*kT){
+            /*Heavily relativistic*/
+            rho_nu_val=rel_rho_nu(a, kT);
         }
         else{
-            rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,log(a),rho_nu_tab->acc);
+            const double loga = log(a);
+            /* Deal with early time case. In practice no need to be very accurate.
+             * Use either limiting case. */
+            if (loga < rho_nu_tab->loga[0]) {
+                if(amnu < 1e-4*kT)
+                    rho_nu_val = rel_rho_nu(a,kT);
+                else
+                    rho_nu_val = non_rel_rho_nu(a, kT, amnu, kTamnu2);
+            }
+            else
+                rho_nu_val=gsl_interp_eval(rho_nu_tab->interp,rho_nu_tab->loga,rho_nu_tab->rhonu,loga,rho_nu_tab->acc);
         }
         return rho_nu_val;
 }
