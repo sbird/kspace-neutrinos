@@ -23,6 +23,9 @@ _delta_tot_table delta_tot_table;
 
 _omega_nu omeganu_table;
 
+/*Allocate memory to copy power spectrum to. The caller may free the input before we are done.*/
+static double * delta_cdm_curr;
+
 /*Compute the matter density in neutrinos*/
 double OmegaNu(double a)
 {
@@ -98,19 +101,19 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   }
   /*Broadcast save-data to other processors*/
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
+  /*Temporary float space so the power spectrum is not over-written before we are done with it*/
+  delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
+  if(!delta_cdm_curr)
+      terminate("Could not allocate temporary memory for power spectra\n");
 }
 
 _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
 {
   int i;
-  /*Allocate memory to copy power spectrum to. The caller may free the input before we are done.*/
-  double * delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
   /*The square root of the neutrino power spectrum*/
   double * delta_nu_curr = delta_cdm_curr+nk_in;
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+2*nk_in;
-  if(!delta_cdm_curr || !delta_nu_curr || !keff)
-      terminate("Could not allocate temporary memory for power spectra\n");
   /*Get delta_cdm_curr , which is P(k)^1/2, and skip bins with zero modes. */
   int nk_nonzero = 0;
   for(i=0;i<nk_in;i++){
