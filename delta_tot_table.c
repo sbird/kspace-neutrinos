@@ -389,8 +389,9 @@ int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const
         fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
         return -1;
     }
-    fprintf(fd, "%g\n", Time);
-    fprintf(fd, "%d\n", d_tot->nk);
+    fprintf(fd,"# k P_nu(k)\n");
+    fprintf(fd, "# a = %g\n", Time);
+    fprintf(fd, "# nbins = %d\n", d_tot->nk);
     for(i = 0; i < d_tot->nk; i++){
         fprintf(fd, "%g %g\n", d_tot->wavenum[i], d_tot->delta_nu_last[i]*d_tot->delta_nu_last[i]);
     }

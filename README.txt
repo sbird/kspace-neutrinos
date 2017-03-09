@@ -52,6 +52,22 @@ Note that total_powerspectrum returns a power spectrum which is in units of the 
 that is, P(k) * N^2, where N is the number of modes in each bin. After investigation, no attempt 
 is made to smooth the power spectrum by averaging neighbouring bins.
 
+==Output Files==
+
+Output is saved with every snapshot, and with a restart. 
+The main output is the neutrino power spectrum, which is saved to: 
+$(All.OutpurDir)/powerspectrum_nu_$(SnapNum).txt
+The format of this file is: ( k, P_nu(k) ).
+Units are: 1/L, L^3, where L is Gadget internal length units.
+A short python script for reading it is found in plot_nu_power.py
+
+The code's internal state is saved to $(snap_dir)/delta_tot_nu.txt.
+This contains a table containing the total matter power spectrum, 
+delta_tot, as a function of redshift.
+Each row is formatted as : "# log(a) delta_tot(k)"
+The wavenumbers are not stored, and so this file is not portable to other simulations.
+I may change this format in future.
+
 ==Using kspace neutrinos with your version of Gadget.==
 
 ===MP-Gadget===
