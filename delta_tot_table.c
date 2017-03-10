@@ -14,6 +14,7 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_sf_bessel.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include "delta_tot_table.h"
 #include "gadget_defines.h"
@@ -352,6 +353,9 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
                     snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
                     terminate(err);
             }
+            /* If directory does not exist, make it.
+             * Don't both to check for error - just try to write the file later.*/
+            mkdir(savedir, S_IRWXU | S_IRGRP | S_IXGRP);
             savefile = strncpy(savefile, savedir, nbytes);
             savefile = strncat(savefile, "delta_tot_nu.txt",25);
     }
