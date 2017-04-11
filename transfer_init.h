@@ -24,11 +24,10 @@ typedef struct _transfer_init_table _transfer_init_table;
  * @param BoxSize Size of simualtion box. Used to set maximal transfer function value to store.
  * @param UnitLength_in_cm Units of the stored transfer function in cm/h. Should be those expected by the simulation code, usually kpc/h.
  * @param InputSpectrum_UnitLength_in_cm Units of the CAMB transfer function in cm/h. Usually Mpc/h.
- * @param OmegaBaryonCAMB Value of OmegaBaryon given to CAMB, so we know how to weight the transfer functions.
  * @param Omega0 Total matter density at z=0.
  * @param OmegaNu Neutrino matter density at z=0.
  * @param KspaceTransferFunction pointer to string containing the transfer function filename.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction);
+void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction);
 
 /**Free memory for a transfer function table*/
 void free_transfer_init_table(_transfer_init_table *t_init);

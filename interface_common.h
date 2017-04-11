@@ -14,8 +14,6 @@ extern struct __kspace_params {
   char	KspaceTransferFunction[500];
   /*Scale factor of CAMB output*/
   double TimeTransfer;
-  /*OmegaBaryon used for CAMB*/
-  double OmegaBaryonCAMB;
   /*Units for the CAMB transfer functions in cm. By default 1 Mpc*/
   double InputSpectrum_UnitLength_in_cm;
   /*Neutrino masses in eV*/

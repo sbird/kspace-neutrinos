@@ -314,7 +314,7 @@ static void test_reproduce_linear(void **state)
     _transfer_init_table transfer;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_transfer_init_table(&transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, get_omega_nu(omnu, 1), 0.2793, "camb_linear/ics_transfer_0.01.dat");
+    allocate_transfer_init_table(&transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, get_omega_nu(omnu, 1), 0.2793, "camb_linear/ics_transfer_0.01.dat");
     /* We will build state by loading the CAMB CDM transfer function at different redshifts,
      * and repeatedly using get_delta_nu_update to advance the internal state of the neutrino code.
      * Then we will compare the CAMB neutrino transfer function to the delta_nu from the neutrino code.*/
@@ -444,7 +444,7 @@ static int setup_delta_pow(void **state) {
     /*Now initialise data structure*/
     init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins,1.);
     const double UnitLength_in_cm = 3.085678e21;
-    allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, 0.0463, get_omega_nu(ts->omnu, 1), 0.2793, "testdata/ics_transfer_99.dat");
+    allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, get_omega_nu(ts->omnu, 1), 0.2793, "testdata/ics_transfer_99.dat");
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
     /*Set up the global variables for the hubble function before we do anything else!*/
     init_hubble_function(ts->omnu, 0.2793, UnitTime_in_s);

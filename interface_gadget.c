@@ -33,10 +33,6 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
       addr[nt] = &kspace_params.TimeTransfer;
       id[nt++] = REAL;
 
-      strcpy(tag[nt], "OmegaBaryonCAMB");
-      addr[nt] = &kspace_params.OmegaBaryonCAMB;
-      id[nt++] = REAL;
-
       strcpy(tag[nt], "InputSpectrum_UnitLength_in_cm");
       addr[nt] = &kspace_params.InputSpectrum_UnitLength_in_cm;
       id[nt++] = REAL;

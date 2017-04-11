@@ -6,7 +6,7 @@
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaBaryonCAMB, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction)
+void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction)
 {
     FILE *fd;
     int count;
@@ -22,7 +22,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
     }
     t_init->NPowerTable = 0;
     while(1){
-        double k, T_cdm, T_b, dummy, T_nu, T_tot;
+        double k, T_cdm, T_b, dummy, T_nu, T_tot, T_nonu;
         char * ret;
         /* read transfer function file */
         ret=fgets(string,1000,fd);
@@ -32,7 +32,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
         /* Skip comments*/
         if(string[0] == '#')
             continue;
-        if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &dummy, &dummy, &T_nu, &T_tot) == 7){
+        if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &dummy, &dummy, &T_nu, &T_tot, &T_nonu) == 8){
         if(k > kmin)
             t_init->NPowerTable++;
         }
@@ -53,12 +53,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
     count=0;
     while(count < t_init->NPowerTable){
     /*T_g stores radiation, T_rnu stores massless/relativistic neutrinos*/
-    double k, T_b, T_cdm,T_g, T_rnu, T_nu, T_tot;
-    /*T_0tot stores all the species for which there are particles*/
-    double T_0tot;
-    /*We may have "faked" baryons by including them into the DM in Gadget.
-    * In this case All.OmegaBaryon will be zero, but CAMB will have been fed a different value.
-    * For this reason we have the variable OmegaBaryonCAMB*/
+    double k, T_b, T_cdm,T_g, T_rnu, T_nu, T_tot, T_nonu;
     char * ret;
     /* read transfer function file */
     ret=fgets(string,1000,fd);
@@ -69,12 +64,10 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
     if(string[0] == '#')
         continue;
     /* read transfer function file from CAMB */
-    if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &T_g, &T_rnu, &T_nu, &T_tot) == 7){
+    if(sscanf(string, " %lg %lg %lg %lg %lg %lg %lg %lg", &k, &T_cdm, &T_b, &T_g, &T_rnu, &T_nu, &T_tot, &T_nonu) == 8){
         if(k > kmin){
-            /*Combine the massive and massless neutrinos.*/
-            /*Set up the total transfer for all the species with particles*/
-            T_0tot=((Omega0-OmegaBaryonCAMB-OmegaNu)*T_cdm+OmegaBaryonCAMB*T_b)/(Omega0-OmegaNu);
-            t_init->T_nu[count]= T_nu/T_0tot;
+            /*Set up the total transfer for all the particle species excluding neutrinos*/
+            t_init->T_nu[count]= T_nu/T_nonu;
             /*k has units of 1/Mpc, need 1/kpc */
             k /= scale; /* Convert to internal units*/
             t_init->logk[count] = log(k);

@@ -88,7 +88,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   if(ThisTask==0) {
       if(kspace_params.TimeTransfer > TimeBegin + 0.01)
           terminate("TimeTransfer must be <= simulation start time\n");
-    allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, kspace_params.OmegaBaryonCAMB, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
+    allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
   /*Broadcast data to other processors*/
   broadcast_transfer_table(&transfer_init, ThisTask, MYMPI_COMM_WORLD);
