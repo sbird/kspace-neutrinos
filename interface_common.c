@@ -146,3 +146,23 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
   init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
   return d_pow;
 }
+
+void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t* ia)
+{
+    *scalefact = delta_tot_table.scalefact;
+    *nk = delta_tot_table.nk;
+    *ia = delta_tot_table.ia;
+    *delta_tot = delta_tot_table.delta_tot;
+}
+
+void set_nu_state(const double * scalefact, const double ** delta_tot, const size_t nk, const size_t ia)
+{
+    int i,k;
+    delta_tot_table.nk = nk;
+    delta_tot_table.ia = ia;
+    for(i=0; i<ia; i++) {
+        delta_tot_table.scalefact[i] = scalefact[i];
+        for(k=0;k<nk;k++)
+            delta_tot_table.delta_tot[k][i] = delta_tot[k][i];
+    }
+}

@@ -83,6 +83,28 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
  * the total matter power spectrum at that scale factor.*/
 void save_nu_state(char * savedir);
 
+/** Get a pointer to the internal state of the integrator.
+ * This may change and should be used with caution.
+ * Included to allow saving the integrator state
+ * using native save/load routines of the N-body code.
+ * @param scalefact pointer containing address of array containing scale factors.
+ * @param delta_tot pointer containing address of 2D array containing
+ * delta_t values at each scale factor.
+ * @param nk pointer to number of k values in delta_tot.
+ * @param ia number of scale factors stored.*/
+void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t* ia);
+
+/** Get a pointer to the internal state of the integrator.
+ * This may change and should be used with caution.
+ * Included to allow loading the integrator state
+ * from native save files of the N-body code.
+ * @param scalefact pointer to array containing scale factors.
+ * @param delta_tot pointer to 2D array containing
+ * delta_t values at each scale factor.
+ * @param nk number of k values in delta_tot.
+ * @param ia number of scale factors stored.*/
+void set_nu_state(const double * scalefact, const double ** delta_tot, const size_t nk, const size_t ia);
+
 /** Save a file containing the neutrino power spectrum.
  * Output to OutputDir/powerspec_nu_$(snapnum).txt
  * File format is:
