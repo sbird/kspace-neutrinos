@@ -86,8 +86,11 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
-      if(kspace_params.TimeTransfer > TimeBegin + 0.01)
-          terminate("TimeTransfer must be <= simulation start time\n");
+      if(kspace_params.TimeTransfer > TimeBegin + 0.01) {
+          char err[1024];
+          snprintf(err, 1024, "TimeTransfer (%g) must be <= simulation start time (%g)\n",kspace_params.TimeTransfer, TimeBegin);
+          terminate(err);
+      }
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
   /*Broadcast data to other processors*/
