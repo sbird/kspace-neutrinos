@@ -96,7 +96,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   delta_tot_table.ThisTask = ThisTask;
   allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
   /*Read the saved data from a snapshot if present*/
-  if(ThisTask==0) {
+  if(ThisTask==0 && snapdir != NULL) {
   	read_all_nu_state(&delta_tot_table, snapdir);
   }
   /*Broadcast save-data to other processors*/
@@ -155,7 +155,7 @@ void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t*
     *delta_tot = delta_tot_table.delta_tot;
 }
 
-void set_nu_state(const double * scalefact, const double ** delta_tot, const size_t nk, const size_t ia)
+void set_nu_state(double * scalefact, double ** delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD)
 {
     int i,k;
     delta_tot_table.nk = nk;
@@ -165,4 +165,6 @@ void set_nu_state(const double * scalefact, const double ** delta_tot, const siz
         for(k=0;k<nk;k++)
             delta_tot_table.delta_tot[k][i] = delta_tot[k][i];
     }
+    /*Broadcast save-data to other processors*/
+    broadcast_delta_tot_table(&delta_tot_table, delta_tot_table.nk_allocated, MYMPI_COMM_WORLD);
 }

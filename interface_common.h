@@ -103,7 +103,7 @@ void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t*
  * delta_t values at each scale factor.
  * @param nk number of k values in delta_tot.
  * @param ia number of scale factors stored.*/
-void set_nu_state(const double * scalefact, const double ** delta_tot, const size_t nk, const size_t ia);
+void set_nu_state(double * scalefact, double ** delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD);
 
 /** Save a file containing the neutrino power spectrum.
  * Output to OutputDir/powerspec_nu_$(snapnum).txt
