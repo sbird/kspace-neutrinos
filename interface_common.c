@@ -150,24 +150,34 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
   return d_pow;
 }
 
-void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t* ia)
+void get_nu_state(double ** scalefact, double ** delta_tot, size_t* nk, size_t* ia)
 {
-    *scalefact = delta_tot_table.scalefact;
+    int ik,i;
     *nk = delta_tot_table.nk;
     *ia = delta_tot_table.ia;
-    *delta_tot = delta_tot_table.delta_tot;
+    *scalefact = mymalloc("tmp_scales",(*ia) * sizeof(double));
+    *delta_tot = mymalloc("tmp_delta",(*nk) * (*ia) * sizeof(double));
+    for(i=0; i< (*ia); i++) {
+         (*scalefact)[i] = delta_tot_table.scalefact[i];
+    }
+    /*Save a flat memory block*/
+    for(ik=0;ik< (*nk);ik++)
+        for(i=0;i< (*ia);i++)
+            (*delta_tot)[ik*(*ia)+i] = delta_tot_table.delta_tot[ik][i];
 }
 
-void set_nu_state(double * scalefact, double ** delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD)
+void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD)
 {
-    int i,k;
+    int i, ik;
     delta_tot_table.nk = nk;
     delta_tot_table.ia = ia;
     for(i=0; i<ia; i++) {
         delta_tot_table.scalefact[i] = scalefact[i];
-        for(k=0;k<nk;k++)
-            delta_tot_table.delta_tot[k][i] = delta_tot[k][i];
     }
+    /*Save a flat memory block*/
+    for(ik=0;ik<nk;ik++)
+        for(i=0;i<ia;i++)
+            delta_tot_table.delta_tot[ik][i] = delta_tot[ik*ia+i];
     /*Broadcast save-data to other processors*/
     broadcast_delta_tot_table(&delta_tot_table, delta_tot_table.nk_allocated, MYMPI_COMM_WORLD);
 }

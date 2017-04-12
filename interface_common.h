@@ -83,16 +83,16 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
  * the total matter power spectrum at that scale factor.*/
 void save_nu_state(char * savedir);
 
-/** Get a pointer to the internal state of the integrator.
+/** Allocate memory and copy integrator internal state to it.
  * This may change and should be used with caution.
  * Included to allow saving the integrator state
  * using native save/load routines of the N-body code.
- * @param scalefact pointer containing address of array containing scale factors.
+ * @param scalefact pointer containing address of array containing scale factors (malloced).
  * @param delta_tot pointer containing address of 2D array containing
- * delta_t values at each scale factor.
+ * delta_t values at each scale factor (malloced).
  * @param nk pointer to number of k values in delta_tot.
  * @param ia number of scale factors stored.*/
-void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t* ia);
+void get_nu_state(double ** scalefact, double ** delta_tot, size_t* nk, size_t* ia);
 
 /** Get a pointer to the internal state of the integrator.
  * This may change and should be used with caution.
@@ -103,7 +103,7 @@ void get_nu_state(double ** scalefact, double *** delta_tot, size_t* nk, size_t*
  * delta_t values at each scale factor.
  * @param nk number of k values in delta_tot.
  * @param ia number of scale factors stored.*/
-void set_nu_state(double * scalefact, double ** delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD);
+void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const size_t ia, MPI_Comm MYMPI_COMM_WORLD);
 
 /** Save a file containing the neutrino power spectrum.
  * Output to OutputDir/powerspec_nu_$(snapnum).txt
