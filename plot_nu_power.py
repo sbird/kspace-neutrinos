@@ -11,7 +11,8 @@ def get_nu_power(filename):
     Gadget-2 and Mpc/h for MP-Gadget."""
     data = np.loadtxt(filename)
     k = data[:,0]
-    pnu = data[:,1]
+    #Convert fourier convention to CAMB.
+    pnu = (2*math.pi)**3*data[:,1]
     return (k, pnu)
 
 def get_camb_nu_power(matpow, transfer):
