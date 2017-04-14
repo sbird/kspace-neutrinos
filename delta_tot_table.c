@@ -414,7 +414,8 @@ double fslength_int(const double loga, void *params)
 }
 
 /******************************************************************************************************
-Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
+Free-streaming length (times Mnu/k_BT_nu) for a non-relativistic
+particle of momentum q = T0, from scale factor ai to af.
 Arguments:
 logai - log of initial scale factor
 logaf - log of final scale factor
@@ -436,7 +437,7 @@ double fslength(const double logai, const double logaf, const double mnubykT, co
       return 0;
   gsl_integration_qag (&F, logai, logaf, 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
   gsl_integration_workspace_free (w);
-  return light*fslength_val;
+  return mnubykT*light*fslength_val;
 }
 
 /**************************************************************************************************
@@ -524,9 +525,9 @@ double get_delta_nu_int(double logai, void * params)
     delta_nu_int_params * p = (delta_nu_int_params *) params;
     double fsl_aia = gsl_interp_eval(p->fs_spline,p->fsscales,p->fslengths,logai,p->fs_acc);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
-    double specJ = specialJ(p->k*fsl_aia, p->qc);
+    double specJ = specialJ(p->k*fsl_aia/p->mnubykT, p->qc);
     double ai = exp(logai);
-    return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a * p->mnubykT;
+    return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a;
 }
 
 /*
@@ -557,7 +558,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
 /*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g\n",a, d_tot->omnu->nufrac_low[0]); */
    }
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
-  deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)* d_tot->TimeTransfer*mnubykT;
+  deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)* d_tot->TimeTransfer;
   for (ik = 0; ik < d_tot->nk; ik++) {
       /* Initial condition piece, assuming linear evolution of delta with a up to startup redshift */
       /* This assumes that delta ~ a, so delta-dot is roughly 1. */
@@ -565,7 +566,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
        * This will be good if all species have similar masses, or
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
-      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a, qc)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a/mnubykT, qc)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /*If only one time given, we are still at the initial time*/
   if(Na > 1){
