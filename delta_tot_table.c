@@ -408,36 +408,32 @@ int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const
 double fslength_int(const double loga, void *params)
 {
     /*This should be M_nu / k_B T_nu (which is dimensionless)*/
-    double mnubykT = *((double *)params);
     const double a = exp(loga);
-    return 1./a/mnubykT/(a*hubble_function(a));
+    return 1./a/(a*hubble_function(a));
 }
 
 /******************************************************************************************************
-Free-streaming length (times Mnu/k_BT_nu) for a non-relativistic
+Free-streaming length (times Mnu/k_BT_nu, which is dimensionless) for a non-relativistic
 particle of momentum q = T0, from scale factor ai to af.
 Arguments:
 logai - log of initial scale factor
 logaf - log of final scale factor
-mnubykT - M_nu / k_B T_nu (dimensionless)
 light - speed of light in internal units.
 Result is in Unit_Length/Unit_Time.
 ******************************************************************************************************/
-double fslength(const double logai, const double logaf, const double mnubykT, const double light)
+double fslength(const double logai, const double logaf, const double light)
 {
   double abserr;
   double fslength_val;
-  /*This is to avoid a gcc warning: it is still const really.*/
-  double mnu_ncst = mnubykT;
   gsl_function F;
   gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
   F.function = &fslength_int;
-  F.params = &mnu_ncst;
+  F.params = NULL;
   if(logai >= logaf)
       return 0;
   gsl_integration_qag (&F, logai, logaf, 0, 1e-6,GSL_VAL,6,w,&(fslength_val), &abserr);
   gsl_integration_workspace_free (w);
-  return mnubykT*light*fslength_val;
+  return light*fslength_val;
 }
 
 /**************************************************************************************************
@@ -548,7 +544,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
   if(d_tot->ThisTask == 0 && d_tot->debug)
           printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
-  fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),mnubykT, d_tot->light);
+  fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),d_tot->light);
    /* Check whether the particle neutrinos are active at this point.
     * If they are we want to truncate our integration.
     * Only do this is hybrid neutrinos are activated in the param file.*/
@@ -600,7 +596,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
         double * fsscales = mymalloc("fsscales", Nfs* sizeof(double));
         for(ik=0; ik < Nfs; ik++) {
             fsscales[ik] = log(d_tot->TimeTransfer) + ik*(log(a) - log(d_tot->TimeTransfer))/(Nfs-1.);
-            fslengths[ik] = fslength(fsscales[ik], log(a),mnubykT, d_tot->light);
+            fslengths[ik] = fslength(fsscales[ik], log(a),d_tot->light);
         }
         params.fslengths = fslengths;
         params.fsscales = fsscales;

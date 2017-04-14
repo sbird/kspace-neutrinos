@@ -181,8 +181,8 @@ static void test_fslength(void **state)
      *we use large masses so that we don't have to compute omega_nu in mathematica.*/
     double kT = BOLEVK*TNUCMB*T_CMB0;
     /*fslength function returns fslength * (MNu / kT)*/
-    assert_true(fabs(fslength(log(0.5), log(1),0.45/kT, 299792.)/ 1272.92/(0.45/kT) -1 ) < 1e-5);
-    assert_true(fabs(fslength(log(0.1), log(0.5),0.6/kT, 299792.)/ 5427.8/(0.6/kT) -1 ) < 1e-5);
+    assert_true(fabs(fslength(log(0.5), log(1), 299792.)/ 1272.92/(0.45/kT) -1 ) < 1e-5);
+    assert_true(fabs(fslength(log(0.1), log(0.5),299792.)/ 5427.8/(0.6/kT) -1 ) < 1e-5);
 }
 
 static void test_get_delta_nu_update(void **state)

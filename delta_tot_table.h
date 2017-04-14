@@ -137,7 +137,8 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir);
 /** Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
 double specialJ(const double x, const double vcmnubylight);
 
-/** Free-streaming length for a non-relativistic particle of momentum q = T0, from scale factor ai to af.
+/** Free-streaming length (times Mnu/k_BT_nu, which is dimensionless) for a non-relativistic
+particle of momentum q = T0, from scale factor ai to af.
 Arguments:
 @param logai log of initial scale factor
 @param logaf log of final scale factor
@@ -145,6 +146,6 @@ Arguments:
 @param light speed of light in internal length units.
 @returns free-streaming length in Unit_Length/Unit_Time (same units as light parameter).
 */
-double fslength(const double logai, const double logaf, const double mnu, const double light);
+double fslength(const double logai, const double logaf, const double light);
 
 #endif
