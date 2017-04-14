@@ -6,6 +6,17 @@ which can be run with 'make test' and aims to be easily portable to a variety of
 You are welcome to use it as desired, but please cite Ali-Haimoud & Bird 2013, and 
 Bird & Ali-Haimoud 2017 if you use the hybrid neutrinos.
 
+==Accuracy limits==
+
+The equations implemented here are accurate for neutrinos
+which are non-relativistic by z=10 (M_nu > 0.005 eV). They are
+also accurate for lighter neutrinos within the horizon, because
+the clustering there is roughly zero. However, they are *not*
+accurate for relativistic neutrinos on superhorizon scales.
+We also do not include radiation (photon) perturbations.
+If you are interested in this limit you should use the output
+of a Boltzmann code, such as CAMB, directly.
+
 ==Building==
 'make all' will make a static library
 'make test' will perform the runtime tests.
