@@ -562,10 +562,13 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
        * This will be good if all species have similar masses, or
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
-      delta_nu_curr[ik] = specialJ(wavenum[ik]*fsl_A0a/mnubykT, qc)*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+      /*For zero mass neutrinos just use the initial conditions piece, modulating to zero inside the horizon*/
+      const double specJ = specialJ(wavenum[ik]*fsl_A0a/(mnubykT > 0 ? mnubykT : 1),qc);
+      delta_nu_curr[ik] = specJ*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /*If only one time given, we are still at the initial time*/
-  if(Na > 1){
+  /*If neutrino mass is zero, we are not accurate, just use the initial conditions piece*/
+  if(Na > 1 && mnubykT > 0){
         delta_nu_int_params params;
         params.acc = gsl_interp_accel_alloc();
         gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);

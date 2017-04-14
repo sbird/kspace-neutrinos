@@ -57,6 +57,9 @@ typedef struct _test_state test_state;
  * delta_tot is still empty (but allocated) after this.*/
 static void test_allocate_delta_tot_table(void **state)
 {
+    test_state * ts = (test_state *) *state;
+    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
+    _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     _omega_nu omnu;
     double MNu[3] = {0, 0, 0};
@@ -71,6 +74,9 @@ static void test_allocate_delta_tot_table(void **state)
     for(int i=0; i<d_tot.nk_allocated; i++){
         assert_true(d_tot.delta_tot[i]);
     }
+    /* Check that we do not crash when neutrino mass is zero*/
+    double delta_nu_curr[d_pow->nbins];
+    get_delta_nu_update(&d_tot, 0.02, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
     free_delta_tot_table(&d_tot);
 }
 
