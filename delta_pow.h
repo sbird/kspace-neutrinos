@@ -30,7 +30,7 @@ typedef struct _delta_pow _delta_pow;
  * @param delta_cdm_curr array containing CDM power spectrum at bins specified by logkk
  * @param nbins number of bins in earlier arrays.
  * @param norm constant which multiplies the value returned by get_dnudcdm_powerspec. 
- * Useful for reintroducing dimensions in the power spectrum.*/
+ * Default call in interface_common.c sets it to Omega_nu/(Omega_0-Omega_nu)*/
 void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], double delta_cdm_curr[], int nbins, double norm);
 
 /**Get P_nu(k)/P_cdm(k) for arbitrary k. This will become: 
@@ -38,7 +38,7 @@ void init_delta_pow(_delta_pow *d_pow, double logkk[], double delta_nu_curr[], d
  * thus we get the right powerspectrum.
  * @param d_pow (opaque) structure containing stored power spectrum and GSL interpolators.
  * @param kk log(k) value to get delta_nu at
- * @returns delta_nu / delta_CDM
+ * @returns Omega_nu/(Omega_0-Omega_nu) * delta_nu / delta_CDM
  * */
 double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);
 
