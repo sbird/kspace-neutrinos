@@ -12,7 +12,7 @@ def get_nu_power(filename):
     data = np.loadtxt(filename)
     k = data[:,0]
     #Convert fourier convention to CAMB.
-    pnu = (2*math.pi)**3*data[:,1]
+    pnu = data[:,1]
     return (k, pnu)
 
 def get_camb_nu_power(matpow, transfer):
