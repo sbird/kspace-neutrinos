@@ -623,9 +623,8 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
          myfree(fslengths);
    }
    if(d_tot->ThisTask == 0 && d_tot->debug){
-          printf("delta_nu_curr[0] is %g\n",delta_nu_curr[0]);
-          for(ik=0; ik< 5; ik++)
-            printf("k %g d_nu %g\n",wavenum[d_tot->nk/6*ik], delta_nu_curr[d_tot->nk/6*ik]);
+          for(ik=0; ik< 3; ik++)
+            printf("k %g d_nu %g\n",wavenum[d_tot->nk/8*ik], delta_nu_curr[d_tot->nk/8*ik]);
    }
    return;
 }
