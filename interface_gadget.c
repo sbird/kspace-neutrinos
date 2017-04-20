@@ -84,7 +84,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   long long int * count = mymalloc("temp_modecount", nk_allocated*sizeof(long long int));
   const double scale=pow(2*M_PI/BoxSize,3);
   if(!delta_cdm_curr || !delta_nu_curr || !keff || !count)
-      terminate("Could not allocate temporary memory for power spectra\n");
+      endrun(1,"Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
    * This function stores the total power*no. modes.*/
@@ -100,8 +100,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
 
   MPI_Barrier(MYMPI_COMM_WORLD);
-  if(delta_tot_table.ThisTask==0)
-	printf("Done get_delta_nu_update on all processors\n");
+  message(0,"Done get_delta_nu_update on all processors\n");
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
@@ -158,14 +157,13 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
            * M_cdm +M_nu in powerspec*/
           smth=(1+get_dnudcdm_powerspec(&d_pow, k2));
           if(isnan(smth))
-                terminate("delta_nu or delta_cdm is nan\n");
+                endrun(5,"delta_nu or delta_cdm is nan\n");
           ip = pmgrid * (pmgrid / 2 + 1) * (y - slabstart_y) + (pmgrid / 2 + 1) * x + z;
           fft_of_rhogrid[ip].re *= smth;
           fft_of_rhogrid[ip].im *= smth;
         }
   MPI_Barrier(MYMPI_COMM_WORLD);
-  if(delta_tot_table.ThisTask==0)
-	printf("Done adding neutrinos to grid on all processors\n");
+  message(0,"Done adding neutrinos to grid on all processors\n");
   /*Free memory*/
   free_d_pow(&d_pow);
   myfree(d_pow.delta_cdm_curr);

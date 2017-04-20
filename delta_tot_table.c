@@ -69,8 +69,7 @@ void free_delta_tot_table(_delta_tot_table *d_tot)
 
 void handler (const char * reason, const char * file, int line, int gsl_errno)
 {
-    printf("GSL_ERROR in file: %s, line %d, errno:%d\n",file, line, gsl_errno);
-    terminate(reason);
+    endrun(2001,"GSL_ERROR in file: %s, line %d, errno:%d, error: %s\n",file, line, gsl_errno, reason);
 }
 
 /* Constructor. transfer_init_tabulate must be called before this function.
@@ -83,20 +82,17 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
     /*Discard any delta_tot (read from a file) later than the current time*/
     for(ik=0; ik<d_tot->ia; ik++) {
         if(log(Time) <= d_tot->scalefact[ik]) {
-            if(d_tot->ThisTask==0)
-                printf("Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, d_tot->ia, ik);
+            message(0,"Truncating delta_tot to current time %g, rows: %d -> %d\n",Time, d_tot->ia, ik);
             d_tot->ia = ik;
             break;
 	    }
     }
     /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
     if(Time > d_tot->TimeTransfer+0.01 && (d_tot->ia == 0 || d_tot->scalefact[d_tot->ia-1] < log(Time-0.04)) ) {
-        terminate("Did not read delta_tot from resume file, but we probably should have\n");
+        endrun(2023,"Did not read delta_tot from resume file, but we probably should have\n");
     }
     if(nk_in > d_tot->nk_allocated){
-           char err[500];
-           sprintf(err,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
-           terminate(err);
+           endrun(2011,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
     }
     gsl_set_error_handler(handler);
     d_tot->nk=nk_in;
@@ -195,13 +191,11 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
   }
   /* Get a delta_nu_curr from CAMB.*/
   if(!d_tot->delta_tot_init_done)
-      terminate("Should have called delta_tot_init first\n");
+      endrun(2001,"Should have called delta_tot_init first\n");
   if(nk_in != d_tot->nk)
-      terminate("Number of kbins differs from stored delta_tot\n");
+      endrun(2002,"Number of kbins %d != stored delta_tot %d\n",nk_in, d_tot->nk);
   if(d_tot->nk < 2){
-      char err[150];
-      snprintf(err,150,"Number of kbins is unreasonably small: %d\n",d_tot->nk);
-      terminate(err);
+      endrun(2003,"Number of kbins is unreasonably small: %d\n",d_tot->nk);
   }
   /*If we get called twice with the same scale factor, do nothing*/
   if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT_ACC){
@@ -227,7 +221,6 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
    if (a >= exp(d_tot->scalefact[d_tot->ia-2]) + 0.009) {
        /* If so update delta_tot(a) correctly, overwriting current power spectrum */
        update_delta_tot(d_tot, a, delta_cdm_curr, delta_nu_curr, 1);
-       /*printf("Updating delta_tot: a=%f, Na=%d, last=%f\n",a,ia,exp(scalefact[ia-2]));*/
        if(d_tot->ThisTask==0 && d_tot->debug)
           save_delta_tot(d_tot, d_tot->ia-1, NULL);
    }
@@ -237,9 +230,7 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
    /*Sanity-check the output*/
    for(ik=0;ik<d_tot->nk;ik++){
           if(isnan(delta_nu_curr[ik]) || delta_nu_curr[ik] < 0){
-                  char err[300];
-                  snprintf(err,300,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
-                  terminate(err);
+              endrun(2004,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
           }
    }
    return;
@@ -258,9 +249,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
         int nbytes = sizeof(char)*(strlen(savedir)+25);
         dfile = mymalloc("filename", nbytes);
         if(!dfile){
-                char err[150];
-                snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
-                terminate(err);
+            endrun(2005,"Unable to allocate %d bytes for filename\n",nbytes);
         }
         dfile = strncpy(dfile, savedir, nbytes);
         dfile = strncat(dfile, "delta_tot_nu.txt",25);
@@ -284,9 +273,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
             for(ik=0;ik<d_tot->nk; ik++){
                     if(fscanf(fd, "%lg ", &(d_tot->delta_tot[ik][iia])) != 1){
                         if(iia != 0){
-                            char err[150];
-                            snprintf(err,150,"Expected %d k values, got %d for delta_tot in %s; a=%g\n",d_tot->nk, ik, dfile, exp(d_tot->scalefact[iia]));
-                            terminate(err);
+                            endrun(2006,"Expected %d k values, got %d for delta_tot in %s; a=%g\n",d_tot->nk, ik, dfile, exp(d_tot->scalefact[iia]));
                         }
                         else{
                             d_tot->nk = ik;
@@ -297,15 +284,13 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
     }
     /*If our table starts at a different time from the simulation, stop.*/
     if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
-            char err[250];
-            snprintf(err,250,"%s starts wih a=%g, transfer function is at a=%g\n",dfile, exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
-            terminate(err);
+            endrun(2007,"%s starts wih a=%g, transfer function is at a=%g\n",dfile, exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
     }
 
     if(iia > 0)
             d_tot->ia=iia;
     if(d_tot->debug)
-        printf("Read %d stored power spectra from %s\n",iia, dfile);
+        message(0,"Read %d stored power spectra from %s\n",iia, dfile);
     fclose(fd);
     if (savedir != NULL)
         myfree(dfile);
@@ -325,9 +310,7 @@ void save_delta_tot(const _delta_tot_table * const d_tot, const int iia, char * 
         dfile = savefile;
     }
     if(!(fd = fopen(dfile, "a"))) {
-            char err[300];
-            snprintf(err,300,"Could not open %s for writing!\n",dfile);
-            terminate(err);
+        endrun(2012,"Could not open %s for writing!\n",dfile);
     }
     /*Write log scale factor*/
     fprintf(fd, "# %le ", d_tot->scalefact[iia]);
@@ -349,9 +332,7 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
             int nbytes = sizeof(char)*(strlen(savedir)+25);
             savefile = mymalloc("filename", nbytes);
             if(!savefile){
-                    char err[150];
-                    snprintf(err,150,"Unable to allocate %d bytes for filename\n",nbytes);
-                    terminate(err);
+                    endrun(2150,"Unable to allocate %d bytes for filename\n",nbytes);
             }
             /* If directory does not exist, make it.
              * Don't both to check for error - just try to write the file later.*/
@@ -541,8 +522,8 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
   /*Number of stored power spectra. This includes the initial guess for the next step*/
   const int Na = d_tot->ia;
   const double mnubykT = mnu /d_tot->omnu->kBtnu;
-  if(d_tot->ThisTask == 0 && d_tot->debug)
-          printf("Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
+  if(d_tot->debug)
+      message(0,"Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
   fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),d_tot->light);
    /* Check whether the particle neutrinos are active at this point.
@@ -605,7 +586,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
         params.fsscales = fsscales;
 
         if(!params.spline || !params.acc || !w || !params.fs_spline || !params.fs_acc || !fslengths || !fsscales)
-              terminate("Error initialising and allocating memory for gsl interpolator and integrator.\n");
+              endrun(2016,"Error initialising and allocating memory for gsl interpolator and integrator.\n");
 
         gsl_interp_init(params.fs_spline,params.fsscales,params.fslengths,Nfs);
         for (ik = 0; ik < d_tot->nk; ik++) {
@@ -624,7 +605,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
    }
    if(d_tot->ThisTask == 0 && d_tot->debug){
           for(ik=0; ik< 3; ik++)
-            printf("k %g d_nu %g\n",wavenum[d_tot->nk/8*ik], delta_nu_curr[d_tot->nk/8*ik]);
+            message(0,"k %g d_nu %g\n",wavenum[d_tot->nk/8*ik], delta_nu_curr[d_tot->nk/8*ik]);
    }
    return;
 }

@@ -17,8 +17,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
     const double kmin=M_PI/BoxSize*scale;
     /*Set up the table length with the first file found*/
     if(!(fd = fopen(KspaceTransferFunction, "r"))){
-        snprintf(string, 1000, "Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
-        terminate(string);
+        endrun(2019,"Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
     }
     t_init->NPowerTable = 0;
     while(1){
@@ -41,14 +40,13 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
     }
 
     fclose(fd);
-    printf("Found transfer function, using %d rows. Min k used is %g.\n", t_init->NPowerTable,kmin);
+    message(1,"Found transfer function, using %d rows. Min k used is %g.\n", t_init->NPowerTable,kmin);
     t_init->logk = (double *) mymalloc("Transfer_functions", 2*t_init->NPowerTable* sizeof(double));
     t_init->T_nu=t_init->logk+t_init->NPowerTable;
 
     /*Now open the file*/
     if(!(fd = fopen(KspaceTransferFunction, "r"))){
-        sprintf(string, "Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
-        terminate(string);
+        endrun(2020,"Can't read input transfer function in file '%s'\n", KspaceTransferFunction);
     }
     count=0;
     while(count < t_init->NPowerTable){
@@ -78,8 +76,7 @@ void allocate_transfer_init_table(_transfer_init_table *t_init, const double Box
         break;
     }
     if(count < t_init->NPowerTable){
-        sprintf(string, "Expected %d rows in  file '%s' but only found %d\n", t_init->NPowerTable, KspaceTransferFunction, count);
-        terminate(string);
+        endrun(2021,"Expected %d rows in  file '%s' but only found %d\n", t_init->NPowerTable, KspaceTransferFunction, count);
     }
     fclose(fd);
     return;

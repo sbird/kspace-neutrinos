@@ -158,6 +158,7 @@ Your code should provide the routines declared in gadget_defines.h.
 These are:
 mymalloc, myfree - free and allocate memory.
 hubble_function - H(a)
-terminate - ends the simulation.
+endrun - ends the simulation.
+message - Prints a message to the screen.
 In case your code does not provide them, there are simple examples 
 defined in gadget_defines.c, primarily for the test suite.

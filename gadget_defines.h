@@ -12,11 +12,9 @@ double hubble_function(double a);
 
 #include <stdlib.h>
 
-#ifdef MPI_VERSION
-#define  terminate(x) {fprintf(stderr,"code termination, function '%s()', file '%s', line %d: '%s'\n", __FUNCTION__, __FILE__, __LINE__, x); MPI_Abort(MPI_COMM_WORLD, 1); exit(1);}
-#else
-#define  terminate(x) {fprintf(stderr,"code termination, function '%s()', file '%s', line %d: '%s'\n", __FUNCTION__, __FILE__, __LINE__, x); exit(1);}
-#endif
+/*These two are statements to end the run and print a message*/
+void endrun(int ierr, const char * fmt, ...);
+void message(int ierr, const char * fmt, ...);
 
 /*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.*/
 #define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)

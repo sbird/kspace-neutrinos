@@ -87,9 +87,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
       if(kspace_params.TimeTransfer > TimeBegin + 0.01) {
-          char err[1024];
-          snprintf(err, 1024, "TimeTransfer (%g) must be <= simulation start time (%g)\n",kspace_params.TimeTransfer, TimeBegin);
-          terminate(err);
+          endrun(2017,"TimeTransfer (%g) must be <= simulation start time (%g)\n",kspace_params.TimeTransfer, TimeBegin);
       }
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
@@ -107,7 +105,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*Temporary float space so the power spectrum is not over-written before we are done with it*/
   delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
   if(!delta_cdm_curr)
-      terminate("Could not allocate temporary memory for power spectra\n");
+      endrun(2018,"Could not allocate temporary memory for power spectra\n");
 }
 
 _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
@@ -130,8 +128,7 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
   get_delta_nu_update(&delta_tot_table, Time, nk_nonzero, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
 
   MPI_Barrier(MYMPI_COMM_WORLD);
-  if(delta_tot_table.ThisTask==0)
-	printf("Done get_delta_nu_update on all processors\n");
+  message(0,"Done getting neutrino power\n");
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
