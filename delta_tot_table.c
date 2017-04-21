@@ -603,7 +603,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
          myfree(fsscales);
          myfree(fslengths);
    }
-   if(d_tot->ThisTask == 0 && d_tot->debug){
+   if(d_tot->debug){
           for(ik=0; ik< 3; ik++)
             message(0,"k %g d_nu %g\n",wavenum[d_tot->nk/8*ik], delta_nu_curr[d_tot->nk/8*ik]);
    }
