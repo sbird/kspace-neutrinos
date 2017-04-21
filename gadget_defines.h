@@ -13,7 +13,10 @@ double hubble_function(double a);
 #include <stdlib.h>
 
 /*These two are statements to end the run and print a message*/
+/* Use this define as a way of knowing we are MP-Gadget, so we use that terminate function.
+ * Cannot just call it endrun as this conflicts with Gadget-2.*/
 #ifdef PETAPM_ORDER
+void endrun(int ierr, const char * fmt, ...);
 #define terminate endrun
 #else
 void terminate(int ierr, const char * fmt, ...);
