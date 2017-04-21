@@ -1,20 +1,20 @@
-From 4c087769070146b8605690e8caaba3e20e3a5326 Mon Sep 17 00:00:00 2001
+From dcf3370a3847495a44fc4dc5a82b07ba175fe654 Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 10:01:09 -0500
 Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
 
 This will output a neutrino powerspectrum on every PM timestep.
 ---
- begrun.c      | 27 +++++++++++++++++++++++++--
+ begrun.c      | 29 +++++++++++++++++++++++++++--
  init.c        |  6 ++++++
  io.c          |  4 ++++
  pm_periodic.c |  5 +++++
  proto.h       |  4 ++++
  restart.c     |  8 ++++++++
- 6 files changed, 52 insertions(+), 2 deletions(-)
+ 6 files changed, 54 insertions(+), 2 deletions(-)
 
 diff --git a/begrun.c b/begrun.c
-index f4a92d9..298a995 100644
+index f4a92d9..22717f0 100644
 --- a/begrun.c
 +++ b/begrun.c
 @@ -6,11 +6,10 @@
@@ -30,11 +30,12 @@ index f4a92d9..298a995 100644
  /*! \file begrun.c
   *  \brief initial set-up of a simulation run
   *
-@@ -41,6 +40,26 @@ void begrun(void)
+@@ -41,6 +40,28 @@ void begrun(void)
  				   exchange during force computation */
    set_units();
  
 +#ifdef KSPACE_NEUTRINOS_2
++#define T_CMB0 2.7255
 +  /*This must be called before hubblefunction(a) is used for the first time*/
 +  {
 +      char *savedir = All.OutputDir;
@@ -51,13 +52,14 @@ index f4a92d9..298a995 100644
 +      {
 +        savedir = All.OutputDir;
 +      }
-+      allocate_kspace_memory(PMGRID/2, ThisTask,All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, All.HubbleParam, 2.7255, savedir, All.TimeBegin, All.TimeMax, MPI_COMM_WORLD);
++      InitOmegaNu(All.TimeBegin, All.HubbleParam, T_CMB0);
++      allocate_kspace_memory(PMGRID/2, ThisTask, All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, savedir, All.TimeMax, MPI_COMM_WORLD);
 +  }
 +#endif
  #if defined(PERIODIC) && (!defined(PMGRID) || defined(FORCETEST))
    ewald_init();
  #endif
-@@ -586,6 +605,10 @@ void read_parameter_file(char *fname)
+@@ -586,6 +607,10 @@ void read_parameter_file(char *fname)
        addr[nt] = &All.MinGasTemp;
        id[nt++] = DOUBLE;
  
@@ -151,5 +153,5 @@ index 9fd4665..f6e07f6 100644
    sprintf(buf_bak, "%s%s.%d.bak", All.OutputDir, All.RestartFile, ThisTask);
    sprintf(buf_mv, "mv %s %s", buf, buf_bak);
 -- 
-2.9.3
+2.12.2
 
