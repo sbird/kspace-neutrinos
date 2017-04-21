@@ -43,7 +43,7 @@ double OmegaNu(double a);
  * @param a scale factor. */
 double OmegaNu_nopart(double a);
 
-void InitOmegaNu(const double TimeBegin,const double HubbleParam, const double tcmb0, MPI_Comm MYMPI_COMM_WORLD);
+void InitOmegaNu(const double HubbleParam, const double tcmb0, MPI_Comm MYMPI_COMM_WORLD);
 
 /** This function allocates memory for the neutrino tables, and loads the initial transfer
  * functions from CAMB transfer files.

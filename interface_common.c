@@ -201,9 +201,9 @@ void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const
 }
 
 /*Initialise only the omega_nu table.*/
-void InitOmegaNu(const double TimeBegin, const double HubbleParam, const double tcmb0, MPI_Comm MYMPI_COMM_WORLD)
+void InitOmegaNu(const double HubbleParam, const double tcmb0, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*Make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
-  init_omega_nu(&omeganu_table, kspace_params.MNu, TimeBegin, HubbleParam, tcmb0);
+  init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam, tcmb0);
 }

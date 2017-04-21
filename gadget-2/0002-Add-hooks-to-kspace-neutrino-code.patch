@@ -52,7 +52,7 @@ index f4a92d9..7b5a04f 100644
 +      {
 +        savedir = All.OutputDir;
 +      }
-+      InitOmegaNu(All.TimeBegin, All.HubbleParam, T_CMB0,MPI_COMM_WORLD);
++      InitOmegaNu(All.HubbleParam, T_CMB0,MPI_COMM_WORLD);
 +      allocate_kspace_memory(PMGRID/2, ThisTask, All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, savedir, All.TimeMax, MPI_COMM_WORLD);
 +  }
 +#endif
