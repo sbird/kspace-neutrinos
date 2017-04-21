@@ -32,16 +32,16 @@ interface_gadget.o: interface_gadget.c ${INCL}
 powerspectrum.o: powerspectrum.c ${INCL}
 	mpicc -c $(CFLAGS) $< -o $@
 
-%_test: %_test.c %.o omega_nu_single.o gadget_defines.o
+%_test: %_test.c %.o omega_nu_single.o gadget_defines_nompi.o
 	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS)
 
-delta_tot_table_test: delta_tot_table_test.c delta_tot_table.o delta_pow.o transfer_init.o omega_nu_single.o gadget_defines.o
+delta_tot_table_test: delta_tot_table_test.c delta_tot_table.o delta_pow.o transfer_init.o omega_nu_single.o gadget_defines_nompi.o
 	$(CC) $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS)
 
 #This needs MPI
 #The fftw link must match the include in powerspectrum_test.c
-powerspectrum_test: powerspectrum_test.c powerspectrum.o omega_nu_single.o gadget_defines.o
+powerspectrum_test: powerspectrum_test.c powerspectrum.o omega_nu_single.o gadget_defines_nompi.o
 	mpicc $(CFLAGS) $^ -o $@ -lcmocka $(LFLAGS) -lsrfftw -lsfftw
 
 clean:
-	rm -f $(OBJS) gadget_defines.o
+	rm -f $(OBJS) gadget_defines_nompi.o

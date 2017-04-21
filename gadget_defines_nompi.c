@@ -6,7 +6,6 @@
 #include <math.h>
 #include "gadget_defines.h"
 #include "omega_nu_single.h"
-#include "mpi.h"
 
 /*These functions need bodies; normally this is provided by gadget*/
 void terminate(int ierr, const char * fmt, ...)
@@ -15,7 +14,6 @@ void terminate(int ierr, const char * fmt, ...)
     va_start(va, fmt);
     printf(fmt, va);
     va_end(va);
-    MPI_Abort(MPI_COMM_WORLD, ierr);
     exit(ierr);
 }
 
@@ -28,8 +26,6 @@ void terminate(int ierr, const char * fmt, ...)
 void message(int ierr, const char * fmt, ...)
 {
     int rank = 0;
-    if(ierr <= 0)
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if(ierr > 0 || rank == 0) {
         va_list va;
         char buf[4096];
