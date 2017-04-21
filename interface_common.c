@@ -75,20 +75,15 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
   }
 }
 
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const double HubbleParam, const double tcmb0, const char * snapdir, const double TimeBegin, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   /*First make sure kspace_params is propagated to all processors*/
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
-  /*Now initialise the background*/
-  init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam, tcmb0);
   if(kspace_params.hybrid_neutrinos_on)
     init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time, omeganu_table.kBtnu);
   /*We only need this for initialising delta_tot later.
    * ThisTask is needed so we only read the transfer functions on task 0, serialising disc access.*/
   if(ThisTask==0) {
-      if(kspace_params.TimeTransfer > TimeBegin + 0.01) {
-          endrun(2017,"TimeTransfer (%g) must be <= simulation start time (%g)\n",kspace_params.TimeTransfer, TimeBegin);
-      }
     allocate_transfer_init_table(&transfer_init, BoxSize, UnitLength_in_cm, kspace_params.InputSpectrum_UnitLength_in_cm, get_omega_nu(&omeganu_table, 1), Omega0, kspace_params.KspaceTransferFunction);
   }
   /*Broadcast data to other processors*/
@@ -180,7 +175,7 @@ void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const
 }
 
 /*Initialise only the omega_nu table.*/
-void InitOmegaNuOnly(const double TimeBegin, const double HubbleParam, const double tcmb0)
+void InitOmegaNu(const double TimeBegin, const double HubbleParam, const double tcmb0)
 {
   init_omega_nu(&omeganu_table, kspace_params.MNu, TimeBegin, HubbleParam, tcmb0);
 }

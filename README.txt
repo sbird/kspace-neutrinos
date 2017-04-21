@@ -120,6 +120,7 @@ If you are using Gadget-3, you can just include these files.
 Note we do not use global Gadget variables, nor Gadget configuration switches.
 
 The main routines are:
+0. InitOmegaNu(a_start, h0, tcmb): Initialises the table for OmegaNu. Should be called before all other functions.
 1. OmegaNu(a): the matter density in neutrinos, should be added to the Hubble function
 2. allocate_kspace_memory(): allocates and sets up the neutrino module. Do it before calling OmegaNu.
 
