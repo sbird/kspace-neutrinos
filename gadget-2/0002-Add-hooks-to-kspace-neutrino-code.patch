@@ -1,17 +1,17 @@
-From dcf3370a3847495a44fc4dc5a82b07ba175fe654 Mon Sep 17 00:00:00 2001
+From c31f465b82d7930f985faf2c81a5a917f84bca33 Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 10:01:09 -0500
 Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
 
-This will output a neutrino powerspectrum on every PM timestep.
+This will output a total and neutrino powerspectrum with every snapshot.
 ---
  begrun.c      | 29 +++++++++++++++++++++++++++--
  init.c        |  6 ++++++
- io.c          |  4 ++++
+ io.c          |  5 +++++
  pm_periodic.c |  5 +++++
  proto.h       |  4 ++++
  restart.c     |  8 ++++++++
- 6 files changed, 54 insertions(+), 2 deletions(-)
+ 6 files changed, 55 insertions(+), 2 deletions(-)
 
 diff --git a/begrun.c b/begrun.c
 index f4a92d9..22717f0 100644
@@ -88,16 +88,17 @@ index 7565646..76b58ee 100644
      {
        if(ThisTask == 0)
 diff --git a/io.c b/io.c
-index 314527c..0cf7cb3 100644
+index 314527c..5032c1e 100644
 --- a/io.c
 +++ b/io.c
-@@ -99,6 +99,10 @@ void savepositions(int num)
+@@ -99,6 +99,11 @@ void savepositions(int num)
      sprintf(buf, "%s%s_%03d.%d", All.OutputDir, All.SnapshotFileBase, num, filenr);
    else
      sprintf(buf, "%s%s_%03d", All.OutputDir, All.SnapshotFileBase, num);
 +#ifdef KSPACE_NEUTRINOS_2
 +      save_nu_state(buf);
 +      save_neutrino_power(All.Time, num, All.OutputDir);
++      save_total_power(All.Time, num, All.OutputDir);
 +#endif
  
    ngroups = All.NumFilesPerSnapshot / All.NumFilesWrittenInParallel;
@@ -153,5 +154,5 @@ index 9fd4665..f6e07f6 100644
    sprintf(buf_bak, "%s%s.%d.bak", All.OutputDir, All.RestartFile, ThisTask);
    sprintf(buf_mv, "mv %s %s", buf, buf_bak);
 -- 
-2.12.2
+2.9.3
 
