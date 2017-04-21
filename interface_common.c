@@ -178,3 +178,9 @@ void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const
     /*Broadcast save-data to other processors*/
     broadcast_delta_tot_table(&delta_tot_table, delta_tot_table.nk_allocated, MYMPI_COMM_WORLD);
 }
+
+/*Initialise only the omega_nu table.*/
+void InitOmegaNuOnly(const double TimeBegin, const double HubbleParam, const double tcmb0)
+{
+  init_omega_nu(&omeganu_table, kspace_params.MNu, TimeBegin, HubbleParam, tcmb0);
+}

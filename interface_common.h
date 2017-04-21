@@ -43,6 +43,8 @@ double OmegaNu(double a);
  * @param a scale factor. */
 double OmegaNu_nopart(double a);
 
+void InitOmegaNuOnly(const double TimeBegin,const double HubbleParam, const double tcmb0);
+
 /** This function allocates memory for the neutrino tables, and loads the initial transfer
  * functions from CAMB transfer files.
  * One processor 0 it reads the transfer tables from CAMB into the transfer_init structure.
