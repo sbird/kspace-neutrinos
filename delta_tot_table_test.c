@@ -34,7 +34,7 @@ void init_hubble_function(_omega_nu * omnu, const double Omega0, const double Un
 double hubble_function(double a)
 {
     if(!m_omnu) {
-        endrun(1,"init_hubble_function was not called in test suite before this!\n");
+        terminate(1,"init_hubble_function was not called in test suite before this!\n");
     }
     /* Matter + Lambda: neglect curvature*/
     double omega_tot = Omega_nonu/pow(a,3) + OmegaLambda;

@@ -100,7 +100,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*Temporary float space so the power spectrum is not over-written before we are done with it*/
   delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
   if(!delta_cdm_curr)
-      endrun(2018,"Could not allocate temporary memory for power spectra\n");
+      terminate(2018,"Could not allocate temporary memory for power spectra\n");
 }
 
 _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)

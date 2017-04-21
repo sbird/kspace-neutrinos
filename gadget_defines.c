@@ -8,7 +8,7 @@
 #include "omega_nu_single.h"
 
 /*These functions need bodies; normally this is provided by gadget*/
-void endrun(int ierr, const char * fmt, ...)
+void terminate(int ierr, const char * fmt, ...)
 {
     va_list va;
     va_start(va, fmt);

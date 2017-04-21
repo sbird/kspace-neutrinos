@@ -144,7 +144,7 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
      rho_nu_tab->acc = gsl_interp_accel_alloc();
      rho_nu_tab->interp=gsl_interp_alloc(gsl_interp_cspline,NRHOTAB);
      if(!rho_nu_tab->interp || !rho_nu_tab->acc || !rho_nu_tab->loga)
-         endrun(2035,"Could not initialise tables for neutrino matter density\n");
+         terminate(2035,"Could not initialise tables for neutrino matter density\n");
 
      for(i=0; i< NRHOTAB; i++){
         double param[2];

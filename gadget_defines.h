@@ -13,8 +13,9 @@ double hubble_function(double a);
 #include <stdlib.h>
 
 /*These two are statements to end the run and print a message*/
-void endrun(int ierr, const char * fmt, ...);
+void terminate(int ierr, const char * fmt, ...);
 void message(int ierr, const char * fmt, ...);
+
 
 /*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.*/
 #define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)

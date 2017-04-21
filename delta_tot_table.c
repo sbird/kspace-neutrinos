@@ -69,7 +69,7 @@ void free_delta_tot_table(_delta_tot_table *d_tot)
 
 void handler (const char * reason, const char * file, int line, int gsl_errno)
 {
-    endrun(2001,"GSL_ERROR in file: %s, line %d, errno:%d, error: %s\n",file, line, gsl_errno, reason);
+    terminate(2001,"GSL_ERROR in file: %s, line %d, errno:%d, error: %s\n",file, line, gsl_errno, reason);
 }
 
 /* Constructor. transfer_init_tabulate must be called before this function.
@@ -89,13 +89,13 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
     }
     /*If we are later than the transfer function time, and we didn't resume, we likely have a problem*/
     if(Time > d_tot->TimeTransfer+0.01 && (d_tot->ia == 0 || d_tot->scalefact[d_tot->ia-1] < log(Time-0.04)) ) {
-        endrun(2023,"Did not read delta_tot from resume file, but we probably should have\n");
+        terminate(2023,"Did not read delta_tot from resume file, but we probably should have\n");
     }
     if(Time < d_tot->TimeTransfer+0.01) {
-        endrun(2024,"Trying to compute delta_tot at a=%g < Transfer time of %g\n",Time, d_tot->TimeTransfer);
+        terminate(2024,"Trying to compute delta_tot at a=%g < Transfer time of %g\n",Time, d_tot->TimeTransfer);
     }
     if(nk_in > d_tot->nk_allocated){
-           endrun(2011,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
+           terminate(2011,"input power of %d is longer than memory of %d\n",nk_in,d_tot->nk_allocated);
     }
     gsl_set_error_handler(handler);
     d_tot->nk=nk_in;
@@ -194,11 +194,11 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
   }
   /* Get a delta_nu_curr from CAMB.*/
   if(!d_tot->delta_tot_init_done)
-      endrun(2001,"Should have called delta_tot_init first\n");
+      terminate(2001,"Should have called delta_tot_init first\n");
   if(nk_in != d_tot->nk)
-      endrun(2002,"Number of kbins %d != stored delta_tot %d\n",nk_in, d_tot->nk);
+      terminate(2002,"Number of kbins %d != stored delta_tot %d\n",nk_in, d_tot->nk);
   if(d_tot->nk < 2){
-      endrun(2003,"Number of kbins is unreasonably small: %d\n",d_tot->nk);
+      terminate(2003,"Number of kbins is unreasonably small: %d\n",d_tot->nk);
   }
   /*If we get called twice with the same scale factor, do nothing*/
   if(log(a)-d_tot->scalefact[d_tot->ia-1] < FLOAT_ACC){
@@ -233,7 +233,7 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
    /*Sanity-check the output*/
    for(ik=0;ik<d_tot->nk;ik++){
           if(isnan(delta_nu_curr[ik]) || delta_nu_curr[ik] < 0){
-              endrun(2004,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
+              terminate(2004,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
           }
    }
    return;
@@ -252,7 +252,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
         int nbytes = sizeof(char)*(strlen(savedir)+25);
         dfile = mymalloc("filename", nbytes);
         if(!dfile){
-            endrun(2005,"Unable to allocate %d bytes for filename\n",nbytes);
+            terminate(2005,"Unable to allocate %d bytes for filename\n",nbytes);
         }
         dfile = strncpy(dfile, savedir, nbytes);
         dfile = strncat(dfile, "delta_tot_nu.txt",25);
@@ -276,7 +276,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
             for(ik=0;ik<d_tot->nk; ik++){
                     if(fscanf(fd, "%lg ", &(d_tot->delta_tot[ik][iia])) != 1){
                         if(iia != 0){
-                            endrun(2006,"Expected %d k values, got %d for delta_tot in %s; a=%g\n",d_tot->nk, ik, dfile, exp(d_tot->scalefact[iia]));
+                            terminate(2006,"Expected %d k values, got %d for delta_tot in %s; a=%g\n",d_tot->nk, ik, dfile, exp(d_tot->scalefact[iia]));
                         }
                         else{
                             d_tot->nk = ik;
@@ -287,7 +287,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
     }
     /*If our table starts at a different time from the simulation, stop.*/
     if(fabs(d_tot->scalefact[0] - log(d_tot->TimeTransfer)) > 1e-4){
-            endrun(2007,"%s starts wih a=%g, transfer function is at a=%g\n",dfile, exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
+            terminate(2007,"%s starts wih a=%g, transfer function is at a=%g\n",dfile, exp(d_tot->scalefact[0]),d_tot->TimeTransfer);
     }
 
     if(iia > 0)
@@ -313,7 +313,7 @@ void save_delta_tot(const _delta_tot_table * const d_tot, const int iia, char * 
         dfile = savefile;
     }
     if(!(fd = fopen(dfile, "a"))) {
-        endrun(2012,"Could not open %s for writing!\n",dfile);
+        terminate(2012,"Could not open %s for writing!\n",dfile);
     }
     /*Write log scale factor*/
     fprintf(fd, "# %le ", d_tot->scalefact[iia]);
@@ -335,7 +335,7 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
             int nbytes = sizeof(char)*(strlen(savedir)+25);
             savefile = mymalloc("filename", nbytes);
             if(!savefile){
-                    endrun(2150,"Unable to allocate %d bytes for filename\n",nbytes);
+                    terminate(2150,"Unable to allocate %d bytes for filename\n",nbytes);
             }
             /* If directory does not exist, make it.
              * Don't both to check for error - just try to write the file later.*/
@@ -589,7 +589,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
         params.fsscales = fsscales;
 
         if(!params.spline || !params.acc || !w || !params.fs_spline || !params.fs_acc || !fslengths || !fsscales)
-              endrun(2016,"Error initialising and allocating memory for gsl interpolator and integrator.\n");
+              terminate(2016,"Error initialising and allocating memory for gsl interpolator and integrator.\n");
 
         gsl_interp_init(params.fs_spline,params.fsscales,params.fslengths,Nfs);
         for (ik = 0; ik < d_tot->nk; ik++) {
