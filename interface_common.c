@@ -95,7 +95,7 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   broadcast_transfer_table(&transfer_init, ThisTask, MYMPI_COMM_WORLD);
   /*Set the private copy of the task in delta_tot_table*/
   delta_tot_table.ThisTask = ThisTask;
-  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 1);
+  allocate_delta_tot_table(&delta_tot_table, nk_in, kspace_params.TimeTransfer, TimeMax, Omega0, &omeganu_table, UnitTime_in_s, UnitLength_in_cm, 0);
   /*Read the saved data from a snapshot if present*/
   if(ThisTask==0 && snapdir != NULL) {
   	read_all_nu_state(&delta_tot_table, snapdir);
@@ -128,7 +128,7 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
   get_delta_nu_update(&delta_tot_table, Time, nk_nonzero, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
 
   MPI_Barrier(MYMPI_COMM_WORLD);
-  message(0,"Done getting neutrino power\n");
+  message(0,"Done getting neutrino power: nk= %d, k = %g, delta_nu = %g, delta_cdm = %g,\n",nk_nonzero, keff[1],delta_nu_curr[1],delta_cdm_curr[1]);
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
