@@ -13,7 +13,11 @@ double hubble_function(double a);
 #include <stdlib.h>
 
 /*These two are statements to end the run and print a message*/
+#ifdef PETAPM_ORDER
+#define terminate endrun
+#else
 void terminate(int ierr, const char * fmt, ...);
+#endif
 void message(int ierr, const char * fmt, ...);
 
 
