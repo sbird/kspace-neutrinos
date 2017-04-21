@@ -255,7 +255,7 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
             terminate(2005,"Unable to allocate %d bytes for filename\n",nbytes);
         }
         dfile = strncpy(dfile, savedir, nbytes);
-        dfile = strncat(dfile, "delta_tot_nu.txt",25);
+        dfile = strncat(dfile, "/delta_tot_nu.txt",25);
     }
     /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
     fd = fopen(dfile, "r");
@@ -341,7 +341,7 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
              * Don't both to check for error - just try to write the file later.*/
             mkdir(savedir, S_IRWXU | S_IRGRP | S_IXGRP);
             savefile = strncpy(savefile, savedir, nbytes);
-            savefile = strncat(savefile, "delta_tot_nu.txt",25);
+            savefile = strncat(savefile, "/delta_tot_nu.txt",25);
     }
     else {
         savefile = "delta_tot_nu.txt";
