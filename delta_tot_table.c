@@ -91,7 +91,7 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
     if(Time > d_tot->TimeTransfer+0.01 && (d_tot->ia == 0 || d_tot->scalefact[d_tot->ia-1] < log(Time-0.04)) ) {
         terminate(2023,"Did not read delta_tot from resume file, but we probably should have\n");
     }
-    if(Time < d_tot->TimeTransfer+0.01) {
+    if(Time < d_tot->TimeTransfer-1e-5) {
         terminate(2024,"Trying to compute delta_tot at a=%g < Transfer time of %g\n",Time, d_tot->TimeTransfer);
     }
     if(nk_in > d_tot->nk_allocated){
