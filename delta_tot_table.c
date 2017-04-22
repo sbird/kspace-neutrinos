@@ -241,22 +241,15 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
 
 /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
+void read_all_nu_state(_delta_tot_table * const d_tot, char * savefile)
 {
     FILE* fd;
     char * dfile;
-    if (savedir == NULL){
+    if (!savefile){
         dfile = "delta_tot_nu.txt";
     }
-    else{
-        int nbytes = sizeof(char)*(strlen(savedir)+25);
-        dfile = mymalloc("filename", nbytes);
-        if(!dfile){
-            terminate(2005,"Unable to allocate %d bytes for filename\n",nbytes);
-        }
-        dfile = strncpy(dfile, savedir, nbytes);
-        dfile = strncat(dfile, "/delta_tot_nu.txt",25);
-    }
+    else
+        dfile = savefile;
     /*Load delta_tot from a file, if such a file exists. Allows resuming.*/
     fd = fopen(dfile, "r");
     if(!fd) {
@@ -295,8 +288,6 @@ void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir)
     if(d_tot->debug)
         message(0,"Read %d stored power spectra from %s\n",iia, dfile);
     fclose(fd);
-    if (savedir != NULL)
-        myfree(dfile);
 }
 
 /*Save a single delta_nu power spectrum into a file*/
@@ -327,23 +318,10 @@ void save_delta_tot(const _delta_tot_table * const d_tot, const int iia, char * 
 
 /* Function to save all the internal state of the neutrino integrator to disc.
  * Must be called for resume to work*/
-void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
+void save_all_nu_state(const _delta_tot_table * const d_tot, char * savefile)
 {
     int ik;
-    char * savefile;
-    if(savedir) {
-            int nbytes = sizeof(char)*(strlen(savedir)+25);
-            savefile = mymalloc("filename", nbytes);
-            if(!savefile){
-                    terminate(2150,"Unable to allocate %d bytes for filename\n",nbytes);
-            }
-            /* If directory does not exist, make it.
-             * Don't both to check for error - just try to write the file later.*/
-            mkdir(savedir, S_IRWXU | S_IRGRP | S_IXGRP);
-            savefile = strncpy(savefile, savedir, nbytes);
-            savefile = strncat(savefile, "/delta_tot_nu.txt",25);
-    }
-    else {
+    if(!savefile) {
         savefile = "delta_tot_nu.txt";
     }
     /*Get a clean debug restart file*/
@@ -361,8 +339,6 @@ void save_all_nu_state(const _delta_tot_table * const d_tot, char * savedir)
     }
     for(ik=0; ik< d_tot->ia; ik++)
          save_delta_tot(d_tot, ik, savefile);
-    if(savedir)
-        myfree(savefile);
 }
 
 

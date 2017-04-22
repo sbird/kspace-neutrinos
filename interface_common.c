@@ -39,10 +39,10 @@ double OmegaNu_nopart(double a)
     return get_omega_nu_nopart(&omeganu_table, a);
 }
 
-void save_nu_state(char * savedir)
+void save_nu_state(char * savefile)
 {
     if(delta_tot_table.ThisTask == 0)
-        save_all_nu_state(&delta_tot_table, savedir);
+        save_all_nu_state(&delta_tot_table, savefile);
 }
 
 int save_neutrino_power(const double Time, const int snapnum, const char * OutputDir)
@@ -103,7 +103,7 @@ void broadcast_delta_tot_table(_delta_tot_table *d_tot, const int nk_in, MPI_Com
   }
 }
 
-void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, const char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
+void allocate_kspace_memory(const int nk_in, const int ThisTask, const double BoxSize, const double UnitTime_in_s, const double UnitLength_in_cm, const double Omega0, char * snapdir, const double TimeMax, MPI_Comm MYMPI_COMM_WORLD)
 {
   if(kspace_params.hybrid_neutrinos_on)
     init_hybrid_nu(&omeganu_table.hybnu, kspace_params.MNu, kspace_params.vcrit, LIGHTCGS * UnitTime_in_s/UnitLength_in_cm, kspace_params.nu_crit_time, omeganu_table.kBtnu);

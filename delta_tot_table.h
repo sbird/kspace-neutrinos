@@ -132,7 +132,7 @@ int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const
 
 /** Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
  * Must be called before delta_tot_init, or resuming wont work*/
-void read_all_nu_state(_delta_tot_table * const d_tot, const char * savedir);
+void read_all_nu_state(_delta_tot_table * const d_tot, char * savedir);
 
 /** Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
 double specialJ(const double x, const double vcmnubylight);
