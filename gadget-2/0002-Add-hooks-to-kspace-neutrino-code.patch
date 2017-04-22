@@ -1,20 +1,20 @@
-From 011dbe00a4743c15f7ef65fad01dd5668bcad026 Mon Sep 17 00:00:00 2001
+From bbe95f21c007c2c8c8a32920c5e270029af2ef3c Mon Sep 17 00:00:00 2001
 From: Simeon Bird <sbird4@jhu.edu>
 Date: Wed, 18 Jan 2017 10:01:09 -0500
 Subject: [PATCH 2/3] Add hooks to kspace neutrino code.
 
 This will output a total and neutrino powerspectrum with every snapshot.
 ---
- begrun.c      | 29 +++++++++++++++++++++++++++--
+ begrun.c      | 32 ++++++++++++++++++++++++++++++--
  init.c        |  6 ++++++
- io.c          |  5 +++++
+ io.c          |  6 ++++++
  pm_periodic.c |  5 +++++
  proto.h       |  4 ++++
- restart.c     |  8 ++++++++
- 6 files changed, 55 insertions(+), 2 deletions(-)
+ restart.c     |  9 +++++++++
+ 6 files changed, 60 insertions(+), 2 deletions(-)
 
 diff --git a/begrun.c b/begrun.c
-index f4a92d9..7b5a04f 100644
+index f4a92d9..7aa177b 100644
 --- a/begrun.c
 +++ b/begrun.c
 @@ -6,11 +6,10 @@
@@ -30,7 +30,7 @@ index f4a92d9..7b5a04f 100644
  /*! \file begrun.c
   *  \brief initial set-up of a simulation run
   *
-@@ -41,6 +40,28 @@ void begrun(void)
+@@ -41,6 +40,31 @@ void begrun(void)
  				   exchange during force computation */
    set_units();
  
@@ -38,19 +38,22 @@ index f4a92d9..7b5a04f 100644
 +#define T_CMB0 2.7255
 +  /*This must be called before hubblefunction(a) is used for the first time*/
 +  {
-+      char *savedir = All.OutputDir;
++      char *savedir = NULL;
 +      char buf[1000];
 +      /* If we are loading from a snapshot, load the neutrino state from the snapshot directory.
 +       * Otherwise load it from the current working directory*/
 +      if(RestartFlag == 2)
 +      {
-+        dirname(strcpy(All.InitCondFile,buf));
++        /*Copied from init.c*/
++        int num = atoi(All.InitCondFile + strlen(All.InitCondFile) - 3);
++        sprintf(buf, "%s/delta_tot_nu_%d.txt",All.OutputDir,num);
 +        savedir = buf;
 +      }
 +      /*Load from a restart file*/
 +      if(RestartFlag == 1)
 +      {
-+        savedir = All.OutputDir;
++        sprintf(buf, "%s/delta_tot_nu.txt",All.OutputDir);
++        savedir = buf;
 +      }
 +      InitOmegaNu(All.HubbleParam, T_CMB0,MPI_COMM_WORLD);
 +      allocate_kspace_memory(PMGRID/2, ThisTask, All.BoxSize, All.UnitTime_in_s, All.UnitLength_in_cm, All.Omega0, savedir, All.TimeMax, MPI_COMM_WORLD);
@@ -59,7 +62,7 @@ index f4a92d9..7b5a04f 100644
  #if defined(PERIODIC) && (!defined(PMGRID) || defined(FORCETEST))
    ewald_init();
  #endif
-@@ -586,6 +607,10 @@ void read_parameter_file(char *fname)
+@@ -586,6 +610,10 @@ void read_parameter_file(char *fname)
        addr[nt] = &All.MinGasTemp;
        id[nt++] = DOUBLE;
  
@@ -88,21 +91,22 @@ index 7565646..76b58ee 100644
      {
        if(ThisTask == 0)
 diff --git a/io.c b/io.c
-index 314527c..5032c1e 100644
+index 314527c..0e11195 100644
 --- a/io.c
 +++ b/io.c
-@@ -99,6 +99,11 @@ void savepositions(int num)
-     sprintf(buf, "%s%s_%03d.%d", All.OutputDir, All.SnapshotFileBase, num, filenr);
-   else
-     sprintf(buf, "%s%s_%03d", All.OutputDir, All.SnapshotFileBase, num);
+@@ -95,6 +95,12 @@ void savepositions(int num)
+ 
+   fill_Tab_IO_Labels();
+ 
 +#ifdef KSPACE_NEUTRINOS_2
++      sprintf(buf, "%s/delta_tot_nu_%d.txt",All.OutputDir,num);
 +      save_nu_state(buf);
 +      save_neutrino_power(All.Time, num, All.OutputDir);
 +      save_total_power(All.Time, num, All.OutputDir);
 +#endif
- 
-   ngroups = All.NumFilesPerSnapshot / All.NumFilesWrittenInParallel;
-   if((All.NumFilesPerSnapshot % All.NumFilesWrittenInParallel))
+   if(All.NumFilesPerSnapshot > 1)
+     sprintf(buf, "%s%s_%03d.%d", All.OutputDir, All.SnapshotFileBase, num, filenr);
+   else
 diff --git a/pm_periodic.c b/pm_periodic.c
 index 4d7859d..0cfe6b7 100644
 --- a/pm_periodic.c
@@ -135,17 +139,18 @@ index 364db59..d82a1e3 100644
  void   allocate_commbuffers(void);
  void   allocate_memory(void);
 diff --git a/restart.c b/restart.c
-index 9fd4665..f6e07f6 100644
+index 9fd4665..d0f9c46 100644
 --- a/restart.c
 +++ b/restart.c
-@@ -40,6 +40,14 @@ void restart(int modus)
+@@ -40,6 +40,15 @@ void restart(int modus)
    struct global_data_all_processes all_task0;
  
  
 +#ifdef KSPACE_NEUTRINOS_2
 +  if(ThisTask == 0 && modus == 0)
 +    {
-+      save_nu_state(All.OutputDir);
++      sprintf(buf, "%s/delta_tot_nu.txt",All.OutputDir);
++      save_nu_state(buf);
 +    }
 +  MPI_Barrier(MPI_COMM_WORLD);
 +#endif
