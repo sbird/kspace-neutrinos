@@ -76,7 +76,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   const int nk_allocated = delta_tot_table.nk_allocated;
   /*Calculate the power for kspace neutrinos*/
   /* (square root of) the power spectrum.*/
-  double * delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_allocated*sizeof(double));
+  double * delta_cdm_curr = delta_tot_table.delta_cdm_last;
   /*The square root of the neutrino power spectrum*/
   double * delta_nu_curr = delta_cdm_curr+nk_allocated;
   /* (binned) k values for the power spectrum*/
@@ -166,6 +166,5 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   message(0,"Done adding neutrinos to grid on all processors\n");
   /*Free memory*/
   free_d_pow(&d_pow);
-  myfree(d_pow.delta_cdm_curr);
   return;
 }

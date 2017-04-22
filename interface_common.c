@@ -67,7 +67,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd,"# k P_nu(k)\n");
     fprintf(fd, "# a = %g\n", Time);
     fprintf(fd, "# nbins = %d\n", delta_tot_table.nk);
-    if(!delta_cdm_curr)
+    if(!delta_tot_table.delta_cdm_last)
         return 1;
     for(i = 0; i < delta_tot_table.nk; i++){
         double delta_tot = fnu*delta_tot_table.delta_nu_last[i]+(1.-fnu)*delta_tot_table.delta_cdm_last[i];
