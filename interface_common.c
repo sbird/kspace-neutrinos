@@ -23,9 +23,6 @@ _delta_tot_table delta_tot_table;
 
 _omega_nu omeganu_table;
 
-/*Allocate memory to copy power spectrum to. The caller may free the input before we are done.*/
-static double * delta_cdm_curr;
-
 /*Compute the matter density in neutrinos*/
 double OmegaNu(double a)
 {
@@ -73,7 +70,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     if(!delta_cdm_curr)
         return 1;
     for(i = 0; i < delta_tot_table.nk; i++){
-        double delta_tot = fnu*delta_tot_table.delta_nu_last[i]+(1.-fnu)*delta_cdm_curr[i];
+        double delta_tot = fnu*delta_tot_table.delta_nu_last[i]+(1.-fnu)*delta_tot_table.delta_cdm_last[i];
         fprintf(fd, "%g %g\n", delta_tot_table.wavenum[i], delta_tot*delta_tot);
     }
     fclose(fd);
@@ -124,8 +121,8 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*Broadcast save-data to other processors*/
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
   /*Temporary float space so the power spectrum is not over-written before we are done with it*/
-  delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
-  if(!delta_cdm_curr)
+  delta_tot_table.delta_cdm_last = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
+  if(!delta_tot_table.delta_cdm_last)
       terminate(2018,"Could not allocate temporary memory for power spectra\n");
 }
 
@@ -133,6 +130,7 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
 {
   int i;
   /*The square root of the neutrino power spectrum*/
+  double * delta_cdm_curr = delta_tot_table.delta_cdm_last;
   double * delta_nu_curr = delta_cdm_curr+nk_in;
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+2*nk_in;
