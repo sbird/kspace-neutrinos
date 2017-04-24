@@ -20,6 +20,9 @@ extern _transfer_init_table transfer_init;
 extern _delta_tot_table delta_tot_table;
 
 extern _omega_nu omeganu_table;
+
+extern double * delta_cdm_curr;
+
 _delta_pow d_pow;
 
 /*Setup the config files to load the needed variables.
@@ -59,6 +62,9 @@ int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt)
       return nt;
 }
 
+/*See interface_common.c*/
+_delta_pow compute_neutrino_power_internal(const double Time, double * keff, double * delta_cdm_curr, double * delta_nu_curr, const int nk_nonzero);
+
 /* This function calculates the matter power spectrum, then calls the integrator to compute the neutrino power spectrum,
  * which is stored in _delta_pow and returned.
  * Arguments:
@@ -75,16 +81,13 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
 {
   int i, nk_in;
   const int nk_allocated = delta_tot_table.nk_allocated;
-  /*Calculate the power for kspace neutrinos*/
-  /* (square root of) the power spectrum.*/
-  double * delta_cdm_curr = delta_tot_table.delta_cdm_last;
   /*The square root of the neutrino power spectrum*/
   double * delta_nu_curr = delta_cdm_curr+nk_allocated;
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+2*nk_allocated;
   long long int * count = mymalloc("temp_modecount", nk_allocated*sizeof(long long int));
   const double scale=pow(2*M_PI/BoxSize,3);
-  if(!delta_cdm_curr || !delta_nu_curr || !keff || !count)
+  if(!count)
       terminate(1,"Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
@@ -97,27 +100,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
       keff[i] *= (2*M_PI/BoxSize);
   }
-  /*This sets up P_nu_curr.*/
-  get_delta_nu_update(&delta_tot_table, Time, nk_in, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
-
-  MPI_Barrier(MYMPI_COMM_WORLD);
-  message(0,"Done get_delta_nu_update on all processors\n");
-  /*Sets up the interpolation for get_neutrino_powerspec*/
-  _delta_pow d_pow;
-  /*We want to interpolate in log space*/
-  for(i=0;i<nk_in;i++){
-      keff[i] = log(keff[i]);
-  }
-  /*kspace_prefac = M_nu (analytic) / M_particles */
-  const double OmegaNu_nop = get_omega_nu_nopart(&omeganu_table, Time);
-  /* Note if (hybrid) neutrino particles are off, this is zero.
-   * We cannot just use OmegaNu(1) as we need to know
-   * whether hybrid neutrinos are on at this redshift.*/
-  const double omega_hybrid = get_omega_nu(&omeganu_table, Time) - OmegaNu_nop;
-  /* Omega0 - Omega in neutrinos + Omega in particle neutrinos = Omega in particles*/
-  const double kspace_prefac = OmegaNu_nop/(delta_tot_table.Omeganonu/pow(Time,3) + omega_hybrid);
-  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
-  return d_pow;
+  return compute_neutrino_power_internal(Time, keff, delta_cdm_curr,delta_nu_curr, nk_in);
 }
 
 /* This function adds the neutrino power spectrum to the

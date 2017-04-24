@@ -42,8 +42,6 @@ struct _delta_tot_table {
     /** Pointer to array of length nk storing the last neutrino power spectrum we saw, for a first estimate
     * of the new delta_tot */
     double * delta_nu_last;
-    /** Pointer to array of length nk storing the last cdm power spectrum we saw, for save and debug purposes. */
-    double * delta_cdm_last;
     /**Pointer to array storing the effective wavenumbers for the above power spectra*/
     double * wavenum;
     /** Pointer to a structure for computing omega_nu*/

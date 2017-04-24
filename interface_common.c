@@ -22,6 +22,9 @@ _transfer_init_table transfer_init;
 _delta_tot_table delta_tot_table;
 
 _omega_nu omeganu_table;
+/* We need this memory to persist - or rather,
+ * we need it to be freed out-of-order. So make it global.*/
+double * delta_cdm_curr;
 
 /*Compute the matter density in neutrinos*/
 double OmegaNu(double a)
@@ -93,19 +96,20 @@ void allocate_kspace_memory(const int nk_in, const int ThisTask, const double Bo
   /*Broadcast save-data to other processors*/
   broadcast_delta_tot_table(&delta_tot_table, nk_in, MYMPI_COMM_WORLD);
   /*Temporary float space so the power spectrum is not over-written before we are done with it*/
-  delta_tot_table.delta_cdm_last = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
-  if(!delta_tot_table.delta_cdm_last)
+  delta_cdm_curr = mymalloc("temp_power_spectrum", 3*nk_in*sizeof(double));
+  if(!delta_cdm_curr)
       terminate(2018,"Could not allocate temporary memory for power spectra\n");
 }
+
+_delta_pow compute_neutrino_power_internal(const double Time, double * keff, double * delta_cdm_curr, double * delta_nu_curr, const int nk_nonzero);
 
 _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_in[], const double P_cdm[], const long int Nmodes[], const int nk_in, MPI_Comm MYMPI_COMM_WORLD)
 {
   int i;
   /*The square root of the neutrino power spectrum*/
-  double * delta_cdm_curr = delta_tot_table.delta_cdm_last;
   double * delta_nu_curr = delta_cdm_curr+nk_in;
   /* (binned) k values for the power spectrum*/
-  double * keff = delta_cdm_curr+2*nk_in;
+  double * keff = delta_cdm_curr+2* nk_in;
   /*Get delta_cdm_curr , which is P(k)^1/2, and skip bins with zero modes. */
   int nk_nonzero = 0;
   for(i=0;i<nk_in;i++){
@@ -115,15 +119,19 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
       keff[nk_nonzero] = keff_in[i];
       nk_nonzero++;
   }
+  return compute_neutrino_power_internal(Time, keff, delta_cdm_curr,delta_nu_curr, nk_nonzero);
+}
+
+_delta_pow compute_neutrino_power_internal(const double Time, double * keff, double * delta_cdm_curr, double * delta_nu_curr, const int nk_nonzero)
+{
+  int i;
   /*This sets up P_nu_curr.*/
   get_delta_nu_update(&delta_tot_table, Time, nk_nonzero, keff, delta_cdm_curr,  delta_nu_curr, &transfer_init);
-
-  MPI_Barrier(MYMPI_COMM_WORLD);
   message(0,"Done getting neutrino power: nk= %d, k = %g, delta_nu = %g, delta_cdm = %g,\n",nk_nonzero, keff[1],delta_nu_curr[1],delta_cdm_curr[1]);
   /*Sets up the interpolation for get_neutrino_powerspec*/
   _delta_pow d_pow;
   /*We want to interpolate in log space*/
-  for(i=0;i<nk_in;i++){
+  for(i=0;i<nk_nonzero;i++){
       keff[i] = log(keff[i]);
   }
   /*kspace_prefac = M_nu (analytic) / M_particles */
@@ -134,7 +142,7 @@ _delta_pow compute_neutrino_power_from_cdm(const double Time, const double keff_
   const double omega_hybrid = get_omega_nu(&omeganu_table, Time) - OmegaNu_nop;
   /* Omega0 - Omega in neutrinos + Omega in particle neutrinos = Omega in particles*/
   const double kspace_prefac = OmegaNu_nop/(delta_tot_table.Omeganonu/pow(Time,3) + omega_hybrid);
-  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_in, kspace_prefac);
+  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_nonzero, kspace_prefac);
   return d_pow;
 }
 
