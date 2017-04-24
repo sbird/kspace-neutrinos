@@ -157,7 +157,8 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
 {
     if(delta_tot_table.ThisTask != 0)
         return 0;
-    const double OmegaMa = delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)*pow(Time,3);
+    const double Omega0 = delta_tot_table.Omeganonu + OmegaNu(1);
+    const double MtotbyMcdm = Omega0/(Omega0 - pow(Time,3)*OmegaNu_nopart(Time));
     FILE *fd;
     int i;
     char nu_fname[1000];
@@ -170,7 +171,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# a = %g\n", Time);
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
-        double d_tot = d_pow.delta_cdm_curr[i] * (1+d_pow.norm*d_pow.delta_nu_curr[i]/d_pow.delta_cdm_curr[i])/OmegaMa;
+        double d_tot = d_pow.delta_cdm_curr[i] * (1+d_pow.norm*d_pow.delta_nu_curr[i]/d_pow.delta_cdm_curr[i])/MtotbyMcdm;
         fprintf(fd, "%g %g\n", exp(d_pow.logkk[i]), d_tot*d_tot);
     }
     fclose(fd);
