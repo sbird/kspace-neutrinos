@@ -150,8 +150,12 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
 {
     if(delta_tot_table.ThisTask != 0)
         return 0;
+#ifdef KSPACE_NEUTRINOS
     const double Omega0 = delta_tot_table.Omeganonu + OmegaNu(1);
     const double MtotbyMcdm = Omega0/(Omega0 - pow(Time,3)*OmegaNu_nopart(Time));
+#else
+    const double MtotbyMcdm = 1;
+#endif
     FILE *fd;
     int i;
     char nu_fname[1000];
