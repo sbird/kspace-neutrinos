@@ -49,34 +49,6 @@ int save_neutrino_power(const double Time, const int snapnum, const char * Outpu
     return save_nu_power(&delta_tot_table, Time, snapnum, OutputDir);
 }
 
-int save_total_power(const double Time, const int snapnum, const char * OutputDir)
-{
-    if(delta_tot_table.ThisTask != 0)
-        return 0;
-    const double OmegaNua3=get_omega_nu_nopart(&omeganu_table, Time)*pow(Time,3);
-    const double OmegaMa = delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)*pow(Time,3);
-    const double fnu = OmegaNua3/OmegaMa;
-    FILE *fd;
-    int i;
-    char nu_fname[1000];
-    snprintf(nu_fname, 1000,"%s/powerspec_tot_%03d.txt", OutputDir, snapnum);
-    if(!(fd = fopen(nu_fname, "w"))){
-        fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
-        return -1;
-    }
-    fprintf(fd,"# k P_nu(k)\n");
-    fprintf(fd, "# a = %g\n", Time);
-    fprintf(fd, "# nbins = %d\n", delta_tot_table.nk);
-    if(!delta_tot_table.delta_cdm_last)
-        return 1;
-    for(i = 0; i < delta_tot_table.nk; i++){
-        double delta_tot = fnu*delta_tot_table.delta_nu_last[i]+(1.-fnu)*delta_tot_table.delta_cdm_last[i];
-        fprintf(fd, "%g %g\n", delta_tot_table.wavenum[i], delta_tot*delta_tot);
-    }
-    fclose(fd);
-    return 0;
-}
-
 void broadcast_transfer_table(_transfer_init_table *t_init, int ThisTask, MPI_Comm MYMPI_COMM_WORLD)
 {
   MPI_Bcast(&(t_init->NPowerTable), 1,MPI_INT,0,MYMPI_COMM_WORLD);

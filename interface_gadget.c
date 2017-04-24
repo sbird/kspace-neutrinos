@@ -20,6 +20,7 @@ extern _transfer_init_table transfer_init;
 extern _delta_tot_table delta_tot_table;
 
 extern _omega_nu omeganu_table;
+_delta_pow d_pow;
 
 /*Setup the config files to load the needed variables.
  * This is an example config file reader specific to P-Gadget3.*/
@@ -134,7 +135,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
 void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
 {
   int x,y,z;
-  _delta_pow d_pow = compute_neutrino_power_spectrum(Time, BoxSize, fft_of_rhogrid, pmgrid, slabstart_y, nslab_y, MYMPI_COMM_WORLD);
+  d_pow = compute_neutrino_power_spectrum(Time, BoxSize, fft_of_rhogrid, pmgrid, slabstart_y, nslab_y, MYMPI_COMM_WORLD);
   /*Add P_nu to fft_of_rhgrid*/
   for(y = slabstart_y; y < slabstart_y + nslab_y; y++)
     for(x = 0; x < pmgrid; x++)
@@ -167,4 +168,28 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
   /*Free memory*/
   free_d_pow(&d_pow);
   return;
+}
+
+int save_total_power(const double Time, const int snapnum, const char * OutputDir)
+{
+    if(delta_tot_table.ThisTask != 0)
+        return 0;
+    const double OmegaMa = delta_tot_table.Omeganonu + get_omega_nu(&omeganu_table, Time)*pow(Time,3);
+    FILE *fd;
+    int i;
+    char nu_fname[1000];
+    snprintf(nu_fname, 1000,"%s/powerspec_tot_%03d.txt", OutputDir, snapnum);
+    if(!(fd = fopen(nu_fname, "w"))){
+        fprintf(stderr, "can't open file `%s` for writing\n", nu_fname);
+        return -1;
+    }
+    fprintf(fd,"# k P_nu(k)\n");
+    fprintf(fd, "# a = %g\n", Time);
+    fprintf(fd, "# nbins = %d\n", d_pow.nbins);
+    for(i = 0; i < d_pow.nbins; i++){
+        double d_tot = d_pow.delta_cdm_curr[i] * (1+d_pow.norm*d_pow.delta_nu_curr[i]/d_pow.delta_cdm_curr[i])/OmegaMa;
+        fprintf(fd, "%g %g\n", exp(d_pow.logkk[i]), d_tot*d_tot);
+    }
+    fclose(fd);
+    return 0;
 }
