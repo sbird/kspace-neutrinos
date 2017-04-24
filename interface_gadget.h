@@ -44,4 +44,15 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
  * It may need changing for your code!*/
 int set_kspace_vars(char tag[][50], void *addr[], int id [], int nt);
 
+/*Compute the total matter power spectrum: will be saved somewhere where save_total_power can read it out.*/
+void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD);
+
+/** Save a file containing the total power spectrum.
+ * Output to OutputDir/powerspec_nu_$(snapnum).txt
+ * File format is:
+ * Time
+ * Nbins
+ * k   P(k)   (repeated Nbins times)
+ * .*/
+int save_total_power(const double Time, const int snapnum, const char * OutputDir);
 #endif

@@ -96,6 +96,45 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   return compute_neutrino_power_internal(Time, keff, delta_cdm_curr,delta_nu_curr, nk_in);
 }
 
+/* This function calculates the matter power spectrum and stores it in the global d_pow.
+ * Arguments:
+ * Time - scale factor, a.
+ * BoxSize - size of the box in internal units.
+ * fft_of_rhogrid - Fourier transformed density grid.
+ * pmgrid - size of one dimension of the density grid.
+ * slabstart_y - for slab parallelized FFT routines, this is the start index of the FFT on this rank.
+ * nslab_y - number of elements of the FFT on this rank.
+ * MYMPI_COMM_WORLD - MPI communicator to use
+ */
+void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
+{
+  int i, nk_in;
+  if(!delta_cdm_curr)
+      delta_cdm_curr = mymalloc("temp_power_spectrum", 3*pmgrid/2*sizeof(double));
+  /*The square root of the neutrino power spectrum*/
+  double * delta_nu_curr = delta_cdm_curr+pmgrid/2;
+  /* (binned) k values for the power spectrum*/
+  double * keff = delta_cdm_curr+pmgrid;
+  long long int * count = mymalloc("temp_modecount", pmgrid/2*sizeof(long long int));
+  const double scale=pow(2*M_PI/BoxSize,3);
+  if(!count)
+      terminate(1,"Could not allocate temporary memory for power spectra\n");
+  nk_in = total_powerspectrum(pmgrid, fft_of_rhogrid, pmgrid/2, slabstart_y, nslab_y, delta_cdm_curr, count, keff, MYMPI_COMM_WORLD);
+  /*Don't need count memory any more*/
+  myfree(count);
+  /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
+  for(i=0;i<nk_in;i++){
+      delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
+      delta_nu_curr[i] = 0;
+      keff[i] = log(keff[i]*2*M_PI/BoxSize);
+  }
+  d_pow.delta_cdm_curr = delta_cdm_curr;
+  d_pow.delta_nu_curr = delta_nu_curr;
+  d_pow.logkk = keff;
+  d_pow.nbins = nk_in;
+  d_pow.norm = 0;
+}
+
 /* This function adds the neutrino power spectrum to the
  * density grid. It calls the internal power spectrum routine and the neutrino integrator.
  * It then adds the neutrino power to fft_of_rhogrid, which is the fourier transformed density grid from the PM code.
@@ -148,8 +187,6 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 
 int save_total_power(const double Time, const int snapnum, const char * OutputDir)
 {
-    if(delta_tot_table.ThisTask != 0)
-        return 0;
 #ifdef KSPACE_NEUTRINOS
     const double Omega0 = delta_tot_table.Omeganonu + OmegaNu(1);
     const double MtotbyMcdm = Omega0/(Omega0 - pow(Time,3)*OmegaNu_nopart(Time));

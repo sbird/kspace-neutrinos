@@ -116,13 +116,5 @@ void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const
  * .*/
 int save_neutrino_power(const double Time, const int snapnum, const char * OutputDir);
 
-/** Save a file containing the total power spectrum.
- * Output to OutputDir/powerspec_nu_$(snapnum).txt
- * File format is:
- * Time
- * Nbins
- * k   P(k)   (repeated Nbins times)
- * .*/
-int save_total_power(const double Time, const int snapnum, const char * OutputDir);
 /*KSPACE_NEUTRINOS_GLOBAL*/
 #endif
