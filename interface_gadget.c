@@ -79,7 +79,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+2*nk_allocated;
   long long int * count = mymalloc("temp_modecount", nk_allocated*sizeof(long long int));
-  const double scale=pow(2*M_PI/BoxSize,3);
+  const double scale=pow(BoxSize,-3);
   if(!count)
       terminate(1,"Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
@@ -116,7 +116,7 @@ void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+pmgrid;
   long long int * count = mymalloc("temp_modecount", pmgrid/2*sizeof(long long int));
-  const double scale=pow(2*M_PI/BoxSize,3);
+  const double scale=pow(BoxSize,-3);
   if(!count)
       terminate(1,"Could not allocate temporary memory for power spectra\n");
   nk_in = total_powerspectrum(pmgrid, fft_of_rhogrid, pmgrid/2, slabstart_y, nslab_y, delta_cdm_curr, count, keff, MYMPI_COMM_WORLD);
