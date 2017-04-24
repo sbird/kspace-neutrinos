@@ -7,19 +7,12 @@
 #include <math.h>
 #include "interface_gadget.h"
 #include "powerspectrum.h"
-#include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
-#include "omega_nu_single.h"
-#include "transfer_init.h"
 #include "delta_tot_table.h"
 #include "delta_pow.h"
 
 /*Global neutrino module parameters*/
-extern _transfer_init_table transfer_init;
-
 extern _delta_tot_table delta_tot_table;
-
-extern _omega_nu omeganu_table;
 
 extern double * delta_cdm_curr;
 

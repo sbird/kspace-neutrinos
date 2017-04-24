@@ -5,7 +5,6 @@
 #include "interface_common.h"
 
 #include <stdio.h>
-/* #include <string.h> */
 #include <math.h>
 #include "kspace_neutrino_const.h"
 #include "gadget_defines.h"
@@ -17,11 +16,11 @@
 /*Global neutrino module parameters*/
 struct __kspace_params kspace_params;
 
-_transfer_init_table transfer_init;
+static _transfer_init_table transfer_init;
 
 _delta_tot_table delta_tot_table;
 
-_omega_nu omeganu_table;
+static _omega_nu omeganu_table;
 /* We need this memory to persist - or rather,
  * we need it to be freed out-of-order. So make it global.*/
 double * delta_cdm_curr;
