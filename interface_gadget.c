@@ -187,7 +187,7 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 
 int save_total_power(const double Time, const int snapnum, const char * OutputDir)
 {
-#ifdef KSPACE_NEUTRINOS
+#ifdef KSPACE_NEUTRINOS_2
     const double Omega0 = delta_tot_table.Omeganonu + OmegaNu(1);
     const double MtotbyMcdm = Omega0/(Omega0 - pow(Time,3)*OmegaNu_nopart(Time));
 #else
