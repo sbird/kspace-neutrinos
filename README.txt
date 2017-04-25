@@ -17,6 +17,13 @@ We also do not include radiation (photon) perturbations.
 If you are interested in this limit you should use the output
 of a Boltzmann code, such as CAMB, directly.
 
+=Massless neutrinos=
+Note that disabling the integrator is not exactly
+equivalent to enabling it with MNu = 0. When
+the integrator is enabled, OmegaNu is included in Omega0, the matter density.
+When it is disabled, OmegaNu is included in OmegaR, the radiation density.
+For best accuracy, disable the neutrino integrator when neutrinos are massless.
+
 ==Building==
 'make all' will make a static library
 'make test' will perform the runtime tests.
@@ -68,7 +75,7 @@ The format of this file is: ( k, P_nu(k) ).
 Units are: 1/L, L^3, where L is Gadget internal length units.
 A short python script for reading it is found in plot_nu_power.py
 
-The code's internal state is saved to $(snap_dir)/delta_tot_nu.txt.
+The code's internal state is saved to delta_tot_nu.txt.
 This contains a table containing the total matter power spectrum, 
 delta_tot, as a function of redshift.
 Each row is formatted as : "# log(a) delta_tot(k)"
@@ -80,6 +87,15 @@ I may change this format in future.
 ===MP-Gadget===
 The easiest way to use the code is with the public MP-Gadget,
 into which it is natively included, and which has many other features.
+To enable, set the parameters:
+RadiationOn = 1
+MassiveNuLinRespOn = 1
+
+The first enables radiation in the background, and the second enables
+the neutrino integrator.
+
+When using MP-Gadget, the neutrino state is saved inside the snapshot,
+not in delta_tot_nu.txt.
 
 ===Gadget-2===
 As a convenience, we include patches to the
@@ -94,6 +110,13 @@ OPT   += -DKSPACE_NEUTRINOS_2
 to your Makefile to enable kspace neutrinos.
 The first enables radiation density in the background Hubble expansion,
 the second enables massive neutrinos.
+
+NOTE When comparing to massless neutrino simulations, you should
+enable INCLUDE_RADIATION but not KSPACE_NEUTRINOS_2.
+
+For convenience our patches also add code to output the total
+matter powerspectrum (in the same units as powerspec_nu_***.txt)
+on every Gadget-2 snapshot.
 
 ===Gadget-3===
 We internally maintain patches to Gadget-3 which incorporate the neutrino code.
