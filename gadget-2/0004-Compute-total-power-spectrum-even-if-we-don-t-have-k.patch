@@ -1,0 +1,113 @@
+From 3a7d2361e24fb49a686025badd69fef2072b3a0a Mon Sep 17 00:00:00 2001
+From: Simeon Bird <sbird4@jhu.edu>
+Date: Mon, 24 Apr 2017 17:28:19 -0400
+Subject: [PATCH 4/4] Compute total power spectrum even if we don't have kspace
+ neutrinos
+
+---
+ allvars.h     | 2 +-
+ io.c          | 7 ++++++-
+ longrange.c   | 2 +-
+ pm_periodic.c | 6 +++++-
+ proto.h       | 4 +---
+ 5 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/allvars.h b/allvars.h
+index f5ae716..43dbf08 100644
+--- a/allvars.h
++++ b/allvars.h
+@@ -58,7 +58,7 @@ typedef  long long  peanokey;    /*!< defines the variable type used for Peano-H
+ 
+ /* Some physical constants in cgs units */
+ 
+-#define  GRAVITY           6.672e-8   /*!< Gravitational constant (in cgs units) */
++#define  GRAVITY           6.67408e-8   /*!< Gravitational constant (in cgs units) */
+ #define  SOLAR_MASS        1.989e33
+ #define  SOLAR_LUM         3.826e33
+ #define  RAD_CONST         7.565e-15
+diff --git a/io.c b/io.c
+index 0e11195..6615621 100644
+--- a/io.c
++++ b/io.c
+@@ -95,11 +95,16 @@ void savepositions(int num)
+ 
+   fill_Tab_IO_Labels();
+ 
++#ifdef PERIODIC
++  pmforce_periodic(1);
++  if(ThisTask == 0) {
++     save_total_power(All.Time, num, All.OutputDir);
+ #ifdef KSPACE_NEUTRINOS_2
+       sprintf(buf, "%s/delta_tot_nu_%d.txt",All.OutputDir,num);
+       save_nu_state(buf);
+       save_neutrino_power(All.Time, num, All.OutputDir);
+-      save_total_power(All.Time, num, All.OutputDir);
++#endif
++  }
+ #endif
+   if(All.NumFilesPerSnapshot > 1)
+     sprintf(buf, "%s%s_%03d.%d", All.OutputDir, All.SnapshotFileBase, num, filenr);
+diff --git a/longrange.c b/longrange.c
+index 16322c2..b381ecb 100644
+--- a/longrange.c
++++ b/longrange.c
+@@ -72,7 +72,7 @@ void long_range_force(void)
+ 
+ 
+ #ifdef PERIODIC
+-  pmforce_periodic();
++  pmforce_periodic(0);
+ #ifdef PLACEHIGHRESREGION
+   i = pmforce_nonperiodic(1);
+   if(i == 1)			/* this is returned if a particle lied outside allowed range */
+diff --git a/pm_periodic.c b/pm_periodic.c
+index 0cfe6b7..bf5010e 100644
+--- a/pm_periodic.c
++++ b/pm_periodic.c
+@@ -177,7 +177,7 @@ void pm_init_periodic_free(void)
+  *  decomposition that is used for the FFT. Instead, overlapping patches
+  *  between local domains and FFT slabs are communicated as needed.
+  */
+-void pmforce_periodic(void)
++void pmforce_periodic(int powerspec)
+ {
+   double k2, kx, ky, kz, smth;
+   double dx, dy, dz;
+@@ -377,6 +377,10 @@ void pmforce_periodic(void)
+ #ifdef KSPACE_NEUTRINOS_2
+   /*Add neutrino power to the Fourier grid*/
+   add_nu_power_to_rhogrid(All.Time, All.BoxSize, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, MPI_COMM_WORLD);
++#else
++  if(powerspec)
++    /*Just compute the power spectrum*/
++    compute_total_power_spectrum(All.Time, All.BoxSize, fft_of_rhogrid, PMGRID, slabstart_y, nslab_y, MPI_COMM_WORLD);
+ #endif
+ 
+   /* multiply with Green's function for the potential */
+diff --git a/proto.h b/proto.h
+index badd966..66a6da8 100644
+--- a/proto.h
++++ b/proto.h
+@@ -10,10 +10,8 @@
+ #include <hdf5.h>
+ #endif
+ 
+-#ifdef KSPACE_NEUTRINOS_2
+ #include "kspace-neutrinos/interface_gadget.h"
+ /*Forward define the hubble function*/
+-#endif
+ double hubble_function(double a);
+ 
+ void   advance_and_find_timesteps(void);
+@@ -164,7 +162,7 @@ void   pm_init_periodic_free(void);
+ void   pm_init_regionsize(void);
+ void   pm_setup_nonperiodic_kernel(void);
+ int    pmforce_nonperiodic(int grnr);
+-void   pmforce_periodic(void);
++void   pmforce_periodic(int powerspec);
+ int    pmpotential_nonperiodic(int grnr);
+ void   pmpotential_periodic(void);
+ 
+-- 
+2.9.3
+
