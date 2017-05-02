@@ -172,7 +172,7 @@ void get_delta_nu_combined(const _delta_tot_table * const d_tot, const double a,
 void update_delta_tot(_delta_tot_table * const d_tot, const double a, const double delta_cdm_curr[], const double delta_nu_curr[], const int overwrite)
 {
   const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
-  const double OmegaMa = d_tot->Omeganonu + get_omega_nu(d_tot->omnu, a)*pow(a,3);
+  const double OmegaMa = d_tot->Omeganonu + get_omega_nu(d_tot->omnu, 1);
   const double fnu = OmegaNua3/OmegaMa;
   int ik;
   if(!overwrite)
