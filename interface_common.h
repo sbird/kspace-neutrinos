@@ -116,5 +116,8 @@ void set_nu_state(double * scalefact, double * delta_tot, const size_t nk, const
  * .*/
 int save_neutrino_power(const double Time, const int snapnum, const char * OutputDir);
 
+/* Determine whether the particle (hybrid) neutrinos are active at this redshift.
+ * Returns true if neutrinos should gravitate.*/
+int particle_nu_active(double a);
 /*KSPACE_NEUTRINOS_GLOBAL*/
 #endif

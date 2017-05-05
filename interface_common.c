@@ -185,3 +185,12 @@ void InitOmegaNu(const double HubbleParam, const double tcmb0, MPI_Comm MYMPI_CO
   MPI_Bcast(&kspace_params,sizeof(kspace_params),MPI_BYTE,0,MYMPI_COMM_WORLD);
   init_omega_nu(&omeganu_table, kspace_params.MNu, kspace_params.TimeTransfer, HubbleParam, tcmb0);
 }
+
+int particle_nu_active(double a)
+{
+    /*Return false if the active neutrino fraction is zero, true otherwise.*/
+    if(particle_nu_fraction(&omeganu_table.hybnu, a, 0) == 0.)
+        return 0;
+    else
+        return 1;
+}

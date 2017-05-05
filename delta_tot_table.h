@@ -148,4 +148,9 @@ Arguments:
 */
 double fslength(const double logai, const double logaf, const double light);
 
+/** Combine the CDM and neutrino power spectra together to get the total power.
+ * OmegaNua3 = OmegaNu(a) * a^3
+ * Omeganonu = Omega0 - OmegaNu(1)
+ * Omeganu1 = OmegaNu(1) */
+double get_delta_tot(const double delta_nu_curr, const double delta_cdm_curr, const double OmegaNua3, const double Omeganonu, const double Omeganu1);
 #endif

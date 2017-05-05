@@ -140,14 +140,13 @@ static void test_delta_tot_init(void **state)
     assert_true(d_tot.scalefact[0] == log(0.01));
     /*Check the initial power spectra were created properly*/
     const double OmegaNua3=get_omega_nu(omnu, 0.01)*pow(0.01,3);
-    const double OmegaMa = d_tot.Omeganonu + OmegaNua3;
-    const double fnu = OmegaNua3/OmegaMa;
+    const double OmegaNu1=get_omega_nu(omnu, 1);
     for(int ik=0; ik < d_tot.nk; ik++) {
         assert_true(d_tot.delta_nu_init[ik] > 0);
         assert_true(d_tot.delta_nu_last[ik] > 0);
         /*These two should be initially the same, although one is created by calling the integrator.*/
         assert_true(fabs(d_tot.delta_nu_last[ik]/ d_tot.delta_nu_init[ik] -1) < 1e-4);
-        double delta_tot_before = (1.-fnu)* d_pow->delta_cdm_curr[ik] + fnu*d_tot.delta_nu_init[ik];
+        double delta_tot_before = get_delta_tot(d_tot.delta_nu_init[ik],d_pow->delta_cdm_curr[ik],OmegaNua3,d_tot.Omeganonu, OmegaNu1);
         assert_true(fabs(d_tot.delta_tot[ik][0]/delta_tot_before-1) < 1e-4);
     }
     free_delta_tot_table(&d_tot);

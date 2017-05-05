@@ -187,13 +187,11 @@ void add_nu_power_to_rhogrid(const double Time, const double BoxSize, fftw_compl
 
 int save_total_power(const double Time, const int snapnum, const char * OutputDir)
 {
-#ifdef KSPACE_NEUTRINOS_2
-    const double Omega0 = delta_tot_table.Omeganonu + OmegaNu(1);
-    const double MtotbyMcdm = Omega0/(Omega0 - pow(Time,3)*OmegaNu_nopart(Time));
-#else
-    const double MtotbyMcdm = 1;
-#endif
     FILE *fd;
+#ifdef KSPACE_NEUTRINOS_2
+    const double OmegaNua3 = OmegaNu_nopart(Time)*pow(Time,3);
+    const double OmegaNu1 = OmegaNu(1);
+#endif
     int i;
     char nu_fname[1000];
     snprintf(nu_fname, 1000,"%s/powerspec_tot_%03d.txt", OutputDir, snapnum);
@@ -205,7 +203,11 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# a = %g\n", Time);
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
-        double d_tot = d_pow.delta_cdm_curr[i] * (1+d_pow.norm*d_pow.delta_nu_curr[i]/d_pow.delta_cdm_curr[i])/MtotbyMcdm;
+#ifdef KSPACE_NEUTRINOS_2
+        const double d_tot = get_delta_tot(d_pow.delta_nu_curr[i], d_pow.delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1);
+#else
+        const double d_tot = d_pow.delta_cdm_curr[i];
+#endif
         fprintf(fd, "%g %g\n", exp(d_pow.logkk[i]), d_tot*d_tot);
     }
     fclose(fd);

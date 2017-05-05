@@ -103,6 +103,7 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
     const double OmegaNua3=get_omega_nu(d_tot->omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
+    const double OmegaNu1 = get_omega_nu(d_tot->omnu, 1);
     /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
@@ -116,14 +117,12 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm +Omega_nu)
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm+Omega_nu) */
             const double OmegaMa = (d_tot->Omeganonu+OmegaNua3);
-            const double fnu = OmegaNua3/OmegaMa;
-            const double CDMtoTot=1-fnu+T_nubyT_notnu*fnu;
             /*If we are not restarting, initialise the first delta_tot and delta_nu_init*/
             if(d_tot->ia == 0)
-                d_tot->delta_tot[ik][0] = delta_cdm_curr[ik]*CDMtoTot;
+                d_tot->delta_tot[ik][0] = get_delta_tot(delta_cdm_curr[ik]*T_nubyT_notnu, delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1);
             /* Also initialise delta_nu_init here to save time later.
              * Use the first delta_tot, in case we are resuming.*/
-            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]/CDMtoTot*fabs(T_nubyT_notnu);
+            d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]*OmegaMa/(OmegaMa-OmegaNua3+T_nubyT_notnu*OmegaNua3)*fabs(T_nubyT_notnu);
             d_tot->wavenum[ik] = wavenum[ik];
     }
     gsl_interp_accel_free(acc);
@@ -172,8 +171,7 @@ void get_delta_nu_combined(const _delta_tot_table * const d_tot, const double a,
 void update_delta_tot(_delta_tot_table * const d_tot, const double a, const double delta_cdm_curr[], const double delta_nu_curr[], const int overwrite)
 {
   const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
-  const double OmegaMa = d_tot->Omeganonu + get_omega_nu(d_tot->omnu, 1);
-  const double fnu = OmegaNua3/OmegaMa;
+  const double OmegaNu1 = get_omega_nu(d_tot->omnu, 1);
   int ik;
   if(!overwrite)
     d_tot->ia++;
@@ -181,7 +179,7 @@ void update_delta_tot(_delta_tot_table * const d_tot, const double a, const doub
   d_tot->scalefact[d_tot->ia-1] = log(a);
   /* Update delta_tot(a)*/
   for (ik = 0; ik < d_tot->nk; ik++){
-    d_tot->delta_tot[ik][d_tot->ia-1] = fnu*delta_nu_curr[ik]+(1.-fnu)*delta_cdm_curr[ik];
+    d_tot->delta_tot[ik][d_tot->ia-1] = get_delta_tot(delta_nu_curr[ik], delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1);
   }
 }
 
@@ -587,4 +585,10 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
             message(0,"k %g d_nu %g\n",wavenum[d_tot->nk/8*ik], delta_nu_curr[d_tot->nk/8*ik]);
    }
    return;
+}
+
+double get_delta_tot(const double delta_nu_curr, const double delta_cdm_curr, const double OmegaNua3, const double Omeganonu, const double Omeganu1)
+{
+    const double fcdm = 1 - OmegaNua3/(Omeganonu + Omeganu1);
+    return fcdm * (delta_cdm_curr + delta_nu_curr * OmegaNua3/(Omeganonu /*+ Omeganu1*particle_nu_fraction()*/));
 }
