@@ -2,6 +2,7 @@
 #include <string.h>
 #include <gsl/gsl_interp.h>
 #include "powerspectrum.h"
+#include "gadget_defines.h"
 
 /*Helper function for 1D window function.*/
 inline fftw_real onedinvwindow(int kx, int n)
@@ -43,7 +44,6 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
      * Note this may not be the rank 0 processor! */
     if(startslab == 0){
         total_mass2 = outfield[0].re*outfield[0].re + outfield[0].im*outfield[0].im;
-        printf("Total powerspectrum mass: %g\n", sqrt(total_mass2));
     }
     /* Now we compute the powerspectrum in each direction.
      * FFTW is unnormalised, so we need to scale by the length of the array
@@ -93,6 +93,7 @@ int total_powerspectrum(const int dims, fftw_complex *outfield, const int nrbins
     MPI_Allreduce(keffspriv, keffs, nrbins, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
     /*Make sure total_mass is same on all processors.*/
     MPI_Allreduce(MPI_IN_PLACE, &total_mass2, 1, MPI_DOUBLE, MPI_SUM, MYMPI_COMM_WORLD);
+    message(0,"Total powerspectrum mass: %g\n", sqrt(total_mass2));
     /*Normalise by the total mass in the array*/
     for(i=0; i<nrbins;i++) {
         power[i]/=total_mass2;
