@@ -12,9 +12,11 @@
 void terminate(int ierr, const char * fmt, ...)
 {
     va_list va;
+    char buf[4096];
     va_start(va, fmt);
-    printf(fmt, va);
+    vsprintf(buf, fmt, va);
     va_end(va);
+    printf("%s",buf);
     MPI_Abort(MPI_COMM_WORLD, ierr);
     exit(ierr);
 }
