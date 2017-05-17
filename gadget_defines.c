@@ -8,6 +8,8 @@
 #include "omega_nu_single.h"
 #include "mpi.h"
 
+extern int ThisTask;
+
 /*These functions need bodies; normally this is provided by gadget*/
 void terminate(int ierr, const char * fmt, ...)
 {
@@ -29,10 +31,7 @@ void terminate(int ierr, const char * fmt, ...)
 
 void message(int ierr, const char * fmt, ...)
 {
-    int rank = 0;
-    if(ierr <= 0)
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    if(ierr > 0 || rank == 0) {
+    if(ierr > 0 || ThisTask == 0) {
         va_list va;
         char buf[4096];
         va_start(va, fmt);
