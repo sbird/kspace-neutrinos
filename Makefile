@@ -1,5 +1,5 @@
 LFLAGS += -lgsl -lgslcblas -lpthread
-CFLAGS +=-O2 -ffast-math -g -Wall -fopenmp ${OPT}
+CFLAGS +=-O2 -ffast-math -g -Wall -fopenmp -DINCLUDE_RADIATION ${OPT}
 LFLAGS += -lm -lgomp
 
 OBJS = transfer_init.o delta_tot_table.o powerspectrum.o delta_pow.o interface_common.o omega_nu_single.o interface_gadget.o
