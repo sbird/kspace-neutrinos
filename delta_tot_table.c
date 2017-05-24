@@ -230,7 +230,9 @@ void get_delta_nu_update(_delta_tot_table * const d_tot, const double a, const i
        d_tot->ia--;
    /*Sanity-check the output*/
    for(ik=0;ik<d_tot->nk;ik++){
-          if(isnan(delta_nu_curr[ik]) || delta_nu_curr[ik] < -1e-5*delta_cdm_curr[ik]){
+          if(isnan(delta_nu_curr[ik]))
+/*|| delta_nu_curr[ik] < -1e-5*delta_cdm_curr[ik])*/
+{
               terminate(2004,"delta_nu_curr=%g i=%d delta_cdm_curr=%g kk=%g\n",delta_nu_curr[ik],ik,delta_cdm_curr[ik],keff[ik]);
           }
           /*Enforce positivity for sanity reasons*/
