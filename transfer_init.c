@@ -6,7 +6,7 @@
 /** This function loads the initial transfer functions from CAMB transfer files.
  * It reads the transfer tables from CAMB into the transfer_init structure.
  * Output stored in T_nu and logk with length NPowerTable.*/
-void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const double OmegaNu, const double Omega0, const char * KspaceTransferFunction)
+void allocate_transfer_init_table(_transfer_init_table *t_init, const double BoxSize, const double UnitLength_in_cm, const double InputSpectrum_UnitLength_in_cm, const char * KspaceTransferFunction)
 {
     FILE *fd;
     int count;
