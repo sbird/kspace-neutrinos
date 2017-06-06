@@ -44,6 +44,4 @@ double get_dnudcdm_powerspec(_delta_pow *d_pow, double kk);
 
 /** Free memory for the GSL structure*/
 void free_d_pow(_delta_pow * d_pow);
-
-double get_delta_tot(const double delta_nu_curr, const double delta_cdm_curr, const double OmegaNua3, const double Omeganonu, const double Omeganu1);
 #endif

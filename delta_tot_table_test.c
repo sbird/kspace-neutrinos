@@ -146,7 +146,7 @@ static void test_delta_tot_init(void **state)
         assert_true(d_tot.delta_nu_last[ik] > 0);
         /*These two should be initially the same, although one is created by calling the integrator.*/
         assert_true(fabs(d_tot.delta_nu_last[ik]/ d_tot.delta_nu_init[ik] -1) < 1e-4);
-        double delta_tot_before = get_delta_tot(d_tot.delta_nu_init[ik],d_pow->delta_cdm_curr[ik],OmegaNua3,d_tot.Omeganonu, OmegaNu1);
+        double delta_tot_before = get_delta_tot(d_tot.delta_nu_init[ik],d_pow->delta_cdm_curr[ik],OmegaNua3,d_tot.Omeganonu, OmegaNu1,0);
         assert_true(fabs(d_tot.delta_tot[ik][0]/delta_tot_before-1) < 1e-4);
     }
     free_delta_tot_table(&d_tot);

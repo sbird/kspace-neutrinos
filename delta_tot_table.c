@@ -102,7 +102,7 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
     /*Construct delta_nu_init from the transfer functions.*/
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
     gsl_interp *spline;
-    const double OmegaNua3=get_omega_nu(d_tot->omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
+    const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, d_tot->TimeTransfer)*pow(d_tot->TimeTransfer,3);
     const double OmegaNu1 = get_omega_nu(d_tot->omnu, 1);
     /*Initialise delta_nu_init to use the first timestep's delta_cdm_curr
      * so that it includes potential Rayleigh scattering. */
@@ -118,8 +118,10 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
              *          = delta_cdm (Omega_cdm+ Omega_nu (delta_nu/delta_cdm)) / (Omega_cdm+Omega_nu) */
             const double OmegaMa = (d_tot->Omeganonu+OmegaNua3);
             /*If we are not restarting, initialise the first delta_tot and delta_nu_init*/
-            if(d_tot->ia == 0)
-                d_tot->delta_tot[ik][0] = get_delta_tot(delta_cdm_curr[ik]*T_nubyT_notnu, delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1);
+            if(d_tot->ia == 0) {
+                const double partnu = particle_nu_fraction(&d_tot->omnu->hybnu, d_tot->TimeTransfer, 0);
+                d_tot->delta_tot[ik][0] = get_delta_tot(delta_cdm_curr[ik]*T_nubyT_notnu, delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1, partnu);
+            }
             /* Also initialise delta_nu_init here to save time later.
              * Use the first delta_tot, in case we are resuming.*/
             d_tot->delta_nu_init[ik] = d_tot->delta_tot[ik][0]*OmegaMa/(OmegaMa-OmegaNua3+T_nubyT_notnu*OmegaNua3)*fabs(T_nubyT_notnu);
@@ -170,8 +172,9 @@ void get_delta_nu_combined(const _delta_tot_table * const d_tot, const double a,
  If overwrite is true, overwrite the existing final entry.*/
 void update_delta_tot(_delta_tot_table * const d_tot, const double a, const double delta_cdm_curr[], const double delta_nu_curr[], const int overwrite)
 {
-  const double OmegaNua3=get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
+  const double OmegaNua3 = get_omega_nu_nopart(d_tot->omnu, a)*pow(a,3);
   const double OmegaNu1 = get_omega_nu(d_tot->omnu, 1);
+  const double partnu = particle_nu_fraction(&d_tot->omnu->hybnu, a, 0);
   int ik;
   if(!overwrite)
     d_tot->ia++;
@@ -179,7 +182,7 @@ void update_delta_tot(_delta_tot_table * const d_tot, const double a, const doub
   d_tot->scalefact[d_tot->ia-1] = log(a);
   /* Update delta_tot(a)*/
   for (ik = 0; ik < d_tot->nk; ik++){
-    d_tot->delta_tot[ik][d_tot->ia-1] = get_delta_tot(delta_nu_curr[ik], delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1);
+    d_tot->delta_tot[ik][d_tot->ia-1] = get_delta_tot(delta_nu_curr[ik], delta_cdm_curr[ik], OmegaNua3, d_tot->Omeganonu, OmegaNu1,partnu);
   }
 }
 
@@ -512,9 +515,9 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
     * If they are we want to truncate our integration.
     * Only do this is hybrid neutrinos are activated in the param file.*/
    if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
-        qc = (d_tot->omnu->hybnu.vcrit / d_tot->light) * mnubykT;
+        qc = (d_tot->omnu->hybnu.vcrit / (LIGHTCGS/1e5)) * mnubykT;
 /*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
-/*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g\n",a, d_tot->omnu->nufrac_low[0]); */
+/*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
    }
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
   deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)* d_tot->TimeTransfer;
@@ -592,8 +595,8 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
    return;
 }
 
-double get_delta_tot(const double delta_nu_curr, const double delta_cdm_curr, const double OmegaNua3, const double Omeganonu, const double Omeganu1)
+double get_delta_tot(const double delta_nu_curr, const double delta_cdm_curr, const double OmegaNua3, const double Omeganonu, const double Omeganu1, const double particle_nu_fraction)
 {
     const double fcdm = 1 - OmegaNua3/(Omeganonu + Omeganu1);
-    return fcdm * (delta_cdm_curr + delta_nu_curr * OmegaNua3/(Omeganonu /*+ Omeganu1*particle_nu_fraction()*/));
+    return fcdm * (delta_cdm_curr + delta_nu_curr * OmegaNua3/(Omeganonu + Omeganu1*particle_nu_fraction));
 }
