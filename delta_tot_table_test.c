@@ -165,6 +165,7 @@ static void test_specialJ(void **state)
     /*Test that it is ok when truncated*/
     /*Mathematica: Jfrac[x_, qc_] := NIntegrate[(Sinc[q*x])*(q^2/(Exp[q] + 1)), {q, qc, Infinity}]/(3*Zeta[3]/2) */
     assert_true(fabs(specialJ(0,1) - 0.940437) < 1e-4);
+    assert_true(fabs(specialJ(0.5,1e-2) - 0.614729) < 1e-3);
     assert_true(fabs(specialJ(0.5,1) - 0.556557) < 1e-4);
     assert_true(fabs(specialJ(1,0.1) - 0.211611) < 1e-4);
 }
