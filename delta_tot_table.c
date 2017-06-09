@@ -507,6 +507,8 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
   /*Number of stored power spectra. This includes the initial guess for the next step*/
   const int Na = d_tot->ia;
   const double mnubykT = mnu /d_tot->omnu->kBtnu;
+  /*Tolerated integration error*/
+  double relerr = 1e-6;
   if(d_tot->debug)
       message(0,"Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
@@ -516,6 +518,8 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
     * Only do this is hybrid neutrinos are activated in the param file.*/
    if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
         qc = d_tot->omnu->hybnu.vcrit * mnubykT;
+        /*More generous integration error for particle neutrinos*/
+        relerr /= (1-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
 /*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
 /*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
    }
@@ -579,7 +583,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
             params.k=wavenum[ik];
             params.delta_tot=d_tot->delta_tot[ik];
             gsl_interp_init(params.spline,params.scale,params.delta_tot,Na);
-            gsl_integration_qag (&F, log(d_tot->TimeTransfer), log(a), 0, 1e-6,GSL_VAL,6,w,&d_nu_tmp, &abserr);
+            gsl_integration_qag (&F, log(d_tot->TimeTransfer), log(a), 0, relerr,GSL_VAL,6,w,&d_nu_tmp, &abserr);
             delta_nu_curr[ik] += d_tot->delta_nu_prefac * d_nu_tmp;
          }
          gsl_integration_workspace_free (w);
