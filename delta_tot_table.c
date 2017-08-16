@@ -519,7 +519,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
    if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
         qc = d_tot->omnu->hybnu.vcrit * mnubykT;
         /*More generous integration error for particle neutrinos*/
-        relerr /= (1-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
+        relerr /= (1.+1e-5-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
 /*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
 /*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
    }

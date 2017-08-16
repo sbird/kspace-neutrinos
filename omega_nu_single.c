@@ -68,17 +68,9 @@ double get_omega_nu(const _omega_nu * const omnu, const double a)
 /* Return the total matter density in neutrinos, excluding that in active particles.*/
 double get_omega_nu_nopart(const _omega_nu * const omnu, const double a)
 {
-        double rhonu=0;
-        int mi;
-        for(mi=0; mi<NUSPECIES; mi++) {
-            if(omnu->nu_degeneracies[mi] > 0){
-                 double rhonu_s = omnu->nu_degeneracies[mi] * rho_nu(omnu->RhoNuTab[mi], a,omnu->kBtnu);
-                 /*Take away the particle neutrinos if these are enabled*/
-                 rhonu_s *= (1-particle_nu_fraction(&omnu->hybnu, a, mi));
-                 rhonu+=rhonu_s;
-            }
-        }
-        return rhonu/omnu->rhocrit;
+    double omega_nu = get_omega_nu(omnu, a);
+    double part_nu = get_omega_nu(omnu, 1) * particle_nu_fraction(&omnu->hybnu, a, 0) / (a*a*a);
+    return omega_nu - part_nu;
 }
 
 /*Return the photon density*/
@@ -279,7 +271,9 @@ double omega_nu_single(const _omega_nu * const omnu, const double a, int i)
             }
     }
     double omega_nu = rho_nu(omnu->RhoNuTab[i], a,omnu->kBtnu)/omnu->rhocrit;
-    omega_nu *= (1-particle_nu_fraction(&omnu->hybnu, a, i));
+    double omega_part = rho_nu(omnu->RhoNuTab[i], 1,omnu->kBtnu)/omnu->rhocrit;
+    omega_part *= particle_nu_fraction(&omnu->hybnu, a, i)/(a*a*a);
+    omega_nu -= omega_part;
     return omega_nu;
 
 }
