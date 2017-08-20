@@ -516,16 +516,6 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
       message(0,"Start get_delta_nu: a=%g Na =%d wavenum[0]=%g delta_tot[0]=%g m_nu=%g\n",a,Na,wavenum[0],d_tot->delta_tot[0][Na-1],mnu);
 
   fsl_A0a = fslength(log(d_tot->TimeTransfer), log(a),d_tot->light);
-   /* Check whether the particle neutrinos are active at this point.
-    * If they are we want to truncate our integration.
-    * Only do this is hybrid neutrinos are activated in the param file.*/
-   if(particle_nu_fraction(&d_tot->omnu->hybnu, a, 0) > 0) {
-        qc = d_tot->omnu->hybnu.vcrit * mnubykT;
-        /*More generous integration error for particle neutrinos*/
-        relerr /= (1.+1e-5-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
-/*         if(d_tot->omnu->neutrinos_not_analytic && d_tot->ThisTask==0) */
-/*             printf("Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
-   }
   /*Precompute factor used to get delta_nu_init. This assumes that delta ~ a, so delta-dot is roughly 1.*/
   deriv_prefac = d_tot->TimeTransfer*(hubble_function(d_tot->TimeTransfer)/d_tot->light)* d_tot->TimeTransfer;
   for (ik = 0; ik < d_tot->nk; ik++) {
@@ -538,6 +528,19 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
       /*For zero mass neutrinos just use the initial conditions piece, modulating to zero inside the horizon*/
       const double specJ = specialJ(wavenum[ik]*fsl_A0a/(mnubykT > 0 ? mnubykT : 1),qc);
       delta_nu_curr[ik] = specJ*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
+  }
+  /* Check whether the particle neutrinos are active at this point.
+   * If they are we want to truncate our integration.
+   * Only do this is hybrid neutrinos are activated in the param file.*/
+  const double partnu = particle_nu_fraction(&d_tot->omnu->hybnu, a, 0);
+  if(partnu > 0) {
+      /*If the particles are everything, be done now*/
+      if(1 - partnu < 1e-4)
+          return;
+      qc = d_tot->omnu->hybnu.vcrit * mnubykT;
+      /*More generous integration error for particle neutrinos*/
+      relerr /= (1.+1e-5-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
+/*    message(0,"Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
   }
   /*If only one time given, we are still at the initial time*/
   /*If neutrino mass is zero, we are not accurate, just use the initial conditions piece*/
