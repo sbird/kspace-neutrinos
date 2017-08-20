@@ -534,13 +534,13 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
    * Only do this is hybrid neutrinos are activated in the param file.*/
   const double partnu = particle_nu_fraction(&d_tot->omnu->hybnu, a, 0);
   if(partnu > 0) {
+/*       message(0,"Particle neutrinos gravitating: a=%g partnu: %g qc is: %g\n",a, partnu,qc); */
       /*If the particles are everything, be done now*/
-      if(1 - partnu < 1e-4)
+      if(1 - partnu < 1e-3)
           return;
       qc = d_tot->omnu->hybnu.vcrit * mnubykT;
       /*More generous integration error for particle neutrinos*/
       relerr /= (1.+1e-5-particle_nu_fraction(&d_tot->omnu->hybnu,a,0));
-/*    message(0,"Particle neutrinos start to gravitate NOW: a=%g nufrac_low is: %g qc is: %g\n",a, (d_tot->omnu->hybnu).nufrac_low[0],qc); */
   }
   /*If only one time given, we are still at the initial time*/
   /*If neutrino mass is zero, we are not accurate, just use the initial conditions piece*/
