@@ -108,6 +108,9 @@ void delta_tot_init(_delta_tot_table * const d_tot, const int nk_in, const doubl
      * so that it includes potential Rayleigh scattering. */
     spline=gsl_interp_alloc(gsl_interp_cspline,t_init->NPowerTable);
     gsl_interp_init(spline,t_init->logk,t_init->T_nu,t_init->NPowerTable);
+    /*Check we have a long enough power table*/
+    if(log(wavenum[d_tot->nk-1]) > t_init->logk[t_init->NPowerTable-1])
+        terminate(0,"Want k = %g but maximum in CAMB table is %g\n",wavenum[d_tot->nk-1], exp(t_init->logk[t_init->NPowerTable-1]));
     for(ik=0;ik<d_tot->nk;ik++){
             double T_nubyT_notnu = gsl_interp_eval(spline,t_init->logk,t_init->T_nu,log(wavenum[ik]),acc);
             /*The total power spectrum using neutrinos and radiation from the CAMB transfer functions:
