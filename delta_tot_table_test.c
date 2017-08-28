@@ -6,7 +6,6 @@
 #include <string.h>
 #include <math.h>
 #include "delta_tot_table.h"
-#include "delta_pow.h"
 #include "transfer_init.h"
 #include "omega_nu_single.h"
 #include "kspace_neutrino_const.h"
@@ -47,7 +46,10 @@ double hubble_function(double a)
 
 /*A struct to hold some useful pointers*/
 struct _test_state {
-    _delta_pow * d_pow;
+    double * delta_cdm_curr;
+    double * delta_nu_curr;
+    double * logkk;
+    int nbins;
     _transfer_init_table * transfer;
     _omega_nu * omnu;
 };
@@ -58,7 +60,6 @@ typedef struct _test_state test_state;
 static void test_allocate_delta_tot_table(void **state)
 {
     test_state * ts = (test_state *) *state;
-    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
     _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     _omega_nu omnu;
@@ -75,21 +76,20 @@ static void test_allocate_delta_tot_table(void **state)
         assert_true(d_tot.delta_tot[i]);
     }
     /* Check that we do not crash when neutrino mass is zero*/
-    double delta_nu_curr[d_pow->nbins];
-    get_delta_nu_update(&d_tot, 0.02, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
+    double delta_nu_curr[ts->nbins];
+    get_delta_nu_update(&d_tot, 0.02, ts->nbins, ts->logkk, ts->delta_cdm_curr, delta_nu_curr, transfer);
     free_delta_tot_table(&d_tot);
 }
 
 static void test_save_resume(void **state)
 {
     test_state * ts = (test_state *) *state;
-    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
     _omega_nu * omnu = (_omega_nu *) ts->omnu;
     _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, ts->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/delta_tot_nu.txt");
@@ -102,7 +102,7 @@ static void test_save_resume(void **state)
     }
     /*Now check that calling delta_tot_init after this works.*/
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer, 0.3333333);
+    delta_tot_init(&d_tot, ts->nbins, ts->logkk, ts->delta_cdm_curr, transfer, 0.3333333);
     assert_true(d_tot.ia == 25);
     /*Check we initialised delta_nu_init and delta_nu_last*/
     for(int ik=0; ik < d_tot.nk; ik++) {
@@ -112,7 +112,7 @@ static void test_save_resume(void **state)
     /*Check saving works: we should also have saved a table in delta_tot_init, but save one in the test data directory and try to load it again.*/
     save_all_nu_state(&d_tot, "testdata/delta_tot_nu.txt");
     _delta_tot_table d_tot2;
-    allocate_delta_tot_table(&d_tot2, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot2, ts->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     read_all_nu_state(&d_tot2, "testdata/delta_tot_nu.txt");
     assert_true(d_tot.ia == d_tot2.ia);
     assert_true(d_tot.nk == d_tot2.nk);
@@ -127,15 +127,14 @@ static void test_save_resume(void **state)
 static void test_delta_tot_init(void **state)
 {
     test_state * ts = (test_state *) *state;
-    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
     _omega_nu * omnu = (_omega_nu *) ts->omnu;
     _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, ts->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /*Note that the delta_cdm_curr used is actually at z=2, so the transfer function isn't really right, but who cares.*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer,0.01);
+    delta_tot_init(&d_tot, ts->nbins, ts->logkk, ts->delta_cdm_curr, transfer,0.01);
     assert_true(d_tot.ia == 1);
     assert_true(d_tot.scalefact[0] == log(0.01));
     /*Check the initial power spectra were created properly*/
@@ -146,7 +145,7 @@ static void test_delta_tot_init(void **state)
         assert_true(d_tot.delta_nu_last[ik] > 0);
         /*These two should be initially the same, although one is created by calling the integrator.*/
         assert_true(fabs(d_tot.delta_nu_last[ik]/ d_tot.delta_nu_init[ik] -1) < 1e-4);
-        double delta_tot_before = get_delta_tot(d_tot.delta_nu_init[ik],d_pow->delta_cdm_curr[ik],OmegaNua3,d_tot.Omeganonu, OmegaNu1,0);
+        double delta_tot_before = get_delta_tot(d_tot.delta_nu_init[ik],ts->delta_cdm_curr[ik],OmegaNua3,d_tot.Omeganonu, OmegaNu1,0);
         assert_true(fabs(d_tot.delta_tot[ik][0]/delta_tot_before-1) < 1e-4);
     }
     free_delta_tot_table(&d_tot);
@@ -195,37 +194,36 @@ static void test_get_delta_nu_update(void **state)
 {
     /*Initialise stuff*/
     test_state * ts = (test_state *) *state;
-    _delta_pow * d_pow = (_delta_pow *) ts->d_pow;
     _omega_nu * omnu = (_omega_nu *) ts->omnu;
     _transfer_init_table * transfer = (_transfer_init_table *) ts->transfer;
     _delta_tot_table d_tot;
     const double UnitLength_in_cm = 3.085678e21;
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
-    allocate_delta_tot_table(&d_tot, d_pow->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
+    allocate_delta_tot_table(&d_tot, ts->nbins, 0.01, 1, 0.2793, omnu, UnitTime_in_s, UnitLength_in_cm, 0);
     /* Reads data from snapdir / delta_tot_nu.txt into delta_tot, if present.
      * Must be called before delta_tot_init, or resuming wont work*/
     read_all_nu_state(&d_tot, "testdata/delta_tot_nu.txt");
     /*Then init delta_tot*/
-    delta_tot_init(&d_tot, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, transfer,0.33333333);
+    delta_tot_init(&d_tot, ts->nbins, ts->logkk, ts->delta_cdm_curr, transfer,0.33333333);
     /*Check that we will actually do something*/
     assert_true(log(0.3333333)-d_tot.scalefact[d_tot.ia-1] > 1e-5);
     /*So now we have a fully initialised d_tot. Update it!*/
-    double delta_nu_curr[d_pow->nbins];
-    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
+    double delta_nu_curr[ts->nbins];
+    get_delta_nu_update(&d_tot, 0.33333333, ts->nbins, ts->logkk, ts->delta_cdm_curr, delta_nu_curr, transfer);
     /*Check that we did indeed update*/
     assert_true(d_tot.ia == 25);
     /*Check that we get the same answer as the saved powerspectrum*/
     for(int ik=0; ik < d_tot.nk; ik++) {
-        assert_true(fabs(delta_nu_curr[ik]/ d_pow->delta_nu_curr[ik] -1) < 1e-2);
+        assert_true(fabs(delta_nu_curr[ik]/ ts->delta_nu_curr[ik] -1) < 1e-2);
     }
     /*Throw out the last stored power spectrum and try again, so that we will perform a save*/
     d_tot.ia--;
-    get_delta_nu_update(&d_tot, 0.33333333, d_pow->nbins, d_pow->logkk, d_pow->delta_cdm_curr, delta_nu_curr, transfer);
+    get_delta_nu_update(&d_tot, 0.33333333, ts->nbins, ts->logkk, ts->delta_cdm_curr, delta_nu_curr, transfer);
     assert_true(d_tot.ia == 25);
     /*Check that we get the same answer as the saved powerspectrum*/
     for(int ik=0; ik < d_tot.nk; ik++) {
         /*Be a bit more generous with the error as we have fewer datapoints now*/
-        assert_true(fabs(delta_nu_curr[ik]/ d_pow->delta_nu_curr[ik] -1) < 3e-2);
+        assert_true(fabs(delta_nu_curr[ik]/ ts->delta_nu_curr[ik] -1) < 3e-2);
     }
 }
 
@@ -372,9 +370,7 @@ static int setup_delta_pow(void **state) {
     double * logkk;
     double * delta_nu_curr;
     double * delta_cdm_curr;
-    _delta_pow * d_pow = NULL;
     /*Initialise the structure and use it as the state.*/
-    d_pow = (_delta_pow *) malloc(sizeof(_delta_pow));
     FILE * fd;
     double scale;
     int nbins;
@@ -389,7 +385,6 @@ static int setup_delta_pow(void **state) {
         delta_cdm_curr = (double *) malloc(nbins*sizeof(double));
         if(!delta_nu_curr || !delta_cdm_curr || !logkk){
             printf("Failed to allocate memory. nbins=%d\n", nbins);
-            free(d_pow);
             free(logkk);
             free(delta_nu_curr);
             free(delta_cdm_curr);
@@ -403,7 +398,6 @@ static int setup_delta_pow(void **state) {
     }
     else {
         printf("Could not open testdata/powerspec_nu_004.txt\n");
-        free(d_pow);
         return 1;
     }
 
@@ -429,7 +423,6 @@ static int setup_delta_pow(void **state) {
     }
     else {
         printf("Could not open testdata/powerspec_cdm_004.txt\n");
-        free(d_pow);
         free(logkk);
         free(delta_nu_curr);
         free(delta_cdm_curr);
@@ -439,7 +432,10 @@ static int setup_delta_pow(void **state) {
     test_state * ts = (test_state *) malloc(sizeof(test_state));
     ts->omnu = malloc(sizeof(_omega_nu));
     ts->transfer = malloc(sizeof(_transfer_init_table));
-    ts->d_pow = d_pow;
+    ts->delta_nu_curr = delta_nu_curr;
+    ts->delta_cdm_curr = delta_cdm_curr;
+    ts->logkk = logkk;
+    ts->nbins = nbins;
     const double MNu[3] = {0.15, 0.15, 0.15};
     init_omega_nu(ts->omnu, MNu, 0.01, 0.7,T_CMB0);
     const double OmegaNua3=get_omega_nu(ts->omnu, 0.01)*pow(0.01,3);
@@ -449,7 +445,6 @@ static int setup_delta_pow(void **state) {
          delta_cdm_curr[ik] = (delta_cdm_curr[ik] - fnu*delta_nu_curr[ik])/(1.-fnu);
     }
     /*Now initialise data structure*/
-    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins,1.);
     const double UnitLength_in_cm = 3.085678e21;
     allocate_transfer_init_table(ts->transfer, 512000, UnitLength_in_cm, UnitLength_in_cm*1e3, "testdata/ics_transfer_99.dat");
     const double UnitTime_in_s = UnitLength_in_cm / 1e5;
@@ -465,11 +460,9 @@ static int teardown_delta_pow(void **state) {
         return 0;
     free(ts->omnu);
     free(ts->transfer);
-    _delta_pow * d_pow = ts->d_pow;
-    free_d_pow(d_pow);
-    free(d_pow->delta_nu_curr);
-    free(d_pow->delta_cdm_curr);
-    free(d_pow);
+    free(ts->delta_nu_curr);
+    free(ts->delta_cdm_curr);
+    free(ts->logkk);
     return 0;
 }
 
