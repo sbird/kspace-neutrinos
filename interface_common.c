@@ -133,6 +133,7 @@ _delta_pow compute_neutrino_power_internal(const double Time, double * keff, dou
   /*We want to interpolate in log space*/
   for(i=0;i<nk_nonzero;i++){
       keff[i] = log(keff[i]);
+      delta_cdm_curr[i] = delta_nu_curr[i]/delta_cdm_curr[i];
   }
   /*kspace_prefac = M_nu (analytic) / M_particles */
   const double OmegaNu_nop = get_omega_nu_nopart(&omeganu_table, Time);
@@ -142,7 +143,7 @@ _delta_pow compute_neutrino_power_internal(const double Time, double * keff, dou
   const double omega_hybrid = get_omega_nu(&omeganu_table, Time) - OmegaNu_nop;
   /* Omega0 - Omega in neutrinos + Omega in particle neutrinos = Omega in particles*/
   const double kspace_prefac = OmegaNu_nop/(delta_tot_table.Omeganonu/pow(Time,3) + omega_hybrid);
-  init_delta_pow(&d_pow, keff, delta_nu_curr, delta_cdm_curr, nk_nonzero, kspace_prefac);
+  init_delta_pow(&d_pow, keff, delta_cdm_curr, nk_nonzero, kspace_prefac);
   return d_pow;
 }
 

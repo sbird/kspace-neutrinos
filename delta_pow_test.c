@@ -12,11 +12,8 @@ static void test_init_delta_pow(void **state) {
     /*Check it initialised correctly.*/
     assert_true(d_pow);
     assert_true(d_pow->logkk);
-    assert_true(d_pow->delta_nu_curr);
-    assert_true(d_pow->spline_nu);
-    assert_true(d_pow->acc_nu);
-    assert_true(d_pow->delta_cdm_curr);
-    assert_true(d_pow->spline_cdm);
+    assert_true(d_pow->delta_ratio);
+    assert_true(d_pow->spline);
     assert_true(d_pow->acc);
 }
 
@@ -27,11 +24,11 @@ static void test_get_dnudcdm_powerspec(void **state) {
     assert_true(d_pow);
     /*Check that we get the desired answer at interpolation points*/
     for(int i=0; i<10; i++)
-        assert_true(get_dnudcdm_powerspec(d_pow, d_pow->logkk[5*i]) == d_pow->delta_nu_curr[5*i]/d_pow->delta_cdm_curr[5*i]);
+        assert_true(get_dnudcdm_powerspec(d_pow, d_pow->logkk[5*i]) == d_pow->delta_ratio[5*i]);
     /*Check that we get a reasonable answer in between*/
     for(int i=0; i<50; i++) {
         double logk = (d_pow->logkk[5*i+1] + d_pow->logkk[5*i+2])/2;
-        double pk = (d_pow->delta_nu_curr[5*i+1]/d_pow->delta_cdm_curr[5*i+1] + d_pow->delta_nu_curr[5*i+2]/d_pow->delta_cdm_curr[5*i+2])/2;
+        double pk = (d_pow->delta_ratio[5*i+1] + d_pow->delta_ratio[5*i+2])/2;
         /*   if (!(fabs(get_dnudcdm_powerspec(d_pow, logk) - pk) < 1e-3*pk))
              printf("i=%d %g %g %g\n", i, logk, pk, get_dnudcdm_powerspec(d_pow, logk));*/
         /*Of course this is not as accurate as the cubic spline, but if linear and
@@ -39,9 +36,9 @@ static void test_get_dnudcdm_powerspec(void **state) {
         assert_true(fabs(get_dnudcdm_powerspec(d_pow, logk) - pk) < 5e-3*pk);
     }
     /*Check that we get something if we are slightly past the edges of the interpolator*/
-    double pksmall = d_pow->delta_nu_curr[0]/d_pow->delta_cdm_curr[0];
+    double pksmall = d_pow->delta_ratio[0];
     assert_true(fabs(get_dnudcdm_powerspec(d_pow, d_pow->logkk[0]-0.01) - pksmall) < 5e-3*pksmall);
-    double pklarge = d_pow->delta_nu_curr[d_pow->nbins-1]/d_pow->delta_cdm_curr[d_pow->nbins-1];
+    double pklarge = d_pow->delta_ratio[d_pow->nbins-1];
     assert_true(fabs(get_dnudcdm_powerspec(d_pow, d_pow->logkk[d_pow->nbins-1]+0.01) - pklarge) < 5e-3*pklarge);
 }
 
@@ -106,7 +103,10 @@ static int setup_delta_pow(void **state) {
         return 1;
     }
     /*Now initialise data structure*/
-    init_delta_pow(d_pow, logkk, delta_nu_curr, delta_cdm_curr, nbins,1.);
+    for(int i=0; i < nbins; i++)
+        delta_nu_curr[i] = delta_nu_curr[i]/delta_cdm_curr[i];
+    free(delta_cdm_curr);
+    init_delta_pow(d_pow, logkk, delta_nu_curr, nbins, 1.);
     *state = (void *) d_pow;
     return 0;
 }
@@ -117,8 +117,7 @@ static int teardown_delta_pow(void **state) {
     if(!d_pow)
         return 0;
     free_d_pow(d_pow);
-    free(d_pow->delta_nu_curr);
-    free(d_pow->delta_cdm_curr);
+    free(d_pow->delta_ratio);
     free(d_pow);
     return 0;
 }

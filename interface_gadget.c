@@ -128,8 +128,7 @@ void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_
       delta_nu_curr[i] = 0;
       keff[i] = log(keff[i]*2*M_PI/BoxSize);
   }
-  d_pow.delta_cdm_curr = delta_cdm_curr;
-  d_pow.delta_nu_curr = delta_nu_curr;
+  d_pow.delta_ratio = delta_nu_curr;
   d_pow.logkk = keff;
   d_pow.nbins = nk_in;
   d_pow.norm = 0;
@@ -204,9 +203,9 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
 #ifdef KSPACE_NEUTRINOS_2
-        const double d_tot = get_delta_tot(d_pow.delta_nu_curr[i], d_pow.delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1);
+        const double d_tot = get_delta_tot(d_pow.delta_ratio[i], delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1);
 #else
-        const double d_tot = d_pow.delta_cdm_curr[i];
+        const double d_tot = delta_cdm_curr[i];
 #endif
         fprintf(fd, "%g %g\n", exp(d_pow.logkk[i]), d_tot*d_tot);
     }
