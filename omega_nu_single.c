@@ -122,7 +122,6 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
      const double logA0=log(a0)-log(1.2);
      const double logaf=log(NU_SW*kBtnu/mnu)+log(1.2);
      gsl_function F;
-     gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
      F.function = &rho_nu_int;
      /*Initialise constants*/
      rho_nu_tab->mnu = mnu;
@@ -138,6 +137,7 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
      if(!rho_nu_tab->interp || !rho_nu_tab->acc || !rho_nu_tab->loga)
          terminate(2035,"Could not initialise tables for neutrino matter density\n");
 
+     gsl_integration_workspace * w = gsl_integration_workspace_alloc (GSL_VAL);
      for(i=0; i< NRHOTAB; i++){
         double param[2];
         rho_nu_tab->loga[i]=logA0+i*(logaf-logA0)/(NRHOTAB-1);
@@ -189,7 +189,7 @@ double rho_nu(_rho_nu_single * rho_nu_tab, const double a, const double kT)
             const double loga = log(a);
             /* Deal with early time case. In practice no need to be very accurate.
              * Use either limiting case. */
-            if (loga < rho_nu_tab->loga[0]) {
+            if (!rho_nu_tab->loga || loga < rho_nu_tab->loga[0]) {
                 if(amnu < 1e-4*kT)
                     rho_nu_val = rel_rho_nu(a,kT);
                 else
