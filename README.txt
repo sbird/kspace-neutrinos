@@ -23,6 +23,11 @@ extensively tested for non-degenerate neutrino masses, as it
 is expected that non-linear effects are small if the neutrino
 mass is low enough for the hierarchy to matter.
 
+Note also that the small particle masses and large speed
+of hybrid neutrinos make them challenging for gravity solvers.
+For this reason we recommend using hybrid neutrinos with MP-Gadget,
+as we have already made sure they work.
+
 =Massless neutrinos=
 Note that disabling the integrator is not exactly
 equivalent to enabling it with MNu = 0. When
@@ -129,6 +134,12 @@ We internally maintain patches to Gadget-3 which incorporate the neutrino code.
 Since Gadget-3 is not public at this time, and many different versions exist,
 these patches often require some work to apply. If you are interested in using
 them, we encourage you to contact Simeon Bird (spb@ias.edu) directly.
+
+When using hybrid neutrinos with Gadget-3, you MUST set
+the parameter TreeDomainUpdateFrequency = 0 , to ensure
+that the simulation completes. This setting rebuilds
+the force tree every timestep. Dynamic tree updates do not
+work when the particles have large random velocities.
 
 ==Porting the neutrino library to a new code==
 
