@@ -135,7 +135,7 @@ int save_nu_power(const _delta_tot_table * const d_tot, const double Time, const
 void read_all_nu_state(_delta_tot_table * const d_tot, char * savedir);
 
 /** Fit to the special function J(x) that is accurate to better than 3% relative and 0.07% absolute*/
-double specialJ(const double x, const double vcmnubylight);
+double specialJ(const double x, const double vcmnubylight, const double nufrac_low);
 
 /** Free-streaming length (times Mnu/k_BT_nu, which is dimensionless) for a non-relativistic
 particle of momentum q = T0, from scale factor ai to af.

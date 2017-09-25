@@ -439,7 +439,7 @@ inline double II(const double x, const double qc, const int n)
  * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
  * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
  * Arguments: vcmnu is vcrit*mnu/LIGHT */
-inline double Jfrac_high(const double x, const double qc)
+inline double Jfrac_high(const double x, const double qc, const double nufrac_low)
 {
     double integ=0;
     int n;
@@ -447,16 +447,17 @@ inline double Jfrac_high(const double x, const double qc)
     {
         integ+= -1*pow((-1),n)*exp(-n*qc)/(n*n+x*x)/(n*n+x*x)*II(x,qc,n);
     }
-    /*Normalise with integral(f_0(q)q^2 dq), same as I(X). So that as qc-> infinity, this -> specialJ_fit(x)*/
-    integ /= 1.8031;
+    /* Normalise with integral_qc^infty(f_0(q)q^2 dq), same as I(X).
+     * So that as qc-> infinity, this -> specialJ_fit(x)*/
+    integ /= 1.5 * 1.202056903159594 * (1 - nufrac_low);
     return integ;
 }
 
 /*Function that picks whether to use the truncated integrator or not*/
-double specialJ(const double x, const double qc)
+double specialJ(const double x, const double qc, const double nufrac_low)
 {
   if( qc > 0 ) {
-   return Jfrac_high(x, qc);
+   return Jfrac_high(x, qc, nufrac_low);
   }
   return specialJ_fit(x);
 }
@@ -482,6 +483,8 @@ struct _delta_nu_int_params
      * This is the critical momentum for hybrid neutrinos: it is unused if
      * hybrid neutrinos are not defined, but left here to save ifdefs.*/
     double qc;
+    /*Fraction of neutrinos in particles for normalisation with hybrid neutrinos*/
+    double nufrac_low;
 };
 typedef struct _delta_nu_int_params delta_nu_int_params;
 
@@ -491,7 +494,7 @@ double get_delta_nu_int(double logai, void * params)
     delta_nu_int_params * p = (delta_nu_int_params *) params;
     double fsl_aia = gsl_interp_eval(p->fs_spline,p->fsscales,p->fslengths,logai,p->fs_acc);
     double delta_tot_at_a = gsl_interp_eval(p->spline,p->scale,p->delta_tot,logai,p->acc);
-    double specJ = specialJ(p->k*fsl_aia/p->mnubykT, p->qc);
+    double specJ = specialJ(p->k*fsl_aia/p->mnubykT, p->qc, p->nufrac_low);
     double ai = exp(logai);
     return fsl_aia/(ai*hubble_function(ai)) * specJ * delta_tot_at_a;
 }
@@ -527,7 +530,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
        * if two species are massless.
        * Also, since at early times the clustering is tiny, it is very unlikely to matter.*/
       /*For zero mass neutrinos just use the initial conditions piece, modulating to zero inside the horizon*/
-      const double specJ = specialJ(wavenum[ik]*fsl_A0a/(mnubykT > 0 ? mnubykT : 1),qc);
+      const double specJ = specialJ(wavenum[ik]*fsl_A0a/(mnubykT > 0 ? mnubykT : 1),qc, d_tot->omnu->hybnu.nufrac_low[0]);
       delta_nu_curr[ik] = specJ*d_tot->delta_nu_init[ik] *(1.+ deriv_prefac*fsl_A0a);
   }
   /* Check whether the particle neutrinos are active at this point.
@@ -563,6 +566,7 @@ void get_delta_nu(const _delta_tot_table * const d_tot, const double a, const do
         params.scale=d_tot->scalefact;
         params.mnubykT=mnubykT;
         params.qc = qc;
+        params.nufrac_low = d_tot->omnu->hybnu.nufrac_low[0];
         /* Massively over-sample the free-streaming lengths.
          * Interpolation is least accurate where the free-streaming length -> 0,
          * which is exactly where it doesn't matter, but

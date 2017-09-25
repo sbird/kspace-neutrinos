@@ -17,6 +17,12 @@ We also do not include radiation (photon) perturbations.
 If you are interested in this limit you should use the output
 of a Boltzmann code, such as CAMB, directly.
 
+Hybrid neutrinos assume that the particles are taken only from
+the first neutrino mass state. The hybrid code has not been
+extensively tested for non-degenerate neutrino masses, as it
+is expected that non-linear effects are small if the neutrino
+mass is low enough for the hierarchy to matter.
+
 =Massless neutrinos=
 Note that disabling the integrator is not exactly
 equivalent to enabling it with MNu = 0. When

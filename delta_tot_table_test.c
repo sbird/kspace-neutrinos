@@ -156,17 +156,17 @@ static void test_specialJ(void **state)
 {
     /*Check against mathematica computed values:
     Integrate[(Sinc[q*x])*(q^2/(Exp[q] + 1)), {q, 0, Infinity}]*/
-    assert_true(specialJ(0,-1) == 1);
-    assert_true(fabs(specialJ(1,-1) - 0.2117) < 1e-3);
-    assert_true(fabs(specialJ(2,-1) - 0.0223807) < 1e-3);
-    assert_true(fabs(specialJ(0.5,-1) - 0.614729) < 1e-3);
-    assert_true(fabs(specialJ(0.3,-1) - 0.829763) < 1e-3);
+    assert_true(specialJ(0,-1,0) == 1);
+    assert_true(fabs(specialJ(1,-1, 0) - 0.2117) < 1e-3);
+    assert_true(fabs(specialJ(2,-1, 0) - 0.0223807) < 1e-3);
+    assert_true(fabs(specialJ(0.5,-1, 0) - 0.614729) < 1e-3);
+    assert_true(fabs(specialJ(0.3,-1, 0) - 0.829763) < 1e-3);
     /*Test that it is ok when truncated*/
     /*Mathematica: Jfrac[x_, qc_] := NIntegrate[(Sinc[q*x])*(q^2/(Exp[q] + 1)), {q, qc, Infinity}]/(3*Zeta[3]/2) */
-    assert_true(fabs(specialJ(0,1) - 0.940437) < 1e-4);
-    assert_true(fabs(specialJ(0.5,1e-2) - 0.614729) < 1e-3);
-    assert_true(fabs(specialJ(0.5,1) - 0.556557) < 1e-4);
-    assert_true(fabs(specialJ(1,0.1) - 0.211611) < 1e-4);
+    assert_true(fabs(specialJ(0,1, 0) - 0.940437) < 1e-4);
+    assert_true(fabs(specialJ(0.5,1e-2, 0.5) - 0.614729/0.5) < 1e-3);
+    assert_true(fabs(specialJ(0.5,1, 0.5) - 0.556557/0.5) < 1e-4);
+    assert_true(fabs(specialJ(1,0.1, 0.5) - 0.211662/0.5) < 1e-4);
 }
 
 /* Check that we accurately work out the free-streaming length.
