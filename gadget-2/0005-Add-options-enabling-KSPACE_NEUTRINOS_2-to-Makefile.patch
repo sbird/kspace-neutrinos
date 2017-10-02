@@ -1,0 +1,26 @@
+From 4373cb40ffb5bff1a81a391ab96bd4dba0780d88 Mon Sep 17 00:00:00 2001
+From: Simeon Bird <sbird4@jhu.edu>
+Date: Mon, 2 Oct 2017 01:44:55 -0400
+Subject: [PATCH] Add options enabling KSPACE_NEUTRINOS_2 to Makefile
+
+---
+ Makefile | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index a47659c..dfb2b99 100644
+--- a/Makefile
++++ b/Makefile
+@@ -25,6 +25,9 @@ OPT   +=  -DPMGRID=128
+ #OPT   +=  -DASMTH=1.25
+ #OPT   +=  -DRCUT=4.5
+ 
++OPT    += -DINCLUDE_RADIATION
++OPT    += -DKSPACE_NEUTRINOS_2
++
+ 
+ #--------------------------------------- Single/Double Precision
+ #OPT   +=  -DDOUBLEPRECISION      
+-- 
+2.14.2
+
