@@ -111,7 +111,8 @@ void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_
   int i, nk_in;
   if(!delta_cdm_curr)
       delta_cdm_curr = mymalloc("temp_power_spectrum", 3*pmgrid/2*sizeof(double));
-  /*The square root of the neutrino power spectrum*/
+  /* The square root of the neutrino power spectrum: not actually used (function only called with KSPACE_NEUTRINOS_2 off).
+   * Only for defensive programming.*/
   double * delta_nu_curr = delta_cdm_curr+pmgrid/2;
   /* (binned) k values for the power spectrum*/
   double * keff = delta_cdm_curr+pmgrid;
@@ -204,7 +205,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
 #ifdef KSPACE_NEUTRINOS_2
-        const double d_tot = get_delta_tot(d_pow.delta_ratio[i], delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
+        const double d_tot = get_delta_tot(d_pow.delta_ratio[i]*delta_cdm_curr[i], delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
 #else
         const double d_tot = delta_cdm_curr[i];
 #endif
