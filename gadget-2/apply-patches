@@ -2,7 +2,21 @@
 
 patchdir=$PWD
 echo $patchdir
-cd ../../
+if [ ! -d Gadget-2.0.7 ]
+then
+    #Create Gadget-2 directory
+    if [ ! -e gadget-2.0.7.tar.gz ]
+    then
+        echo "Downloading Gadget-2..."
+        wget "http://wwwmpa.mpa-garching.mpg.de/gadget/gadget-2.0.7.tar.gz"
+    fi
+    tar -xvf "gadget-2.0.7.tar.gz"
+fi
+cd Gadget-2.0.7/Gadget2
+if [ ! -e kspace-neutrinos ]
+then
+    ln -s ../../../ kspace-neutrinos
+fi
 for pp in $patchdir/*.patch; do
     patch -p1 -N -i $pp
 done
