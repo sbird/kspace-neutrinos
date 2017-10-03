@@ -205,7 +205,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
 #ifdef KSPACE_NEUTRINOS_2
-        const double d_tot = get_delta_tot(d_pow.delta_ratio[i]*delta_cdm_curr[i], delta_cdm_curr[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
+        const double d_tot = get_delta_tot(delta_tot_table.delta_nu_last[i], delta_tot_table.delta_nu_last[i]/d_pow.delta_ratio[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
 #else
         const double d_tot = delta_cdm_curr[i];
 #endif
