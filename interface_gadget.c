@@ -16,6 +16,8 @@ extern _delta_tot_table delta_tot_table;
 
 extern double * delta_cdm_curr;
 
+double * delta_cdm_last;
+
 _delta_pow d_pow;
 
 /*Setup the config files to load the needed variables.
@@ -80,7 +82,9 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   double * keff = delta_cdm_curr+2*nk_allocated;
   long long int * count = mymalloc("temp_modecount", nk_allocated*sizeof(long long int));
   const double scale=pow(BoxSize,-3);
-  if(!count)
+  if(!delta_cdm_last)
+      delta_cdm_last = mymalloc("delta_cdm", nk_allocated*sizeof(double));
+  if(!count || !delta_cdm_last)
       terminate(1,"Could not allocate temporary memory for power spectra\n");
   /*We calculate the power spectrum at every timestep
    * because we need it as input to the neutrino power spectrum.
@@ -91,6 +95,7 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
+      delta_cdm_last[i] = delta_cdm_curr[i];
       keff[i] *= (2*M_PI/BoxSize);
   }
   return compute_neutrino_power_internal(Time, keff, delta_cdm_curr,delta_nu_curr, nk_in);
@@ -109,8 +114,10 @@ _delta_pow compute_neutrino_power_spectrum(const double Time, const double BoxSi
 void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_complex *fft_of_rhogrid, const int pmgrid, int slabstart_y, int nslab_y, MPI_Comm MYMPI_COMM_WORLD)
 {
   int i, nk_in;
-  if(!delta_cdm_curr)
-      delta_cdm_curr = mymalloc("temp_power_spectrum", 3*pmgrid/2*sizeof(double));
+  if(!delta_cdm_curr) {
+      delta_cdm_curr = mymalloc("temp_power_spectrum", 4*pmgrid/2*sizeof(double));
+      delta_cdm_last = delta_cdm_curr + 3/2*pmgrid;
+  }
   /* The square root of the neutrino power spectrum: not actually used (function only called with KSPACE_NEUTRINOS_2 off).
    * Only for defensive programming.*/
   double * delta_nu_curr = delta_cdm_curr+pmgrid/2;
@@ -126,6 +133,7 @@ void compute_total_power_spectrum(const double Time, const double BoxSize, fftw_
   /*Get delta_cdm_curr , which is P(k)^1/2, and convert P(k) to physical units. */
   for(i=0;i<nk_in;i++){
       delta_cdm_curr[i] = sqrt(delta_cdm_curr[i]/scale);
+      delta_cdm_last[i] = delta_cdm_curr[i];
       delta_nu_curr[i] = 0;
       keff[i] = log(keff[i]*2*M_PI/BoxSize);
   }
@@ -205,7 +213,7 @@ int save_total_power(const double Time, const int snapnum, const char * OutputDi
     fprintf(fd, "# nbins = %d\n", d_pow.nbins);
     for(i = 0; i < d_pow.nbins; i++){
 #ifdef KSPACE_NEUTRINOS_2
-        const double d_tot = get_delta_tot(delta_tot_table.delta_nu_last[i], delta_tot_table.delta_nu_last[i]/d_pow.delta_ratio[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
+        const double d_tot = get_delta_tot(delta_tot_table.delta_nu_last[i], delta_cdm_last[i], OmegaNua3, delta_tot_table.Omeganonu, OmegaNu1, partnu);
 #else
         const double d_tot = delta_cdm_curr[i];
 #endif
