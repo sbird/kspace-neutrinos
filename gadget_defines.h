@@ -16,13 +16,14 @@ double hubble_function(double a);
 /* Use this define as a way of knowing we are MP-Gadget, so we use that terminate function.
  * Cannot just call it endrun as this conflicts with Gadget-2.*/
 #ifndef PERIODIC
-void endrun(int ierr, const char * fmt, ...);
+
+#include "mymalloc.h"
+#include "endrun.h"
 #define terminate endrun
+
 #else
 void terminate(int ierr, const char * fmt, ...);
-#endif
 void message(int ierr, const char * fmt, ...);
-
 
 /*Definitions from gadget's allvars.h: these are macros, so we have to repeat them here or include allvars.h.*/
 #define  mymalloc(x, y)            mymalloc_fullinfo(x, y, __FUNCTION__, __FILE__, __LINE__)
@@ -30,6 +31,8 @@ void message(int ierr, const char * fmt, ...);
 /*These functions need bodies; normally this is provided by gadget. We fake it in gadget_defines.c for the tests.*/
 void * mymalloc_fullinfo(const char * string, size_t size, const char *func, const char *file, int line);
 void myfree_fullinfo(void * ptr, const char *func, const char *file, int line);
+
+#endif
 
 /*These are defined in begrun.c. They correspond to types and are very specific to P-Gadget3!
  * Only used in set_kspace_vars*/
