@@ -5,7 +5,7 @@
 #include "gadget_defines.h"
 
 /*Helper function for 1D window function.*/
-inline fftw_real onedinvwindow(int kx, int n)
+static inline fftw_real onedinvwindow(int kx, int n)
 {
     /*Return \pi x /(n sin(\pi x / n)) unless x = 0, in which case return 1.*/
     return kx ? M_PI*kx/(n*sin(M_PI*kx/(fftw_real)n)) : 1.0;
