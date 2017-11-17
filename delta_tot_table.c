@@ -414,7 +414,7 @@ Fit to the special function J(x) that is accurate to better than 3% relative and
    (PolyGamma[1, 1/2 - i x/2] - PolyGamma[1, 1 - i x/2] -    PolyGamma[1, 1/2 + i x/2] +
    PolyGamma[1, 1 + i x/2])/(12 x Zeta[3]), which we could evaluate exactly if we wanted to.
 ***************************************************************************************************/
-inline double specialJ_fit(const double x)
+static inline double specialJ_fit(const double x)
 {
 
   double x2, x4, x8;
@@ -428,7 +428,7 @@ inline double specialJ_fit(const double x)
 }
 
 /*Asymptotic series expansion from YAH. Not good when qc * x is small, but fine otherwise.*/
-inline double II(const double x, const double qc, const int n)
+static inline double II(const double x, const double qc, const int n)
 {
     return (n*n+n*n*n*qc+n*qc*x*x - x*x)* qc*gsl_sf_bessel_j0(qc*x) + (2*n+n*n*qc+qc*x*x)*cos(qc*x);
 }
@@ -439,7 +439,7 @@ inline double II(const double x, const double qc, const int n)
  * This is an approximation to integral f_0(q) q^2 j_0(qX) dq between qc and infinity.
  * It gives the fraction of the integral that is due to neutrinos above a certain threshold.
  * Arguments: vcmnu is vcrit*mnu/LIGHT */
-inline double Jfrac_high(const double x, const double qc, const double nufrac_low)
+static inline double Jfrac_high(const double x, const double qc, const double nufrac_low)
 {
     double integ=0;
     int n;

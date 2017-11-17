@@ -153,7 +153,7 @@ void rho_nu_init(_rho_nu_single * const rho_nu_tab, const double a0, const doubl
 }
 
 /*Heavily non-relativistic*/
-inline double non_rel_rho_nu(const double a, const double kT, const double amnu, const double kTamnu2)
+static inline double non_rel_rho_nu(const double a, const double kT, const double amnu, const double kTamnu2)
 {
     /*The constants are Riemann zetas: 3,5,7 respectively*/
     return amnu*(kT*kT*kT)/(a*a*a*a)*(1.5*1.202056903159594+kTamnu2*45./4.*1.0369277551433704+2835./32.*kTamnu2*kTamnu2*1.0083492773819229+80325/32.*kTamnu2*kTamnu2*kTamnu2*1.0020083928260826)*get_rho_nu_conversion();
@@ -161,7 +161,7 @@ inline double non_rel_rho_nu(const double a, const double kT, const double amnu,
 
 /*Heavily relativistic: we could be more accurate here,
  * but in practice this will only be called for massless neutrinos, so don't bother.*/
-inline double rel_rho_nu(const double a, const double kT)
+static inline double rel_rho_nu(const double a, const double kT)
 {
     return 7*pow(M_PI*kT/a,4)/120.*get_rho_nu_conversion();
 }
