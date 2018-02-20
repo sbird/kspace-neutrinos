@@ -17,8 +17,8 @@ double hubble_function(double a);
  * Cannot just call it endrun as this conflicts with Gadget-2.*/
 #ifndef PERIODIC
 
-#include "mymalloc.h"
-#include "endrun.h"
+#include <libgadget/mymalloc.h>
+#include <libgadget/endrun.h>
 #define terminate endrun
 
 #else
